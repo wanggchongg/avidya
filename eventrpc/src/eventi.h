@@ -16,6 +16,7 @@ class EventPoller;
 class Event {
  public:
   virtual ~Event() {
+    Close();
   }
 
   struct event* read_event() {

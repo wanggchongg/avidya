@@ -101,16 +101,18 @@ int ClientEvent::OnWrite() {
 
 int ClientEvent::OnRead() {
   int len, ret;
+  ssize_t recv_count;
   while (true) {
-    ret = Recv(fd_, buf_, count_, &len);
+    recv_count = count_ > BUFFER_LENGTH ? BUFFER_LENGTH : count_;
+    ret = Recv(fd_, buf_, recv_count, &len);
     if (ret < 0) {
       Close();
       return -1;
-    } else if (len < count_) {
+    } else if (len < recv_count) {
       count_ -= len;
       message_.append(buf_, len);
       return 0;
-    } else if (len == count_) {
+    } else if (len == recv_count) {
       message_.append(buf_, len);
       if (state_ == READ_META) {
         meta_.Encode(message_.c_str());
@@ -131,9 +133,9 @@ int ClientEvent::OnRead() {
         request_ = rpc_method_->request_->New();
         response_ = rpc_method_->response_->New();
         request_->ParseFromString(message_);
-        gpb::Closure *done = gpb::NewCallback(this,
-                                              &ClientEvent::HandleServiceDone);
-        message_ = "";
+        gpb::Closure *done = gpb::NewCallback(
+            this,
+            &ClientEvent::HandleServiceDone);
         rpc_method_->service_->CallMethod(method_,
                                           NULL,
                                           request_, response_, done);
@@ -146,6 +148,7 @@ int ClientEvent::OnRead() {
 }
 
 void ClientEvent::HandleServiceDone() {
+  message_ = "";
   meta_.EncodeWithMessage(method_->full_name(), response_, &message_);
   sent_count_ = 0;
   count_ = message_.length();

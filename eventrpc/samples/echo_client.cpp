@@ -7,9 +7,10 @@
 using namespace eventrpc;
 using namespace std;
 
-void echo_done(echo::EchoResponse* resp)
+void echo_done(echo::EchoResponse* resp, RpcClientEvent *event)
 {
   printf("response: %s\n", resp->response().c_str());
+  event->Close();
 }
 
 int main() {
@@ -22,7 +23,7 @@ int main() {
   echo::EchoResponse response;
   request.set_message("hello");
   stub.Echo(NULL, &request, &response,
-            gpb::NewCallback(::echo_done, &response));
+            gpb::NewCallback(::echo_done, &response, event));
 
   eventpoller.Loop();
 

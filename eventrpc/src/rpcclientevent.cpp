@@ -93,16 +93,18 @@ int RpcClientEvent::Impl::OnRead() {
   }
 
   int len, ret;
+  ssize_t recv_count;
   while (true) {
-    ret = Recv(client_event_->fd_, buf_, count_, &len);
+    recv_count = count_ > BUFFER_LENGTH ? BUFFER_LENGTH : count_;
+    ret = Recv(client_event_->fd_, buf_, recv_count, &len);
     if (ret < 0) {
       Close();
       return -1;
-    } else if (len < count_) {
+    } else if (len < recv_count) {
       count_ -= len;
       message_.append(buf_, len);
       return 0;
-    } else if (len == count_) {
+    } else if (len == recv_count) {
       if (state_ == READ_META) {
           meta_.Encode(message_.c_str());
           count_ = meta_.message_len();
@@ -116,7 +118,8 @@ int RpcClientEvent::Impl::OnRead() {
           message_.append(buf_, len);
           request_info_.response_->ParseFromString(message_);
           request_info_.done_->Run();
-          Close();
+          // whether close depends on user
+          // Close();
           return 0;
       }
     }
