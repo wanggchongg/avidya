@@ -42,9 +42,9 @@ struct RpcMethod {
 
 typedef map<uint32_t, RpcMethod*> RpcMethodMap;
 
-struct ClientEvent : public Event {
+struct ConnectionEvent : public Event {
  public:
-  ClientEvent(int fd, const RpcMethodMap &rpc_methods,
+  ConnectionEvent(int fd, const RpcMethodMap &rpc_methods,
               RpcServerEvent *server_event)
     : Event(READ_EVENT, fd)
       , rpc_methods_(rpc_methods)
@@ -75,7 +75,7 @@ struct ClientEvent : public Event {
   ssize_t sent_count_;
 };
 
-int ClientEvent::OnWrite() {
+int ConnectionEvent::OnWrite() {
   int len, ret;
   while (true) {
     ret = Send(fd_, message_.c_str() + sent_count_, count_, &len);
@@ -99,7 +99,7 @@ int ClientEvent::OnWrite() {
   return 0;
 }
 
-int ClientEvent::OnRead() {
+int ConnectionEvent::OnRead() {
   int len, ret;
   ssize_t recv_count;
   while (true) {
@@ -135,7 +135,7 @@ int ClientEvent::OnRead() {
         request_->ParseFromString(message_);
         gpb::Closure *done = gpb::NewCallback(
             this,
-            &ClientEvent::HandleServiceDone);
+            &ConnectionEvent::HandleServiceDone);
         rpc_method_->service_->CallMethod(method_,
                                           NULL,
                                           request_, response_, done);
@@ -147,7 +147,7 @@ int ClientEvent::OnRead() {
   return -1;
 }
 
-void ClientEvent::HandleServiceDone() {
+void ConnectionEvent::HandleServiceDone() {
   message_ = "";
   meta_.EncodeWithMessage(method_->full_name(), response_, &message_);
   sent_count_ = 0;
@@ -157,7 +157,7 @@ void ClientEvent::HandleServiceDone() {
   OnWrite();
 }
 
-void ClientEvent::Init() {
+void ConnectionEvent::Init() {
   state_ = READ_META;
   count_ = META_LEN;
 }
@@ -176,7 +176,7 @@ struct RpcServerEvent::Impl {
 
  private:
   RpcServerEvent *server_event_;
-  vector<ClientEvent*> client_events_;
+  vector<ConnectionEvent*> client_events_;
   RpcMethodMap rpc_methods_;
 };
 
@@ -207,7 +207,7 @@ int RpcServerEvent::Impl::OnRead() {
     return -1;
   }
 
-  ClientEvent *client_event = new ClientEvent(
+  ConnectionEvent *client_event = new ConnectionEvent(
       fd, rpc_methods_, server_event_);
   client_event->Init();
   server_event_->event_poller()->AddEvent(READ_EVENT, client_event);
