@@ -1,5 +1,5 @@
-#ifndef __EVENTRPC_RPCEVENT_H__
-#define __EVENTRPC_RPCEVENT_H__
+#ifndef __EVENTRPC_RPCCLIENTEVENT_H__
+#define __EVENTRPC_RPCCLIENTEVENT_H__
 
 #include <google/protobuf/service.h>
 #include "base.h"
@@ -31,4 +31,4 @@ class RpcClientEvent
 };
 
 EVENTRPC_NAMESPACE_END
-#endif  //  __EVENTRPC_RPCEVENT_H__
+#endif  //  __EVENTRPC_RPCCLIENTEVENT_H__

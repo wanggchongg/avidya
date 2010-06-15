@@ -31,6 +31,10 @@ class Event {
     return event_;
   }
 
+  void set_event(short event) {
+    event_ = event;
+  }
+
   int fd() {
     return fd_;
   }
