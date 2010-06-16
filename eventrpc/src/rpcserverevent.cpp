@@ -13,6 +13,7 @@
 #include "connectionevent.h"
 #include "eventpoller.h"
 #include "socket_utility.h"
+#include "workerthread.h"
 
 using std::string;
 using std::vector;
@@ -20,6 +21,8 @@ using std::vector;
 EVENTRPC_NAMESPACE_BEGIN
 
 struct RpcServerEvent::Impl {
+  friend class RpcServerEvent;
+
  public:
   Impl(const char *ip, int port, RpcServerEvent *serverevent);
 
@@ -33,14 +36,16 @@ struct RpcServerEvent::Impl {
 
  private:
   RpcServerEvent *server_event_;
-  vector<ConnectionEvent*> client_events_;
   RpcMethodMap rpc_methods_;
+  WorkerThread worker_thread_;
 };
 
 RpcServerEvent::Impl::Impl(const char *ip, int port,
                            RpcServerEvent *server_event)
-: server_event_(server_event) {
-  server_event_->fd_ = Listen(ip, port);
+  : server_event_(server_event)
+  , worker_thread_(server_event){
+    server_event_->fd_ = Listen(ip, port);
+    worker_thread_.Start();
 }
 
 RpcServerEvent::Impl::~Impl() {
@@ -60,15 +65,7 @@ int RpcServerEvent::Impl::OnRead() {
     return -1;
   }
 
-  if (SetNonBlocking(fd) < 0) {
-    return -1;
-  }
-
-  ConnectionEvent *client_event = new ConnectionEvent(
-      fd, rpc_methods_, server_event_, server_event_->event_poller());
-  client_event->Init();
-  server_event_->event_poller()->AddEvent(READ_EVENT, client_event);
-  client_events_.push_back(client_event);
+  worker_thread_.PushNewConnection(fd);
 
   return 0;
 }
@@ -110,6 +107,10 @@ int RpcServerEvent::OnWrite() {
 
 bool RpcServerEvent::RegisterService(gpb::Service* service) {
   return impl_->RegisterService(service);
+}
+
+RpcMethodMap* RpcServerEvent::rpc_methods() {
+  return &(impl_->rpc_methods_);
 }
 
 EVENTRPC_NAMESPACE_END

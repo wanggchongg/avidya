@@ -2,10 +2,15 @@
 #define __EVENTRPC_RPCEVENT_H__
 
 #include <google/protobuf/service.h>
+#include <map>
 #include "base.h"
 #include "eventi.h"
 
+using std::map;
+
 EVENTRPC_NAMESPACE_BEGIN
+
+struct RpcMethod;
 
 class RpcServerEvent : public Event {
  public:
@@ -18,6 +23,8 @@ class RpcServerEvent : public Event {
   virtual int OnRead();
 
   bool RegisterService(gpb::Service *service);
+
+  map<uint32_t, RpcMethod*>* rpc_methods();
 
  private:
   struct Impl;

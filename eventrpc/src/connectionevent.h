@@ -35,7 +35,7 @@ typedef map<uint32_t, RpcMethod*> RpcMethodMap;
 
 struct ConnectionEvent : public Event {
  public:
-  ConnectionEvent(int fd, const RpcMethodMap &rpc_methods,
+  ConnectionEvent(int fd, const RpcMethodMap *rpc_methods,
                   RpcServerEvent *server_event, EventPoller *event_poller);
 
   virtual ~ConnectionEvent();

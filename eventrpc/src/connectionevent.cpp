@@ -9,7 +9,7 @@ EVENTRPC_NAMESPACE_BEGIN
 
 struct ConnectionEvent::Impl {
  public:
-  Impl(int fd, const RpcMethodMap &rpc_methods,
+  Impl(int fd, const RpcMethodMap *rpc_methods,
        RpcServerEvent *server_event, ConnectionEvent *conn_event,
        EventPoller *event_poller)
     : fd_(fd)
@@ -31,7 +31,7 @@ struct ConnectionEvent::Impl {
  private:
   int fd_;
   char buf_[BUFFER_LENGTH];
-  RpcMethodMap rpc_methods_;
+  const RpcMethodMap *rpc_methods_;
   Meta meta_;
   RpcServerEvent *server_event_;
   gpb::Message *request_;
@@ -89,9 +89,9 @@ int ConnectionEvent::Impl::OnRead() {
       if (state_ == READ_META) {
         meta_.Encode(message_.c_str());
         state_ = READ_MESSAGE;
-        RpcMethodMap::iterator iter;
-        if ((iter = rpc_methods_.find(meta_.method_id()))
-            != rpc_methods_.end()) {
+        RpcMethodMap::const_iterator iter;
+        if ((iter = rpc_methods_->find(meta_.method_id()))
+            != rpc_methods_->end()) {
           rpc_method_ = iter->second;
           count_ = meta_.message_len();
           state_ = READ_MESSAGE;
@@ -134,7 +134,7 @@ void ConnectionEvent::Impl::Init() {
   count_ = META_LEN;
 }
 
-ConnectionEvent::ConnectionEvent(int fd, const RpcMethodMap &rpc_methods,
+ConnectionEvent::ConnectionEvent(int fd, const RpcMethodMap *rpc_methods,
                                  RpcServerEvent *server_event,
                                  EventPoller *event_poller)
   : Event(READ_EVENT, fd)
