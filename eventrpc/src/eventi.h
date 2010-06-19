@@ -27,10 +27,18 @@ class Event {
     return event_flags_;
   }
 
+  void set_event_flags(short event_flags) {
+    event_flags_ = event_flags;
+  }
+
   bool UpdateEvent(short new_event_flags);
 
   int fd() {
     return fd_;
+  }
+
+  void set_fd(int fd) {
+    fd_ = fd;
   }
 
   EventPoller* event_poller() {

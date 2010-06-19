@@ -139,9 +139,6 @@ int RpcClientEvent::Impl::OnWrite() {
     } else if (len < count_) {
       count_ -= len;
       sent_count_ += len;
-      if (!client_event_->UpdateEvent(WRITE_EVENT)) {
-        return -1;
-      }
       return 0;
     } else if (len == count_) {
       if (!client_event_->UpdateEvent(READ_EVENT)) {
@@ -165,6 +162,9 @@ void RpcClientEvent::Impl::CallMethod(const gpb::MethodDescriptor *method,
   state_ = SEND_REQUEST;
   count_ = message_.length();
   sent_count_ = 0;
+  if (!client_event_->UpdateEvent(WRITE_EVENT)) {
+    return;
+  }
   OnWrite();
 }
 

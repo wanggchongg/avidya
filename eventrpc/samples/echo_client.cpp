@@ -10,6 +10,7 @@ using namespace std;
 void echo_done(echo::EchoResponse* resp, RpcClientEvent *event)
 {
   printf("response: %s\n", resp->response().c_str());
+  event = event;
   event->Close();
 }
 
@@ -24,6 +25,12 @@ int main() {
   request.set_message("hello");
   stub.Echo(NULL, &request, &response,
             gpb::NewCallback(::echo_done, &response, event));
+
+  /*
+  request.set_message("hello2");
+  stub.Echo(NULL, &request, &response,
+            gpb::NewCallback(::echo_done, &response, event));
+  */
 
   eventpoller.Loop();
 

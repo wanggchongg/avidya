@@ -12,18 +12,37 @@ using namespace std;
 EVENTRPC_NAMESPACE_BEGIN
 
 static void *worker_thread(void *arg);
-static void thread_libevent_process(int fd, short which, void *arg);
+
+struct NotifyEvent : public Event {
+ public:
+  NotifyEvent(int fd, EventPoller *event_poller) {
+    fd_ = fd;
+    event_poller_ = event_poller;
+  }
+
+  virtual ~NotifyEvent() {
+  }
+
+  virtual int OnWrite() {
+    return -1;
+  }
+
+  virtual int OnRead() {
+    return -1;
+  }
+};
 
 struct WorkerThreadImpl {
-  friend void thread_libevent_process(int fd, short which, void *arg);
  public:
   WorkerThreadImpl(RpcServerEvent *server_event, WorkerThread *worker_thread)
     : server_event_(server_event)
-      , event_base_(NULL)
-      , worker_thread_(worker_thread) {
+      , worker_thread_(worker_thread)
+      , notify_event_(NULL) {
   }
 
-  ~WorkerThreadImpl();
+  ~WorkerThreadImpl() {
+    delete notify_event_;
+  }
 
   int Start();
 
@@ -42,9 +61,8 @@ struct WorkerThreadImpl {
   vector<ConnectionEvent*> unused_conn_;
   RpcServerEvent *server_event_;
   EventPoller event_poller_;
-  struct event_base *event_base_;
-  struct event notify_event_;
   WorkerThread *worker_thread_;
+  NotifyEvent *notify_event_;
 };
 
 struct WorkerThread::Impl {
@@ -99,17 +117,8 @@ int WorkerThreadImpl::Start() {
   notify_recv_fd_ = fds[0];
   notify_send_fd_ = fds[1];
 
-  event_base_ = event_init();
-  if (!event_base_) {
-    return -1;
-  }
-
-  /* Listen for notifications from other threads */
-  event_set(&notify_event_, notify_recv_fd_,
-            EV_READ | EV_PERSIST, thread_libevent_process, this);
-  event_base_set(event_base_, &notify_event_);
-
-  if (event_add(&notify_event_, 0) == -1) {
+  notify_event_ = new NotifyEvent(notify_recv_fd_, &event_poller_);
+  if (!notify_event_->UpdateEvent(READ_EVENT)) {
     return -1;
   }
 
@@ -121,9 +130,8 @@ int WorkerThreadImpl::Start() {
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, 1);
 
-  if ((ret = pthread_create(&thread, &attr, worker_thread, event_base_)) != 0) {
-    fprintf(stderr, "Can't create thread: %s\n",
-            strerror(ret));
+  ret = pthread_create(&thread, &attr, worker_thread, &event_poller_);
+  if (ret != 0) {
     return -1;
   }
 
@@ -150,21 +158,11 @@ void WorkerThread::PushUnusedConnection(ConnectionEvent *conn_event) {
   impl_->impl_->PushUnusedConnection(conn_event);
 }
 
-void thread_libevent_process(int fd, short which, void *arg) {
-  char buf[1];
-
-  if (read(fd, buf, 1) != 1) {
-      return;
-  }
-  fd = fd;
-  which = which;
-  arg = arg;
-}
-
 void *worker_thread(void *arg) {
-  event_base *base = (event_base*)arg;
+  EventPoller *event_poller = static_cast<EventPoller*>(arg);
 
-  event_base_loop(base, 0);
+  event_poller->Loop();
+
   return NULL;
 }
 

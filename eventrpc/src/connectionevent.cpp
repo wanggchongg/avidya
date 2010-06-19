@@ -62,14 +62,10 @@ int ConnectionEvent::Impl::OnWrite() {
     } else if (len < count_) {
       count_ -= len;
       sent_count_ += len;
-      if (!conn_event_->UpdateEvent(WRITE_EVENT)) {
-        return -1;
-      }
       return 0;
     } else if (len == count_) {
-      // whether close depends on user
-      // Close();
-      if (!event_poller_->DelEvent(conn_event_)) {
+      // waiting for the next request
+      if (!conn_event_->UpdateEvent(READ_EVENT)) {
         return -1;
       }
       return 0;
@@ -86,7 +82,7 @@ int ConnectionEvent::Impl::OnRead() {
     recv_count = count_ > BUFFER_LENGTH ? BUFFER_LENGTH : count_;
     ret = Recv(fd_, buf_, recv_count, &len);
     if (ret < 0) {
-      conn_event_->Close();
+      Close();
       return -1;
     } else if (len < recv_count) {
       count_ -= len;
@@ -105,7 +101,7 @@ int ConnectionEvent::Impl::OnRead() {
           state_ = READ_MESSAGE;
           message_ = "";
         } else {
-          conn_event_->Close();
+          Close();
           return -1;
         }
       } else if (state_ == READ_MESSAGE) {
@@ -134,6 +130,9 @@ void ConnectionEvent::Impl::HandleServiceDone() {
   count_ = message_.length();
   delete request_;
   delete response_;
+  if (!conn_event_->UpdateEvent(WRITE_EVENT)) {
+    return;
+  }
   OnWrite();
 }
 
@@ -141,6 +140,7 @@ void ConnectionEvent::Impl::Init(int fd, WorkerThread *worker_thread) {
   state_ = READ_META;
   count_ = META_LEN;
   fd_ = fd;
+  conn_event_->set_fd(fd);
   worker_thread_ = worker_thread;
 }
 

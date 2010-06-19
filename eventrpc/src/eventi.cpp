@@ -1,5 +1,6 @@
 
 #include <unistd.h>
+#include <string.h>
 #include "eventi.h"
 #include "eventpoller.h"
 

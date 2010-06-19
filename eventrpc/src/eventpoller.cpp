@@ -19,7 +19,9 @@ static void HandleEvent(int fd, short event_flags, void *arg) {
 struct EventPoller::Impl {
  public:
   Impl(EventPoller *event_poller)
-    : event_poller_(event_poller) {
+    : event_poller_(event_poller)
+    , event_base_(NULL) {
+    event_base_ = event_init();
   }
 
   void Loop();
@@ -32,10 +34,11 @@ struct EventPoller::Impl {
 
  private:
   EventPoller *event_poller_;
+  struct event_base *event_base_;
 };
 
 void EventPoller::Impl::Loop() {
-  event_dispatch();
+  event_base_dispatch(event_base_);
 }
 
 void EventPoller::Impl::Stop() {
@@ -45,6 +48,9 @@ bool EventPoller::Impl::AddEvent(Event *event) {
   if (event->event_flags() != -1) {
     event_set(event->event(), event->fd(), event->event_flags(),
               &eventrpc::HandleEvent, event);
+    if (event_base_set(event_base_, event->event()) == -1) {
+      return false;
+    }
     if (event_add(event->event(), NULL) == -1) {
       return false;
     }
@@ -55,12 +61,12 @@ bool EventPoller::Impl::AddEvent(Event *event) {
 }
 
 bool EventPoller::Impl::DelEvent(Event *event) {
+  event->set_event_flags(-1);
   return event_del(event->event()) == -1 ? false : true;
 }
 
 EventPoller::EventPoller()
   : impl_(new Impl(this)) {
-    event_init();
 }
 
 EventPoller::~EventPoller() {
