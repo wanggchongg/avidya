@@ -14,14 +14,14 @@ struct RequestInfo {
  public:
   RequestInfo()
     : controller_(NULL)
-      , response_(NULL)
-      , done_(NULL){
-      }
+    , response_(NULL)
+    , done_(NULL){
+  }
 
   void Init(gpb::RpcController *controller,
-              gpb::Message *response,
-              uint32_t method_id,
-              gpb::Closure *done) {
+            gpb::Message *response,
+            uint32_t method_id,
+            gpb::Closure *done) {
     controller_ = controller;
     response_ = response;
     method_id_ = method_id;
@@ -139,14 +139,14 @@ int RpcClientEvent::Impl::OnWrite() {
     } else if (len < count_) {
       count_ -= len;
       sent_count_ += len;
-      if (!(client_event_->event_ & WRITE_EVENT)) {
-        client_event_->event_ |= WRITE_EVENT;
-        event_poller_->AddEvent(WRITE_EVENT, client_event_);
+      if (!client_event_->UpdateEvent(WRITE_EVENT)) {
+        return -1;
       }
       return 0;
     } else if (len == count_) {
-      client_event_->event_ &= ~WRITE_EVENT;
-      event_poller_->DelEvent(WRITE_EVENT, client_event_);
+      if (!client_event_->UpdateEvent(READ_EVENT)) {
+        return -1;
+      }
       return 0;
     }
   }
@@ -169,8 +169,7 @@ void RpcClientEvent::Impl::CallMethod(const gpb::MethodDescriptor *method,
 }
 
 RpcClientEvent::RpcClientEvent(const char* ip, int port)
-  : Event(READ_EVENT)
-  , impl_(new Impl(ip, port, this, event_poller_)) {
+  : impl_(new Impl(ip, port, this, event_poller_)) {
 }
 
 RpcClientEvent::~RpcClientEvent() {

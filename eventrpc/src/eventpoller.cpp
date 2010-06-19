@@ -4,35 +4,31 @@
 
 EVENTRPC_NAMESPACE_BEGIN
 
-static void OnRead(int fd, short event, void *arg) {
+static void HandleEvent(int fd, short event_flags, void *arg) {
   (void)fd;
-  (void)event;
-  Event *ev = static_cast<Event*>(arg);
+  Event *event = static_cast<Event*>(arg);
 
-  ev->OnRead();
-}
-
-static void OnWrite(int fd, short event, void *arg) {
-  (void)fd;
-  (void)event;
-  Event *ev = static_cast<Event*>(arg);
-
-  ev->OnWrite();
+  if (event_flags & WRITE_EVENT) {
+    event->OnWrite();
+  }
+  if (event_flags & READ_EVENT) {
+    event->OnRead();
+  }
 }
 
 struct EventPoller::Impl {
  public:
   Impl(EventPoller *event_poller)
     : event_poller_(event_poller) {
-    }
+  }
 
   void Loop();
 
   void Stop();
 
-  void AddEvent(short event, Event *ev);
+  bool AddEvent(Event *event);
 
-  void DelEvent(short event, Event *ev);
+  bool DelEvent(Event *event);
 
  private:
   EventPoller *event_poller_;
@@ -45,29 +41,21 @@ void EventPoller::Impl::Loop() {
 void EventPoller::Impl::Stop() {
 }
 
-void EventPoller::Impl::AddEvent(short event, Event *ev) {
-  if (event & EV_READ) {
-    event_set(ev->read_event(), ev->fd(), READ_EVENT,
-              &eventrpc::OnRead, ev);
-    event_add(ev->read_event(), NULL);
+bool EventPoller::Impl::AddEvent(Event *event) {
+  if (event->event_flags() != -1) {
+    event_set(event->event(), event->fd(), event->event_flags(),
+              &eventrpc::HandleEvent, event);
+    if (event_add(event->event(), NULL) == -1) {
+      return false;
+    }
   }
 
-  if (event & EV_WRITE) {
-    event_set(ev->write_event(), ev->fd(), WRITE_EVENT,
-              &eventrpc::OnWrite, ev);
-    event_add(ev->write_event(), NULL);
-  }
-
-  ev->set_event_poller(event_poller_);
+  event->set_event_poller(event_poller_);
+  return true;
 }
 
-void EventPoller::Impl::DelEvent(short event, Event *ev) {
-  if (event & EV_READ) {
-    event_del(ev->read_event());
-  }
-  if (event & EV_WRITE) {
-    event_del(ev->write_event());
-  }
+bool EventPoller::Impl::DelEvent(Event *event) {
+  return event_del(event->event()) == -1 ? false : true;
 }
 
 EventPoller::EventPoller()
@@ -87,12 +75,12 @@ void EventPoller::Stop() {
   impl_->Stop();
 }
 
-void EventPoller::AddEvent(short event, Event* ev) {
-  impl_->AddEvent(event, ev);
+bool EventPoller::AddEvent(Event* event) {
+  return impl_->AddEvent(event);
 }
 
-void EventPoller::DelEvent(short event, Event* ev) {
-  impl_->DelEvent(event, ev);
+bool EventPoller::DelEvent(Event* event) {
+  return impl_->DelEvent(event);
 }
 
 EVENTRPC_NAMESPACE_END

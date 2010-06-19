@@ -19,21 +19,15 @@ class Event {
     Close();
   }
 
-  struct event* read_event() {
-    return &read_event_;
+  struct event* event() {
+    return &event_;
   }
 
-  struct event* write_event() {
-    return &write_event_;
+  short event_flags() {
+    return event_flags_;
   }
 
-  short event() {
-    return event_;
-  }
-
-  void set_event(short event) {
-    event_ = event;
-  }
+  bool UpdateEvent(short new_event_flags);
 
   int fd() {
     return fd_;
@@ -54,17 +48,16 @@ class Event {
   void Close();
 
  protected:
-  Event(short event, int fd = -1)
-    : event_(event)
-      , fd_(fd)
-      , event_poller_(NULL) {
-      }
+  Event()
+    : event_flags_(-1)
+    , fd_(-1)
+    , event_poller_(NULL) {
+  }
 
  protected:
-  short event_;
+  short event_flags_;
   int fd_;
-  struct event read_event_;
-  struct event write_event_;
+  struct event event_;
   EventPoller *event_poller_;
 };
 

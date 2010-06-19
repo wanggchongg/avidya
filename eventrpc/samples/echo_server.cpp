@@ -30,7 +30,7 @@ int main() {
   RpcServerEvent *event = new RpcServerEvent("127.0.0.1", 2008);
   gpb::Service *service = new EchoServiceImpl();
   event->RegisterService(service);
-  eventpoller.AddEvent(event->event(), event);
+  eventpoller.AddEvent(event);
   eventpoller.Loop();
 
   return 0;

@@ -8,6 +8,7 @@ EVENTRPC_NAMESPACE_BEGIN
 
 class EventPoller;
 class RpcServerEvent;
+class ConnectionEvent;
 
 class WorkerThread {
  public:
@@ -17,7 +18,9 @@ class WorkerThread {
 
   int Start();
 
-  void PushNewConnection(int fd);
+  bool PushNewConnection(int fd);
+
+  void PushUnusedConnection(ConnectionEvent *conn_event);
 
  private:
   struct Impl;

@@ -16,7 +16,7 @@ void echo_done(echo::EchoResponse* resp, RpcClientEvent *event)
 int main() {
   EventPoller eventpoller;
   RpcClientEvent *event = new RpcClientEvent("127.0.0.1", 2008);
-  eventpoller.AddEvent(event->event(), event);
+  eventpoller.AddEvent(event);
 
   echo::EchoService::Stub stub(event);
   echo::EchoRequest request;

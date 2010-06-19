@@ -6,12 +6,14 @@
 #include "meta.h"
 #include "eventi.h"
 #include "base.h"
+#include "workerthread.h"
 
 using std::map;
 
 EVENTRPC_NAMESPACE_BEGIN
 
 class RpcServerEvent;
+class WorkerThread;
 
 struct RpcMethod {
  public:
@@ -35,8 +37,8 @@ typedef map<uint32_t, RpcMethod*> RpcMethodMap;
 
 struct ConnectionEvent : public Event {
  public:
-  ConnectionEvent(int fd, const RpcMethodMap *rpc_methods,
-                  RpcServerEvent *server_event, EventPoller *event_poller);
+  ConnectionEvent(int fd, RpcServerEvent *server_event,
+                  EventPoller *event_poller);
 
   virtual ~ConnectionEvent();
 
@@ -44,7 +46,9 @@ struct ConnectionEvent : public Event {
 
   virtual int OnRead();
 
-  void Init();
+  void Close();
+
+  void Init(int fd, WorkerThread *worker_thread);
 
  private:
   struct Impl;

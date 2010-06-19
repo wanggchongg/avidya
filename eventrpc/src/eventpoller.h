@@ -18,9 +18,9 @@ class EventPoller {
 
   void Stop();
 
-  void AddEvent(short event, Event *ev);
+  bool AddEvent(Event *event);
 
-  void DelEvent(short event, Event *ev);
+  bool DelEvent(Event *event);
 
  private:
   struct Impl;

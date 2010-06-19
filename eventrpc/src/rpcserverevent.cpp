@@ -89,8 +89,8 @@ bool RpcServerEvent::Impl::RegisterService(gpb::Service *service) {
 }
 
 RpcServerEvent::RpcServerEvent(const char *ip, int port)
-  : Event(READ_EVENT)
-  , impl_(new Impl(ip, port, this)) {
+  : impl_(new Impl(ip, port, this)) {
+  event_flags_ = READ_EVENT;
 }
 
 RpcServerEvent::~RpcServerEvent() {

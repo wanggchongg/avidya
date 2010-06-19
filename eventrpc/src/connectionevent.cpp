@@ -4,21 +4,24 @@
 #include "connectionevent.h"
 #include "socket_utility.h"
 #include "eventpoller.h"
+#include "rpcserverevent.h"
 
 EVENTRPC_NAMESPACE_BEGIN
 
 struct ConnectionEvent::Impl {
  public:
-  Impl(int fd, const RpcMethodMap *rpc_methods,
-       RpcServerEvent *server_event, ConnectionEvent *conn_event,
-       EventPoller *event_poller)
+  Impl(int fd, RpcServerEvent *server_event,
+       ConnectionEvent *conn_event, EventPoller *event_poller)
     : fd_(fd)
-      , rpc_methods_(rpc_methods)
-      , server_event_(server_event)
-      , state_(INIT)
-      , conn_event_(conn_event)
-      , event_poller_(event_poller) {
-      }
+    , rpc_methods_(server_event->rpc_methods())
+    , server_event_(server_event)
+    , state_(INIT)
+    , conn_event_(conn_event)
+    , event_poller_(event_poller) {
+  }
+
+  ~Impl() {
+  }
 
   int OnWrite();
 
@@ -26,7 +29,9 @@ struct ConnectionEvent::Impl {
 
   void HandleServiceDone();
 
-  void Init();
+  void Init(int fd, WorkerThread *worker_thread);
+
+  void Close();
 
  private:
   int fd_;
@@ -44,6 +49,7 @@ struct ConnectionEvent::Impl {
   ssize_t sent_count_;
   ConnectionEvent *conn_event_;
   EventPoller *event_poller_;
+  WorkerThread *worker_thread_;
 };
 
 int ConnectionEvent::Impl::OnWrite() {
@@ -51,19 +57,21 @@ int ConnectionEvent::Impl::OnWrite() {
   while (true) {
     ret = Send(fd_, message_.c_str() + sent_count_, count_, &len);
     if (ret < 0) {
-      conn_event_->Close();
+      Close();
       return -1;
     } else if (len < count_) {
       count_ -= len;
       sent_count_ += len;
-      short event = conn_event_->event();
-      if (!(event & WRITE_EVENT)) {
-        conn_event_->set_event(event | WRITE_EVENT);
-        event_poller_->AddEvent(WRITE_EVENT, conn_event_);
+      if (!conn_event_->UpdateEvent(WRITE_EVENT)) {
+        return -1;
       }
       return 0;
     } else if (len == count_) {
-      conn_event_->Close();
+      // whether close depends on user
+      // Close();
+      if (!event_poller_->DelEvent(conn_event_)) {
+        return -1;
+      }
       return 0;
     }
   }
@@ -129,16 +137,23 @@ void ConnectionEvent::Impl::HandleServiceDone() {
   OnWrite();
 }
 
-void ConnectionEvent::Impl::Init() {
+void ConnectionEvent::Impl::Init(int fd, WorkerThread *worker_thread) {
   state_ = READ_META;
   count_ = META_LEN;
+  fd_ = fd;
+  worker_thread_ = worker_thread;
 }
 
-ConnectionEvent::ConnectionEvent(int fd, const RpcMethodMap *rpc_methods,
-                                 RpcServerEvent *server_event,
+void ConnectionEvent::Impl::Close() {
+  (static_cast<Event*>(conn_event_))->Close();
+  worker_thread_->PushUnusedConnection(conn_event_);
+}
+
+ConnectionEvent::ConnectionEvent(int fd, RpcServerEvent *server_event,
                                  EventPoller *event_poller)
-  : Event(READ_EVENT, fd)
-  , impl_(new Impl(fd, rpc_methods, server_event, this, event_poller)) {
+  : impl_(new Impl(fd, server_event, this, event_poller)) {
+  fd_ = fd;
+  event_poller_ = event_poller;
 }
 
 ConnectionEvent::~ConnectionEvent() {
@@ -153,8 +168,12 @@ int ConnectionEvent::OnRead() {
   return impl_->OnRead();
 }
 
-void ConnectionEvent::Init() {
-  impl_->Init();
+void ConnectionEvent::Init(int fd, WorkerThread *worker_thread) {
+  impl_->Init(fd, worker_thread);
+}
+
+void ConnectionEvent::Close() {
+  impl_->Close();
 }
 
 EVENTRPC_NAMESPACE_END
