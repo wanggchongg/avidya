@@ -37,18 +37,29 @@ struct RpcServerEvent::Impl {
  private:
   RpcServerEvent *server_event_;
   RpcMethodMap rpc_methods_;
-  WorkerThread worker_thread_;
+  vector<WorkerThread*> worker_thread_vec_;
+  int thread_count_;
 };
 
 RpcServerEvent::Impl::Impl(const char *ip, int port,
                            RpcServerEvent *server_event)
   : server_event_(server_event)
-  , worker_thread_(server_event){
+  , thread_count_(0) {
     server_event_->fd_ = Listen(ip, port);
-    worker_thread_.Start();
+    int count = GetCpuNum();
+    for (; count > 0; --count) {
+      WorkerThread *worker_thread = new WorkerThread(server_event);
+      worker_thread->Start();
+      worker_thread_vec_.push_back(worker_thread);
+    }
 }
 
 RpcServerEvent::Impl::~Impl() {
+  while (!worker_thread_vec_.empty()) {
+    WorkerThread *worker_thread = worker_thread_vec_.back();
+    worker_thread_vec_.pop_back();
+    delete worker_thread;
+  }
 }
 
 bool RpcServerEvent::Impl::OnWrite() {
@@ -65,7 +76,8 @@ bool RpcServerEvent::Impl::OnRead() {
     return false;
   }
 
-  worker_thread_.PushNewConnection(fd);
+  thread_count_ = (thread_count_ + 1) % worker_thread_vec_.size();
+  worker_thread_vec_[thread_count_]->PushNewConnection(fd);
 
   return true;
 }

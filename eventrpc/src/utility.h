@@ -11,5 +11,7 @@ EVENTRPC_NAMESPACE_BEGIN
 
 uint32_t hash_string(const string &str);
 
+int GetCpuNum();
+
 EVENTRPC_NAMESPACE_END
 #endif  //  __EVENTRPC_UTILITY_H__
