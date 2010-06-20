@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <strings.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
 #include <errno.h>
 #include "socket_utility.h"
 
