@@ -23,9 +23,9 @@ struct ConnectionEvent::Impl {
   ~Impl() {
   }
 
-  int OnWrite();
+  bool OnWrite();
 
-  int OnRead();
+  bool OnRead();
 
   void HandleServiceDone();
 
@@ -52,42 +52,44 @@ struct ConnectionEvent::Impl {
   WorkerThread *worker_thread_;
 };
 
-int ConnectionEvent::Impl::OnWrite() {
-  int len, ret;
+bool ConnectionEvent::Impl::OnWrite() {
+  int len;
+  bool ret;
   while (true) {
     ret = Send(fd_, message_.c_str() + sent_count_, count_, &len);
-    if (ret < 0) {
+    if (!ret) {
       Close();
-      return -1;
+      return false;
     } else if (len < count_) {
       count_ -= len;
       sent_count_ += len;
-      return 0;
+      return true;
     } else if (len == count_) {
       // waiting for the next request
       if (!conn_event_->UpdateEvent(READ_EVENT)) {
-        return -1;
+        return false;
       }
-      return 0;
+      return true;
     }
   }
 
-  return 0;
+  return true;
 }
 
-int ConnectionEvent::Impl::OnRead() {
-  int len, ret;
+bool ConnectionEvent::Impl::OnRead() {
+  int len;
+  bool ret;
   ssize_t recv_count;
   while (true) {
     recv_count = count_ > BUFFER_LENGTH ? BUFFER_LENGTH : count_;
     ret = Recv(fd_, buf_, recv_count, &len);
-    if (ret < 0) {
+    if (!ret) {
       Close();
-      return -1;
+      return false;
     } else if (len < recv_count) {
       count_ -= len;
       message_.append(buf_, len);
-      return 0;
+      return true;
     } else if (len == recv_count) {
       message_.append(buf_, len);
       if (state_ == READ_META) {
@@ -102,7 +104,7 @@ int ConnectionEvent::Impl::OnRead() {
           message_ = "";
         } else {
           Close();
-          return -1;
+          return false;
         }
       } else if (state_ == READ_MESSAGE) {
         method_ = rpc_method_->method_;;
@@ -115,12 +117,12 @@ int ConnectionEvent::Impl::OnRead() {
         rpc_method_->service_->CallMethod(method_,
                                           NULL,
                                           request_, response_, done);
-        return 0;
+        return true;
       }
     }
   }
 
-  return -1;
+  return false;
 }
 
 void ConnectionEvent::Impl::HandleServiceDone() {
@@ -160,11 +162,11 @@ ConnectionEvent::~ConnectionEvent() {
   delete impl_;
 }
 
-int ConnectionEvent::OnWrite() {
+bool ConnectionEvent::OnWrite() {
   return impl_->OnWrite();
 }
 
-int ConnectionEvent::OnRead() {
+bool ConnectionEvent::OnRead() {
   return impl_->OnRead();
 }
 

@@ -28,9 +28,9 @@ struct RpcServerEvent::Impl {
 
   ~Impl();
 
-  int OnWrite();
+  bool OnWrite();
 
-  int OnRead();
+  bool OnRead();
 
   bool RegisterService(gpb::Service *service);
 
@@ -51,23 +51,23 @@ RpcServerEvent::Impl::Impl(const char *ip, int port,
 RpcServerEvent::Impl::~Impl() {
 }
 
-int RpcServerEvent::Impl::OnWrite() {
-  return -1;
+bool RpcServerEvent::Impl::OnWrite() {
+  return false;
 }
 
-int RpcServerEvent::Impl::OnRead() {
+bool RpcServerEvent::Impl::OnRead() {
   int fd;
   struct sockaddr_in addr;
   socklen_t len = sizeof(addr);
 
-  fd = accept(server_event_->fd_, (struct sockaddr *)&addr, &len);
+  fd = ::accept(server_event_->fd_, (struct sockaddr *)&addr, &len);
   if (fd == -1) {
-    return -1;
+    return false;
   }
 
   worker_thread_.PushNewConnection(fd);
 
-  return 0;
+  return true;
 }
 
 bool RpcServerEvent::Impl::RegisterService(gpb::Service *service) {
@@ -97,11 +97,11 @@ RpcServerEvent::~RpcServerEvent() {
   delete impl_;
 }
 
-int RpcServerEvent::OnRead() {
+bool RpcServerEvent::OnRead() {
   return impl_->OnRead();
 }
 
-int RpcServerEvent::OnWrite() {
+bool RpcServerEvent::OnWrite() {
   return impl_->OnWrite();
 }
 

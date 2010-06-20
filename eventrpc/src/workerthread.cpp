@@ -27,11 +27,11 @@ struct NotifyEvent : public Event {
   virtual ~NotifyEvent() {
   }
 
-  virtual int OnWrite() {
-    return -1;
+  virtual bool OnWrite() {
+    return true;
   }
 
-  virtual int OnRead();
+  virtual bool OnRead();
 
  private:
   WorkerThreadImpl *worker_thread_impl_;
@@ -150,11 +150,11 @@ bool WorkerThreadImpl::Start() {
   return 0;
 }
 
-int NotifyEvent::OnRead() {
+bool NotifyEvent::OnRead() {
   char buf[1];
   read(fd_, buf, 1);
   worker_thread_impl_->HandleNewEvent();
-  return 0;
+  return true;
 }
 
 WorkerThread::WorkerThread(RpcServerEvent *server_event)

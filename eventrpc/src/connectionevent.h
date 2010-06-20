@@ -42,9 +42,9 @@ struct ConnectionEvent : public Event {
 
   virtual ~ConnectionEvent();
 
-  virtual int OnWrite();
+  virtual bool OnWrite();
 
-  virtual int OnRead();
+  virtual bool OnRead();
 
   void Close();
 

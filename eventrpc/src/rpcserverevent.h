@@ -18,9 +18,9 @@ class RpcServerEvent : public Event {
 
   virtual ~RpcServerEvent();
 
-  virtual int OnWrite();
+  virtual bool OnWrite();
 
-  virtual int OnRead();
+  virtual bool OnRead();
 
   bool RegisterService(gpb::Service *service);
 

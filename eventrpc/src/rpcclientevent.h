@@ -15,9 +15,9 @@ class RpcClientEvent
 
   virtual ~RpcClientEvent();
 
-  virtual int OnWrite();
+  virtual bool OnWrite();
 
-  virtual int OnRead();
+  virtual bool OnRead();
 
   virtual void CallMethod(const gpb::MethodDescriptor* method,
                           gpb::RpcController* controller,

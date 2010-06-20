@@ -12,7 +12,7 @@
 EVENTRPC_NAMESPACE_BEGIN
 
 int Connect(const char *ip, int port) {
-  int fd = socket(AF_INET, SOCK_STREAM, 0);
+  int fd = ::socket(AF_INET, SOCK_STREAM, 0);
 
   if (fd < 0) {
     return -1;
@@ -25,24 +25,28 @@ int Connect(const char *ip, int port) {
   servaddr.sin_port = htons(port);
   inet_pton(AF_INET, ip, &servaddr.sin_addr);
 
-  if (connect(fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-    close(fd);
+  if (::connect(fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
+    ::close(fd);
     return -1;
   }
 
-  SetNonBlocking(fd);
+  if (!SetNonBlocking(fd)) {
+    ::close(fd);
+    return -1;
+  }
+
   return fd;
 }
 
 int Listen(const char *ip, int port) {
-  int fd = socket(AF_INET, SOCK_STREAM, 0);
+  int fd = ::socket(AF_INET, SOCK_STREAM, 0);
 
   if (fd < 0) {
     return -1;
   }
 
   int one = 1;
-  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0) {
+  if (::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0) {
     return -1;
   }
   struct sockaddr_in servaddr;
@@ -52,22 +56,22 @@ int Listen(const char *ip, int port) {
   servaddr.sin_port = htons(port);
   servaddr.sin_addr.s_addr = inet_addr(ip);
 
-  if (SetNonBlocking(fd) < 0) {
+  if (!SetNonBlocking(fd)) {
     return -1;
   }
 
-  if (bind(fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
+  if (::bind(fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
     return -1;
   }
 
-  if (listen(fd, 10000) < 0) {
+  if (::listen(fd, 10000) < 0) {
     return -1;
   }
 
   return fd;
 }
 
-int Send(int fd, const void *buf, size_t count, int *length) {
+bool Send(int fd, const void *buf, size_t count, int *length) {
   int ret = 0, errno_copy;
 
   *length = 0;
@@ -81,16 +85,16 @@ int Send(int fd, const void *buf, size_t count, int *length) {
     } else if (errno_copy == EINTR) {
       continue;
     } else if (errno_copy == EAGAIN) {
-      return 0;
+      return true;
     } else {
-      return -1;
+      return false;
     }
   } while (ret > 0 && count > 0);
 
-  return 0;
+  return true;
 }
 
-int Recv(int fd, void *buf, size_t count, int *length) {
+bool Recv(int fd, void *buf, size_t count, int *length) {
   int ret = 0, errno_copy;
 
   *length = 0;
@@ -103,26 +107,26 @@ int Recv(int fd, void *buf, size_t count, int *length) {
     } else if (errno_copy == EINTR) {
       continue;
     } else if (errno_copy == EAGAIN) {
-      return 0;
+      return true;
     } else {
-      return -1;
+      return false;
     }
   } while (ret > 0 && count > 0);
 
-  return 0;
+  return true;
 }
 
-int SetNonBlocking(int fd) {
+bool SetNonBlocking(int fd) {
   int flags = fcntl(fd, F_GETFL, 0);
   if (flags == -1) {
-    return -1;
+    return false;
   }
 
   if (-1 == fcntl(fd, F_SETFL, flags | O_NONBLOCK)) {
-    return -1;
+    return false;
   }
 
-  return 0;
+  return true;
 }
 
 EVENTRPC_NAMESPACE_END

@@ -49,9 +49,9 @@ class Event {
     event_poller_ = event_poller;
   }
 
-  virtual int OnWrite() = 0;
+  virtual bool OnWrite() = 0;
 
-  virtual int OnRead() = 0;
+  virtual bool OnRead() = 0;
 
   void Close();
 

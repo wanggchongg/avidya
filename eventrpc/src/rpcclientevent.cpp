@@ -42,9 +42,9 @@ struct RpcClientEvent::Impl {
 
   ~Impl();
 
-  int OnRead();
+  bool OnRead();
 
-  int OnWrite();
+  bool OnWrite();
 
   void CallMethod(const gpb::MethodDescriptor* method,
                   gpb::RpcController* controller,
@@ -84,26 +84,27 @@ RpcClientEvent::Impl::Impl(const char *ip, int port,
 RpcClientEvent::Impl::~Impl() {
 }
 
-int RpcClientEvent::Impl::OnRead() {
+bool RpcClientEvent::Impl::OnRead() {
   if (state_ < SEND_REQUEST) {
-    return -1;
+    return false;
   } else if (state_ == SEND_REQUEST) {
     state_ = READ_META;
     count_ = META_LEN;
   }
 
-  int len, ret;
+  int len;
+  bool ret;
   ssize_t recv_count;
   while (true) {
     recv_count = count_ > BUFFER_LENGTH ? BUFFER_LENGTH : count_;
     ret = Recv(client_event_->fd_, buf_, recv_count, &len);
-    if (ret < 0) {
+    if (!ret) {
       Close();
-      return -1;
+      return false;
     } else if (len < recv_count) {
       count_ -= len;
       message_.append(buf_, len);
-      return 0;
+      return true;
     } else if (len == recv_count) {
       if (state_ == READ_META) {
           meta_.Encode(message_.c_str());
@@ -111,7 +112,7 @@ int RpcClientEvent::Impl::OnRead() {
           state_ = READ_MESSAGE;
           if (meta_.method_id() != request_info_.method_id_) {
             Close();
-            return -1;
+            return false;
           }
           message_ = "";
       } else if (state_ == READ_MESSAGE) {
@@ -120,35 +121,36 @@ int RpcClientEvent::Impl::OnRead() {
           request_info_.done_->Run();
           // whether close depends on user
           // Close();
-          return 0;
+          return true;
       }
     }
   }
 
-  return -1;
+  return false;
 }
 
-int RpcClientEvent::Impl::OnWrite() {
-  int len, ret;
+bool RpcClientEvent::Impl::OnWrite() {
+  int len;
+  bool ret;
   while (true) {
     ret = Send(client_event_->fd_,
                message_.c_str() + sent_count_, count_, &len);
-    if (ret < 0) {
+    if (!ret) {
       Close();
-      return -1;
+      return false;
     } else if (len < count_) {
       count_ -= len;
       sent_count_ += len;
-      return 0;
+      return true;
     } else if (len == count_) {
       if (!client_event_->UpdateEvent(READ_EVENT)) {
-        return -1;
+        return false;
       }
-      return 0;
+      return true;
     }
   }
 
-  return 0;
+  return true;
 }
 
 void RpcClientEvent::Impl::CallMethod(const gpb::MethodDescriptor *method,
@@ -176,11 +178,11 @@ RpcClientEvent::~RpcClientEvent() {
   delete impl_;
 }
 
-int RpcClientEvent::OnWrite() {
+bool RpcClientEvent::OnWrite() {
   return impl_->OnWrite();
 }
 
-int RpcClientEvent::OnRead() {
+bool RpcClientEvent::OnRead() {
   return impl_->OnRead();
 }
 
