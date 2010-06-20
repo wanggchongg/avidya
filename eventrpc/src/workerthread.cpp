@@ -3,6 +3,7 @@
 #include <event.h>
 #include <vector>
 #include "workerthread.h"
+#include "mutex.h"
 #include "eventpoller.h"
 #include "socket_utility.h"
 #include "rpcserverevent.h"
@@ -67,6 +68,7 @@ struct WorkerThreadImpl {
   vector<ConnectionEvent*> unused_conn_;
   vector<int> fd_vec_;
   RpcServerEvent *server_event_;
+  Mutex mutex_;
   EventPoller event_poller_;
   WorkerThread *worker_thread_;
   NotifyEvent *notify_event_;
@@ -95,6 +97,7 @@ ConnectionEvent* WorkerThreadImpl::GetConnectionEvent(int fd) {
 }
 
 bool WorkerThreadImpl::PushNewConnection(int fd) {
+  MutexLock lock(&mutex_);
   fd_vec_.push_back(fd);
   write(notify_send_fd_, "a", 1);
   return true;
@@ -106,6 +109,7 @@ void WorkerThreadImpl::PushUnusedConnection(ConnectionEvent *conn_event) {
 
 bool WorkerThreadImpl::HandleNewEvent() {
   int fd;
+  MutexLock lock(&mutex_);
   while (!fd_vec_.empty()) {
     fd = fd_vec_.back();
     fd_vec_.pop_back();
