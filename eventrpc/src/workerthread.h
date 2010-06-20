@@ -16,7 +16,7 @@ class WorkerThread {
 
   ~WorkerThread();
 
-  bool Start();
+  bool Start(int cpuno);
 
   bool PushNewConnection(int fd);
 

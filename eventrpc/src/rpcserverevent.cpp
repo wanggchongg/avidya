@@ -49,7 +49,7 @@ RpcServerEvent::Impl::Impl(const char *ip, int port,
     int count = GetCpuNum();
     for (; count > 0; --count) {
       WorkerThread *worker_thread = new WorkerThread(server_event);
-      worker_thread->Start();
+      worker_thread->Start(count - 1);
       worker_thread_vec_.push_back(worker_thread);
     }
 }

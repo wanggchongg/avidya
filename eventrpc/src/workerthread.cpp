@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <unistd.h>
+#include <sched.h>
 #include <event.h>
 #include <vector>
 #include "workerthread.h"
@@ -50,7 +51,7 @@ struct WorkerThreadImpl {
     delete notify_event_;
   }
 
-  bool Start();
+  bool Start(int cpuno);
 
   bool PushNewConnection(int fd);
 
@@ -125,7 +126,11 @@ bool WorkerThreadImpl::HandleNewEvent() {
   return true;
 }
 
-bool WorkerThreadImpl::Start() {
+bool WorkerThreadImpl::Start(int cpuno) {
+  cpu_set_t mask;
+  CPU_ZERO(&mask);
+  CPU_SET(cpuno, &mask);
+  sched_setaffinity(0, sizeof(mask), &mask);
   int fds[2];
   if (pipe(fds)) {
     return -1;
@@ -169,8 +174,8 @@ WorkerThread::~WorkerThread() {
   delete impl_;
 }
 
-bool WorkerThread::Start() {
-  return impl_->impl_->Start();
+bool WorkerThread::Start(int cpuno) {
+  return impl_->impl_->Start(cpuno);
 }
 
 bool WorkerThread::PushNewConnection(int fd) {
