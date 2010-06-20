@@ -9,8 +9,8 @@ LIBNAME=eventrpc
 LIB_NAME=lib$(LIBNAME).a
 LIB=$(LIB_DIR)/lib$(LIBNAME).a
 SAMPLES_DIR=$(DIR)/samples
-INSTALL_DIR=/usr/lib
-INSTALL_INCLUDE_DIR=/usr/include/eventrpc
+INSTALL_LIB_DIR=/usr/local/lib
+INSTALL_INCLUDE_DIR=/usr/local/include/avidya/eventrpc
 LIBS=-lprotobuf -levent
 
 EXTENSION=cpp
@@ -18,6 +18,7 @@ OBJS=$(patsubst $(SRC_DIR)/%.$(EXTENSION), $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/
 DEPS=$(patsubst $(OBJ_DIR)/%.o, $(DEPS_DIR)/%.d, $(OBJS))
 
 INCLUDE=-I$(INCLUDE_DIR)
+INSTALL_FILES=rpcserverevent.h rpcclientevent.h eventpoller.h
 
 CC=g++
 STRIP=strip
@@ -42,13 +43,19 @@ $(OBJ_DIR)/%.o:$(SRC_DIR)/%.$(EXTENSION)
 echo:$(SAMPLES_DIR)/echo_client.cpp $(SAMPLES_DIR)/echo_server.cpp $(LIB)
 	protoc --proto_path=$(SAMPLES_DIR) --cpp_out=$(SAMPLES_DIR) $(SAMPLES_DIR)/echo.proto
 	$(CC) -c $(SAMPLES_DIR)/echo.pb.cc -o $(SAMPLES_DIR)/echo.pb.o
-	$(CC) $(SAMPLES_DIR)/echo_client.cpp -o $(BIN_DIR)/echo_client -L$(LIB_DIR) -l$(LIBNAME) $(LIBS) $(CFLAGS) $(INCLUDE) samples/echo.pb.o
-	$(CC) $(SAMPLES_DIR)/echo_server.cpp -o $(BIN_DIR)/echo_server -L$(LIB_DIR) -l$(LIBNAME) $(LIBS) $(CFLAGS) $(INCLUDE) samples/echo.pb.o
+	$(CC) $(SAMPLES_DIR)/echo_client.cpp -o $(BIN_DIR)/echo_client -l$(LIBNAME) $(LIBS) $(CFLAGS) $(INCLUDE) samples/echo.pb.o
+	$(CC) $(SAMPLES_DIR)/echo_server.cpp -o $(BIN_DIR)/echo_server -l$(LIBNAME) $(LIBS) $(CFLAGS) $(INCLUDE) samples/echo.pb.o
 
 install:
+	cp $(LIB) $(INSTALL_LIB_DIR)
+	test -d $(INSTALL_INCLUDE_DIR) || mkdir -p $(INSTALL_INCLUDE_DIR)
+	for i in $(INSTALL_FILES); do 			\
+		cd $(INCLUDE_DIR); 				\
+		cp $$i $(INSTALL_INCLUDE_DIR); 	\
+	done
 
 uninstall:
-	rm -f $(INSTALL_DIR)/$(LIB_NAME)
+	rm -f $(INSTALL_LIB_DIR)/$(LIB_NAME)
 	rm -fr ${INSTALL_INCLUDE_DIR}
 
 rebuild: clean all

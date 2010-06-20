@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <iostream>
-#include "rpcserverevent.h"
-#include "eventpoller.h"
+#include <avidya/eventrpc/rpcserverevent.h>
+#include <avidya/eventrpc/eventpoller.h>
 #include "echo.pb.h"
 
 using namespace eventrpc;
