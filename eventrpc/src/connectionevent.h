@@ -21,11 +21,11 @@ struct RpcMethod {
             const gpb::Message *request,
             const gpb::Message *response,
             const gpb::MethodDescriptor *method)
-    : service_(service)
-      , request_(request)
-      , response_(response)
-      , method_(method) {
-      }
+    : service_(service),
+      request_(request),
+      response_(response),
+      method_(method) {
+  }
 
   gpb::Service *service_;
   const gpb::Message *request_;

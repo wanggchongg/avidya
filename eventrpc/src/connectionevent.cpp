@@ -12,12 +12,12 @@ struct ConnectionEvent::Impl {
  public:
   Impl(int fd, RpcServerEvent *server_event,
        ConnectionEvent *conn_event, EventPoller *event_poller)
-    : fd_(fd)
-    , rpc_methods_(server_event->rpc_methods())
-    , server_event_(server_event)
-    , state_(INIT)
-    , conn_event_(conn_event)
-    , event_poller_(event_poller) {
+    : fd_(fd),
+      rpc_methods_(server_event->rpc_methods()),
+      server_event_(server_event),
+      state_(INIT),
+      conn_event_(conn_event),
+      event_poller_(event_poller) {
   }
 
   ~Impl() {

@@ -43,8 +43,8 @@ struct RpcServerEvent::Impl {
 
 RpcServerEvent::Impl::Impl(const char *ip, int port,
                            RpcServerEvent *server_event)
-  : server_event_(server_event)
-  , thread_count_(0) {
+  : server_event_(server_event),
+    thread_count_(0) {
     server_event_->fd_ = Listen(ip, port);
     int count = GetCpuNum();
     for (; count > 0; --count) {
