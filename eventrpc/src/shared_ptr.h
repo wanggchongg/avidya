@@ -3,6 +3,9 @@
 #include <functional>
 #include <algorithm>  // for swap
 #include "atomic.h"
+#include "base.h"
+
+EVENTRPC_NAMESPACE_BEGIN
 
 template <typename T> class shared_ptr;
 template <typename T> class weak_ptr;
@@ -236,3 +239,5 @@ template <typename T> void swap(weak_ptr<T> &r,
   r.swap(s);
 }
 #endif  // __EVENTRPC_SHARED_PTR_H__
+
+EVENTRPC_NAMESPACE_END
