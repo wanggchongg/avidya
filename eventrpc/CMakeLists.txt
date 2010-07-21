@@ -1,0 +1,3 @@
+PROJECT(eventrpc)
+
+ADD_SUBDIRECTORY(src)
