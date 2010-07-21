@@ -1,8 +1,8 @@
 
 #include <string.h>
 #include <arpa/inet.h>
-#include "meta.h"
-#include "utility.h"
+#include "util/utility.h"
+#include "net/meta.h"
 
 EVENTRPC_NAMESPACE_BEGIN
 

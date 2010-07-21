@@ -1,6 +1,6 @@
 
-#include "eventpoller.h"
-#include "eventi.h"
+#include "net/eventpoller.h"
+#include "net/eventi.h"
 
 EVENTRPC_NAMESPACE_BEGIN
 

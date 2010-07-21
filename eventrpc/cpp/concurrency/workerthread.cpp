@@ -3,11 +3,11 @@
 #include <sched.h>
 #include <event.h>
 #include <vector>
-#include "workerthread.h"
-#include "mutex.h"
-#include "eventpoller.h"
-#include "socket_utility.h"
-#include "rpcserverevent.h"
+#include "concurrency/workerthread.h"
+#include "concurrency/mutex.h"
+#include "net/eventpoller.h"
+#include "net/socket_utility.h"
+#include "net/rpcserverevent.h"
 
 using namespace std;
 

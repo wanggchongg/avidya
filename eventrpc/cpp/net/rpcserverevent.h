@@ -3,8 +3,8 @@
 
 #include <google/protobuf/service.h>
 #include <map>
-#include "base.h"
-#include "eventi.h"
+#include "base/base.h"
+#include "net/eventi.h"
 
 using std::map;
 

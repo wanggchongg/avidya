@@ -2,8 +2,8 @@
 #define __EVENTRPC_RPCCLIENTEVENT_H__
 
 #include <google/protobuf/service.h>
-#include "base.h"
-#include "eventi.h"
+#include "base/base.h"
+#include "net/eventi.h"
 
 EVENTRPC_NAMESPACE_BEGIN
 

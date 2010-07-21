@@ -8,12 +8,12 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include "utility.h"
-#include "rpcserverevent.h"
-#include "connectionevent.h"
-#include "eventpoller.h"
-#include "socket_utility.h"
-#include "workerthread.h"
+#include "net/rpcserverevent.h"
+#include "util/utility.h"
+#include "net/connectionevent.h"
+#include "net/eventpoller.h"
+#include "net/socket_utility.h"
+#include "concurrency/workerthread.h"
 
 using std::string;
 using std::vector;

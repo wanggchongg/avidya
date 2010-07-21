@@ -1,10 +1,10 @@
 
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
-#include "connectionevent.h"
-#include "socket_utility.h"
-#include "eventpoller.h"
-#include "rpcserverevent.h"
+#include "net/connectionevent.h"
+#include "net/socket_utility.h"
+#include "net/eventpoller.h"
+#include "net/rpcserverevent.h"
 
 EVENTRPC_NAMESPACE_BEGIN
 

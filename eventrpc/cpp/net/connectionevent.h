@@ -3,10 +3,10 @@
 
 #include <map>
 #include <google/protobuf/service.h>
-#include "meta.h"
-#include "eventi.h"
-#include "base.h"
-#include "workerthread.h"
+#include "net/meta.h"
+#include "net/eventi.h"
+#include "base/base.h"
+#include "concurrency/workerthread.h"
 
 using std::map;
 

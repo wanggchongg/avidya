@@ -3,7 +3,7 @@
 
 #include <google/protobuf/message.h>
 #include <string>
-#include "base.h"
+#include "base/base.h"
 
 using std::string;
 
