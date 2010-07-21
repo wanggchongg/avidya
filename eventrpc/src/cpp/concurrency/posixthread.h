@@ -2,7 +2,7 @@
 #ifndef __EVENTRPC_POSIX_THREAD_H__
 #define __EVENTRPC_POSIX_THREAD_H__
 
-#include "thread.h"
+#include "concurrency/thread.h"
 
 EVENTRPC_NAMESPACE_BEGIN
 

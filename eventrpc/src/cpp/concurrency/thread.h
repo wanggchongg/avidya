@@ -1,10 +1,10 @@
 #ifndef __EVENTRPC_THREAD_H__
 #define __EVENTRPC_THREAD_H__
 
-EVENTRPC_NAMESPACE_BEGIN
+#include "smart_ptr/shared_ptr.h"
+#include "base/base.h"
 
-#include "shared_ptr.h"
-#include "base.h"
+EVENTRPC_NAMESPACE_BEGIN
 
 class Thread;
 
@@ -23,7 +23,7 @@ class Runnable {
 
 class Thread {
  public:
-  typedef uint64_t id_t;
+  typedef unsigned long id_t;
 
   virtual ~Thread() {};
 
@@ -52,6 +52,7 @@ class ThreadFactory {
   virtual shared_ptr<Thread> newThread(shared_ptr<Runnable> runnable) const = 0;
 };
 
-#endif // __EVENTRPC_THREAD_H__
 
 EVENTRPC_NAMESPACE_END
+
+#endif // __EVENTRPC_THREAD_H__
