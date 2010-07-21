@@ -4,7 +4,7 @@
 #include <google/protobuf/message.h>
 #include "net/rpcclientevent.h"
 #include "net/socket_utility.h"
-#include "net/eventpoller.h"
+#include "net/dispatcher.h"
 #include "util/utility.h"
 #include "net/meta.h"
 

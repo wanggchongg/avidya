@@ -5,7 +5,7 @@
 #include <vector>
 #include "concurrency/workerthread.h"
 #include "concurrency/mutex.h"
-#include "net/eventpoller.h"
+#include "net/dispatcher.h"
 #include "net/socket_utility.h"
 #include "net/rpcserverevent.h"
 

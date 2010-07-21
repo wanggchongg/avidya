@@ -11,7 +11,7 @@
 #include "net/rpcserverevent.h"
 #include "util/utility.h"
 #include "net/connectionevent.h"
-#include "net/eventpoller.h"
+#include "net/dispatcher.h"
 #include "net/socket_utility.h"
 #include "concurrency/workerthread.h"
 
