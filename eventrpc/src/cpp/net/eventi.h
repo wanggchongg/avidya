@@ -11,7 +11,7 @@
 
 EVENTRPC_NAMESPACE_BEGIN
 
-class EventPoller;
+class Dispatcher;
 
 class Event {
  public:
@@ -41,12 +41,12 @@ class Event {
     fd_ = fd;
   }
 
-  EventPoller* event_poller() {
-    return event_poller_;
+  Dispatcher* dispatcher() {
+    return dispatcher_;
   }
 
-  void set_event_poller(EventPoller *event_poller) {
-    event_poller_ = event_poller;
+  void set_dispatcher(Dispatcher *dispatcher) {
+    dispatcher_ = dispatcher;
   }
 
   virtual bool OnWrite() = 0;
@@ -59,14 +59,14 @@ class Event {
   Event()
     : event_flags_(-1)
     , fd_(-1)
-    , event_poller_(NULL) {
+    , dispatcher_(NULL) {
   }
 
  protected:
   short event_flags_;
   int fd_;
   struct event event_;
-  EventPoller *event_poller_;
+  Dispatcher *dispatcher_;
 };
 
 EVENTRPC_NAMESPACE_END

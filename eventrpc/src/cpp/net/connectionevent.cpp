@@ -3,7 +3,7 @@
 #include <google/protobuf/descriptor.h>
 #include "net/connectionevent.h"
 #include "net/socket_utility.h"
-#include "net/eventpoller.h"
+#include "net/dispatcher.h"
 #include "net/rpcserverevent.h"
 
 EVENTRPC_NAMESPACE_BEGIN
@@ -11,13 +11,13 @@ EVENTRPC_NAMESPACE_BEGIN
 struct ConnectionEvent::Impl {
  public:
   Impl(int fd, RpcServerEvent *server_event,
-       ConnectionEvent *conn_event, EventPoller *event_poller)
+       ConnectionEvent *conn_event, Dispatcher *dispatcher)
     : fd_(fd),
       rpc_methods_(server_event->rpc_methods()),
       server_event_(server_event),
       state_(INIT),
       conn_event_(conn_event),
-      event_poller_(event_poller) {
+      dispatcher_(dispatcher) {
   }
 
   ~Impl() {
@@ -48,7 +48,7 @@ struct ConnectionEvent::Impl {
   ssize_t count_;
   ssize_t sent_count_;
   ConnectionEvent *conn_event_;
-  EventPoller *event_poller_;
+  Dispatcher *dispatcher_;
   WorkerThread *worker_thread_;
 };
 
@@ -152,10 +152,10 @@ void ConnectionEvent::Impl::Close() {
 }
 
 ConnectionEvent::ConnectionEvent(int fd, RpcServerEvent *server_event,
-                                 EventPoller *event_poller)
-  : impl_(new Impl(fd, server_event, this, event_poller)) {
+                                 Dispatcher *dispatcher)
+  : impl_(new Impl(fd, server_event, this, dispatcher)) {
   fd_ = fd;
-  event_poller_ = event_poller;
+  dispatcher_ = dispatcher;
 }
 
 ConnectionEvent::~ConnectionEvent() {

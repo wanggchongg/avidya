@@ -38,7 +38,7 @@ struct RpcClientEvent::Impl {
  public:
   Impl(const char *ip, int port,
        RpcClientEvent *client_event,
-       EventPoller *event_poller);
+       Dispatcher *dispatcher);
 
   ~Impl();
 
@@ -61,7 +61,7 @@ struct RpcClientEvent::Impl {
 
  private:
   RpcClientEvent *client_event_;
-  EventPoller *&event_poller_;
+  Dispatcher *&dispatcher_;
   RequestInfo request_info_;
   Request_State state_;
   char buf_[BUFFER_LENGTH];
@@ -73,9 +73,9 @@ struct RpcClientEvent::Impl {
 
 RpcClientEvent::Impl::Impl(const char *ip, int port,
                            RpcClientEvent *client_event,
-                           EventPoller *event_poller)
+                           Dispatcher *dispatcher)
   : client_event_(client_event)
-    , event_poller_(event_poller)
+    , dispatcher_(dispatcher)
     , state_(INIT)
     , count_(0) {
       client_event_->fd_ = Connect(ip, port);
@@ -171,7 +171,7 @@ void RpcClientEvent::Impl::CallMethod(const gpb::MethodDescriptor *method,
 }
 
 RpcClientEvent::RpcClientEvent(const char* ip, int port)
-  : impl_(new Impl(ip, port, this, event_poller_)) {
+  : impl_(new Impl(ip, port, this, dispatcher_)) {
 }
 
 RpcClientEvent::~RpcClientEvent() {

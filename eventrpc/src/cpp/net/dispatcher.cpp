@@ -16,10 +16,10 @@ static void HandleEvent(int fd, short event_flags, void *arg) {
   }
 }
 
-struct EventPoller::Impl {
+struct Dispatcher::Impl {
  public:
-  Impl(EventPoller *event_poller)
-    : event_poller_(event_poller)
+  Impl(Dispatcher *dispatcher)
+    : dispatcher_(dispatcher)
     , event_base_(NULL) {
     event_base_ = event_init();
   }
@@ -33,18 +33,18 @@ struct EventPoller::Impl {
   bool DelEvent(Event *event);
 
  private:
-  EventPoller *event_poller_;
+  Dispatcher *dispatcher_;
   struct event_base *event_base_;
 };
 
-void EventPoller::Impl::Loop() {
+void Dispatcher::Impl::Loop() {
   event_base_dispatch(event_base_);
 }
 
-void EventPoller::Impl::Stop() {
+void Dispatcher::Impl::Stop() {
 }
 
-bool EventPoller::Impl::AddEvent(Event *event) {
+bool Dispatcher::Impl::AddEvent(Event *event) {
   if (event->event_flags() != -1) {
     event_set(event->event(), event->fd(), event->event_flags(),
               &eventrpc::HandleEvent, event);
@@ -56,36 +56,36 @@ bool EventPoller::Impl::AddEvent(Event *event) {
     }
   }
 
-  event->set_event_poller(event_poller_);
+  event->set_dispatcher(dispatcher_);
   return true;
 }
 
-bool EventPoller::Impl::DelEvent(Event *event) {
+bool Dispatcher::Impl::DelEvent(Event *event) {
   event->set_event_flags(-1);
   return event_del(event->event()) == -1 ? false : true;
 }
 
-EventPoller::EventPoller()
+Dispatcher::Dispatcher()
   : impl_(new Impl(this)) {
 }
 
-EventPoller::~EventPoller() {
+Dispatcher::~Dispatcher() {
   delete impl_;
 }
 
-void EventPoller::Loop() {
+void Dispatcher::Loop() {
   impl_->Loop();
 }
 
-void EventPoller::Stop() {
+void Dispatcher::Stop() {
   impl_->Stop();
 }
 
-bool EventPoller::AddEvent(Event* event) {
+bool Dispatcher::AddEvent(Event* event) {
   return impl_->AddEvent(event);
 }
 
-bool EventPoller::DelEvent(Event* event) {
+bool Dispatcher::DelEvent(Event* event) {
   return impl_->DelEvent(event);
 }
 

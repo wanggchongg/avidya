@@ -1,14 +1,14 @@
 
 #include <unistd.h>
 #include <string.h>
-#include "eventi.h"
-#include "eventpoller.h"
+#include "net/eventi.h"
+#include "net/dispatcher.h"
 
 EVENTRPC_NAMESPACE_BEGIN
 
 void Event::Close() {
   if (fd_ != -1) {
-    event_poller_->DelEvent(this);
+    dispatcher_->DelEvent(this);
     close(fd_);
     fd_ = -1;
     event_flags_ = -1;
@@ -19,11 +19,11 @@ bool Event::UpdateEvent(short new_event_flags) {
   if (event_flags_ == new_event_flags) {
     return true;
   }
-  if (event_flags_ != -1 && !event_poller_->DelEvent(this)) {
+  if (event_flags_ != -1 && !dispatcher_->DelEvent(this)) {
     return false;
   }
   event_flags_ = new_event_flags;
-  if (!event_poller_->AddEvent(this)) {
+  if (!dispatcher_->AddEvent(this)) {
     return false;
   }
   return true;

@@ -6,7 +6,7 @@
 
 EVENTRPC_NAMESPACE_BEGIN
 
-class EventPoller;
+class Dispatcher;
 class RpcServerEvent;
 class ConnectionEvent;
 

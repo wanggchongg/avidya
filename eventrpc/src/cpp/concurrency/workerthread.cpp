@@ -19,11 +19,11 @@ class WorkerThreadImpl;
 
 struct NotifyEvent : public Event {
  public:
-  NotifyEvent(int fd, EventPoller *event_poller,
+  NotifyEvent(int fd, Dispatcher *dispatcher,
               WorkerThreadImpl *worker_thread_impl)
     : worker_thread_impl_ (worker_thread_impl){
     fd_ = fd;
-    event_poller_ = event_poller;
+    dispatcher_ = dispatcher;
   }
 
   virtual ~NotifyEvent() {
@@ -70,7 +70,7 @@ struct WorkerThreadImpl {
   vector<int> fd_vec_;
   RpcServerEvent *server_event_;
   Mutex mutex_;
-  EventPoller event_poller_;
+  Dispatcher dispatcher_;
   WorkerThread *worker_thread_;
   NotifyEvent *notify_event_;
 };
@@ -88,7 +88,7 @@ ConnectionEvent* WorkerThreadImpl::GetConnectionEvent(int fd) {
   ConnectionEvent *conn_event;
 
   if (unused_conn_.empty()) {
-    conn_event = new ConnectionEvent(fd, server_event_, &event_poller_);
+    conn_event = new ConnectionEvent(fd, server_event_, &dispatcher_);
   } else {
     conn_event = unused_conn_.front();
     unused_conn_.erase(unused_conn_.begin());
@@ -139,7 +139,7 @@ bool WorkerThreadImpl::Start(int cpuno) {
   notify_recv_fd_ = fds[0];
   notify_send_fd_ = fds[1];
 
-  notify_event_ = new NotifyEvent(notify_recv_fd_, &event_poller_, this);
+  notify_event_ = new NotifyEvent(notify_recv_fd_, &dispatcher_, this);
   if (!notify_event_->UpdateEvent(READ_EVENT)) {
     return -1;
   }
@@ -151,7 +151,7 @@ bool WorkerThreadImpl::Start(int cpuno) {
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, 1);
 
-  ret = pthread_create(&thread, &attr, worker_thread, &event_poller_);
+  ret = pthread_create(&thread, &attr, worker_thread, &dispatcher_);
   if (ret != 0) {
     return -1;
   }
@@ -187,9 +187,9 @@ void WorkerThread::PushUnusedConnection(ConnectionEvent *conn_event) {
 }
 
 void *worker_thread(void *arg) {
-  EventPoller *event_poller = static_cast<EventPoller*>(arg);
+  Dispatcher *dispatcher = static_cast<Dispatcher*>(arg);
 
-  event_poller->Loop();
+  dispatcher->Loop();
 
   return NULL;
 }

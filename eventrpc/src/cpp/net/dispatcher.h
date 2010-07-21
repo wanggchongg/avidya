@@ -8,11 +8,11 @@ EVENTRPC_NAMESPACE_BEGIN
 
 class Event;
 
-class EventPoller {
+class Dispatcher {
  public:
-  EventPoller();
+  Dispatcher();
 
-  ~EventPoller();
+  ~Dispatcher();
 
   void Loop();
 
