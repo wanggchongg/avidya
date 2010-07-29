@@ -19,7 +19,12 @@ def CheckDependencies():
 
 CheckDependencies()
 
-subdir=['base', 'concurrency', 'net']
+subdir=[
+ 'base',
+ 'concurrency',
+ 'net',
+ 'util',
+]
 
 for x in subdir:
   target_dir='%s/%s' % (cpp_src_env['objroot'], x)

@@ -2,6 +2,7 @@
 #ifndef __EVENTRPC_UTILITY_H__
 #define __EVENTRPC_UTILITY_H__
 
+#include <stdint.h>
 #include <string>
 #include "base/base.h"
 
