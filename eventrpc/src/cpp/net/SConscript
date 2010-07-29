@@ -1,8 +1,6 @@
 Import('cpp_src_env')
 
 net_env = cpp_src_env.Clone()
-net_env.Append(LIBPATH=[''])
-net_env.Prepend(LIBS=[''])
 
 src_files = [
   'connectionevent.cpp',
