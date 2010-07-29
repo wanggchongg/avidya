@@ -1,0 +1,18 @@
+Import('cpp_src_env')
+
+net_env = cpp_src_env.Clone()
+net_env.Append(LIBPATH=[''])
+net_env.Prepend(LIBS=[''])
+
+src_files = [
+  'connectionevent.cpp',
+  'dispatcher.cpp',
+  'event.cpp',
+  'meta.cpp',
+  'rpcclientevent.cpp',
+  'rpcserverevent.cpp',
+  'socket_utility.cpp',
+]
+
+for file in src_files:
+  net_env.Object(file)
