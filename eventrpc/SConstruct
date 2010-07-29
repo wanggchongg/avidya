@@ -26,9 +26,3 @@ for x in subdir:
   SConscript('%s/%s/SConscript' % (env['srcroot'], x), build_dir=target_dir,
   duplicate=0)
 
-first_builds = [ ]
-second_builds = [
-'$objroot/src',
-]
-
-env.Depends(second_builds, first_builds)
