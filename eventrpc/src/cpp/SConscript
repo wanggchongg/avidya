@@ -2,6 +2,7 @@ Import('src_env')
 
 cpp_src_env = src_env.Clone()
 cpp_src_env['objroot'] += '/cpp'
+cpp_src_env['extension'] = 'cpp'
 cpp_src_env.Append(CPPPATH=[cpp_src_env['objroot']])
 Export('cpp_src_env')
 

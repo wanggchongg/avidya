@@ -2,15 +2,7 @@ Import('cpp_src_env')
 
 net_env = cpp_src_env.Clone()
 
-src_files = [
-  'connectionevent.cpp',
-  'dispatcher.cpp',
-  'event.cpp',
-  'meta.cpp',
-  'rpcclientevent.cpp',
-  'rpcserverevent.cpp',
-  'socket_utility.cpp',
-]
+src_files = Glob('*.' + net_env['extension'])
 
 for file in src_files:
   net_env.Object(file)
