@@ -5,6 +5,19 @@ cpp_src_env['objroot'] += '/cpp'
 cpp_src_env.Append(CPPPATH=[cpp_src_env['objroot']])
 Export('cpp_src_env')
 
+def CheckDependencies():
+  global cpp_src_env
+  conf = Configure(cpp_src_env)
+  if not conf.CheckLib('event'):
+    print 'Did not find libevent existing'
+    Exit(1)
+  if not conf.CheckLib('protobuf'):
+    print 'Did not find protobuf existing'
+    Exit(1)
+  env = conf.Finish()
+
+CheckDependencies()
+
 subdir=['base', 'concurrency']
 
 for x in subdir:

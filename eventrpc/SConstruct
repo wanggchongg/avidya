@@ -19,16 +19,6 @@ objroot = env['objroot']
 srcroot = env['srcroot']
 Export('env')
 
-def CheckDependencies():
-  conf = Configure(env)
-  if not conf.CheckCHeader('event.h'):
-    print 'libevent MUST be installed'
-    Exit(1)
-  if not conf.CheckCHeader('google/protobuf/service.h'):
-    print 'google protobuf MUST be installed'
-    Exit(1)
-
-CheckDependencies()
 subdir = ['src', ]
 
 for x in subdir:
