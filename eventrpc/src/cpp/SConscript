@@ -1,0 +1,13 @@
+Import('src_env')
+
+cpp_src_env = src_env.Clone()
+cpp_src_env['objroot'] += '/cpp'
+cpp_src_env.Append(CPPPATH=[cpp_src_env['objroot']])
+Export('cpp_src_env')
+
+subdir=['base', 'concurrency']
+
+for x in subdir:
+  target_dir='%s/%s' % (cpp_src_env['objroot'], x)
+  print target_dir
+  SConscript('%s/%s/SConscript' % (cpp_src_env['srcroot'], x), build_dir=target_dir, duplicate=0)

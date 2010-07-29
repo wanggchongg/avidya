@@ -1,0 +1,14 @@
+Import('cpp_src_env')
+
+concurrency_env = cpp_src_env.Clone()
+concurrency_env.Append(LIBPATH=[''])
+concurrency_env.Prepend(LIBS=[''])
+
+src_files = [
+'mutex.cpp',
+'posixthread.cpp',
+'workerthread.cpp'
+]
+
+for file in src_files:
+  concurrency_env.Object(file)
