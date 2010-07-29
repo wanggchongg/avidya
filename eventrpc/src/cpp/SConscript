@@ -32,8 +32,10 @@ for x in subdirs:
   SConscript('%s/%s/SConscript' % (cpp_src_env['srcroot'], x), build_dir=target_dir, duplicate=0)
 
 obj_files = []
+src_files = []
 for x in subdirs:
   target_dir='%s/%s/' % (cpp_src_env['objroot'], x)
   obj_files += Glob(target_dir + '*.o')
+  src_files += Glob(target_dir + '*.' + cpp_src_env['extension'])
 
 StaticLibrary('eventrpc', obj_files)
