@@ -19,7 +19,7 @@ def CheckDependencies():
 
 CheckDependencies()
 
-subdir=[
+subdirs=[
  'base',
  'concurrency',
  'net',
@@ -27,7 +27,13 @@ subdir=[
  'util',
 ]
 
-for x in subdir:
+for x in subdirs:
   target_dir='%s/%s' % (cpp_src_env['objroot'], x)
-  print target_dir
   SConscript('%s/%s/SConscript' % (cpp_src_env['srcroot'], x), build_dir=target_dir, duplicate=0)
+
+obj_files = []
+for x in subdirs:
+  target_dir='%s/%s/' % (cpp_src_env['objroot'], x)
+  obj_files += Glob(target_dir + '*.o')
+
+StaticLibrary('eventrpc', obj_files)
