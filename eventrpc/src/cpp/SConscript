@@ -23,6 +23,7 @@ subdir=[
  'base',
  'concurrency',
  'net',
+ 'smart_ptr',
  'util',
 ]
 

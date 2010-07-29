@@ -1,0 +1,8 @@
+Import('cpp_src_env')
+
+smart_ptr_env = cpp_src_env.Clone()
+
+src_files = Glob('*.' + smart_ptr_env['extension'])
+
+for file in src_files:
+  smart_ptr_env.Object(file)
