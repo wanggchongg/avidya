@@ -1,23 +1,25 @@
 Import('src_env')
 
-cpp_src_env = src_env.Clone()
-cpp_src_env['objroot'] += '/cpp'
-cpp_src_env['srcroot'] += '/cpp'
-cpp_src_env['extension'] = 'cpp'
-cpp_src_env.Append(CPPPATH=[cpp_src_env['srcroot']])
-print cpp_src_env['srcroot']
-Export('cpp_src_env')
+src_cpp_env = src_env.Clone()
+src_cpp_env['objroot'] += '/cpp'
+src_cpp_env['srcroot'] += '/cpp'
+src_cpp_env['extension'] = 'cpp'
+src_cpp_env.Append(CPPPATH=[src_cpp_env['srcroot']])
+Export('src_cpp_env')
 
 def CheckDependencies():
-  global cpp_src_env
-  conf = Configure(cpp_src_env)
+  global src_cpp_env
+  conf = Configure(src_cpp_env)
   if not conf.CheckLib('event'):
     print 'Did not find libevent existing'
     Exit(1)
   if not conf.CheckLib('protobuf'):
     print 'Did not find protobuf existing'
     Exit(1)
-  env = conf.Finish()
+  if not conf.CheckLib('gtest'):
+    print 'Did not find gtest existing'
+    Exit(1)
+  src_cpp_env = conf.Finish()
 
 CheckDependencies()
 
@@ -31,8 +33,8 @@ subdirs=[
 
 src_files = []
 for x in subdirs:
-  target_dir='%s/%s/' % (cpp_src_env['objroot'], x)
-  src_files += Glob(target_dir + '*.' + cpp_src_env['extension'])
+  target_dir='%s/%s/' % (src_cpp_env['objroot'], x)
+  src_files += Glob(target_dir + '*.' + src_cpp_env['extension'])
 
-cpp_src_env.StaticLibrary('eventrpc', src_files)
-cpp_src_env.SharedLibrary('eventrpc', src_files)
+src_cpp_env.StaticLibrary('eventrpc', src_files)
+src_cpp_env.SharedLibrary('eventrpc', src_files)
