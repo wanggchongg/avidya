@@ -1,8 +1,0 @@
-Import('cpp_src_env')
-
-base_env = cpp_src_env.Clone()
-
-src_files = Glob('*.' + base_env['extension'])
-
-for file in src_files:
-  base_env.Object(file)

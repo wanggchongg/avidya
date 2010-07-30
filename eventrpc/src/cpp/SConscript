@@ -2,8 +2,10 @@ Import('src_env')
 
 cpp_src_env = src_env.Clone()
 cpp_src_env['objroot'] += '/cpp'
+cpp_src_env['srcroot'] += '/cpp'
 cpp_src_env['extension'] = 'cpp'
-cpp_src_env.Append(CPPPATH=[cpp_src_env['objroot']])
+cpp_src_env.Append(CPPPATH=[cpp_src_env['srcroot']])
+print cpp_src_env['srcroot']
 Export('cpp_src_env')
 
 def CheckDependencies():
@@ -27,15 +29,10 @@ subdirs=[
  'util',
 ]
 
-for x in subdirs:
-  target_dir='%s/%s' % (cpp_src_env['objroot'], x)
-  SConscript('%s/%s/SConscript' % (cpp_src_env['srcroot'], x), build_dir=target_dir, duplicate=0)
-
-obj_files = []
 src_files = []
 for x in subdirs:
   target_dir='%s/%s/' % (cpp_src_env['objroot'], x)
-  obj_files += Glob(target_dir + '*.o')
   src_files += Glob(target_dir + '*.' + cpp_src_env['extension'])
 
-StaticLibrary('eventrpc', obj_files)
+cpp_src_env.StaticLibrary('eventrpc', src_files)
+cpp_src_env.SharedLibrary('eventrpc', src_files)

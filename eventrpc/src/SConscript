@@ -2,8 +2,8 @@ Import('env')
 
 src_env = env.Clone()
 src_env['objroot'] += '/src'
+src_env['srcroot'] += '/src'
 Export('src_env')
-
 
 subdir=['cpp',]
 
