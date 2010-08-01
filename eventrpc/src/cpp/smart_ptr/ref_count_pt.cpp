@@ -1,4 +1,5 @@
 
+#ifdef USE_PTHREAD
 #include "ref_count_pt.h"
 
 RefCount::RefCount(unsigned int use_count, unsigned int weak_count)
@@ -49,4 +50,4 @@ void RefCount::inc_weak_ref() {
 void RefCount::destroy() {
   delete this;
 }
-
+#endif

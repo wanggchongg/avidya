@@ -1,7 +1,9 @@
 #ifndef __RefCountImpl_H__
 #define __RefCountImpl_H__
 
+#ifdef USE_PTHREAD
 #include "ref_count_pt.h"
+#endif
 
 template<typename T>
 class RefCountImpl : public RefCount {
