@@ -61,12 +61,15 @@ class StdoutLogger : public Logger {
   }
 };
 
+#define CONSTRUCT_STRINGSTREAM(content) \
+  std::ostringstream os;                                      \
+  os << "[" << __FILE__ << ":" << __LINE__ << "]";       \
+  os << content
+
 #define STDOUT_LOG(log_level, content)                       \
   do{                                                           \
     if (log_level >= eventrpc::kLogLevel) {                   \
-      std::ostringstream os;                                      \
-      os << "[" << __FILE__ << ":" << __LINE__ << "]";       \
-      os << content;                                                \
+      CONSTRUCT_STRINGSTREAM(content);   \
       StdoutLogger(os.str().c_str(), log_level);               \
     } \
   } while(0)
