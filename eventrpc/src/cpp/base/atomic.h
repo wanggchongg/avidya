@@ -1,6 +1,8 @@
 #ifndef __EVENTRPC_ATOMIC_H__
 #define __EVENTRPC_ATOMIC_H__
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,17 +20,17 @@ extern uint32_t atomic_inc32(volatile uint32_t *mem);
 extern uint32_t atomic_dec32(volatile uint32_t *mem);
 
 extern uint32_t atomic_cas32(volatile uint32_t *mem,
-                             uint32_t with,
-                             uint32_t cmp);
+                             uint32_t oldval,
+                             uint32_t newval);
 
 extern uint32_t atomic_xchg32(volatile uint32_t *mem,
                               uint32_t val);
 
 extern void* atomic_casptr(volatile void **mem,
-                           void *with,
-                           const void *cmp);
+                           void *oldval,
+                           const void *newval);
 
-void* atomic_xchgptr(volatile void **mem, void *with);
+extern void* atomic_xchgptr(volatile void **mem, void *val);
 
 #ifdef __cplusplus
 }

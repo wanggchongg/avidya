@@ -33,13 +33,15 @@ def CheckPlatform():
   global src_cpp_env
   conf = Configure(src_cpp_env)
   platform = ' '
+  if src_cpp_env['CC'] == 'gcc':
+    platform += '-DUSE_GCC '
+
   if conf.CheckCHeader('pthread.h'):
-    platform += '-DUSE_PTHREAD'
+    platform += '-DUSE_PTHREAD '
   src_cpp_env['CCFLAGS'] += platform
   src_cpp_env = conf.Finish()
 
 CheckPlatform()
-print 'CCFLAGS: ', src_cpp_env['CCFLAGS']
 
 subdirs=[
  'base',
