@@ -22,9 +22,6 @@ def CheckDependencies():
   if not conf.CheckLib('protobuf'):
     print 'Did not find protobuf existing'
     Exit(1)
-  if not conf.CheckLib('gtest'):
-    print 'Did not find gtest existing'
-    Exit(1)
   src_cpp_env = conf.Finish()
 
 CheckDependencies()
@@ -58,4 +55,4 @@ for x in subdirs:
   src_files += Glob(target_dir + '*.' + src_cpp_env['extension'])
 
 src_cpp_env.StaticLibrary('eventrpc', src_files)
-src_cpp_env.SharedLibrary('eventrpc', src_files)
+#src_cpp_env.SharedLibrary('eventrpc', src_files)
