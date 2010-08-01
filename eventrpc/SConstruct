@@ -2,16 +2,16 @@ import os
 import platform
 
 env = DefaultEnvironment()
-dbg = ARGUMENTS.get('dbg', 0)
-opt = ARGUMENTS.get('opt', 0)
+debug = ARGUMENTS.get('debug', 0)
+release = ARGUMENTS.get('release', 0)
 
-if int(opt) == 1:
-  env.Append(CCFLAGS=' -g -O2 ')
-  env['objroot'] = env.Dir('build/opt').abspath
+if int(release) == 1:
+  env.Append(CCFLAGS=' -g -O ')
+  env['objroot'] = env.Dir('build/release').abspath
   env['DEBUG'] = False
 else:
   env.Append(CCFLAGS=' -g ')
-  env['objroot'] = env.Dir('build/dbg').abspath
+  env['objroot'] = env.Dir('build/debug').abspath
   env['DEBUG'] = True
 
 env['srcroot'] = env.Dir('.').abspath
