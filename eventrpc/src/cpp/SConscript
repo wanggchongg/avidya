@@ -4,6 +4,12 @@ src_cpp_env = src_env.Clone()
 src_cpp_env['objroot'] += '/cpp'
 src_cpp_env['srcroot'] += '/cpp'
 src_cpp_env['extension'] = 'cpp'
+
+if (src_cpp_env['DEBUG'] == True):
+  src_cpp_env.Append(CCFLAGS=' -g ')
+else:
+  src_cpp_env.Append(CCFLAGS=' -g -O ')
+
 src_cpp_env.Append(CPPPATH=[src_cpp_env['srcroot']])
 Export('src_cpp_env')
 
@@ -22,6 +28,18 @@ def CheckDependencies():
   src_cpp_env = conf.Finish()
 
 CheckDependencies()
+
+def CheckPlatform():
+  global src_cpp_env
+  conf = Configure(src_cpp_env)
+  platform = ' '
+  if conf.CheckCHeader('pthread.h'):
+    platform += '-DUSE_PTHREAD'
+  src_cpp_env['CCFLAGS'] += platform
+  src_cpp_env = conf.Finish()
+
+CheckPlatform()
+print 'CCFLAGS: ', src_cpp_env['CCFLAGS']
 
 subdirs=[
  'base',

@@ -6,11 +6,9 @@ debug = ARGUMENTS.get('debug', 0)
 release = ARGUMENTS.get('release', 0)
 
 if int(release) == 1:
-  env.Append(CCFLAGS=' -g -O ')
   env['objroot'] = env.Dir('build/release').abspath
   env['DEBUG'] = False
 else:
-  env.Append(CCFLAGS=' -g ')
   env['objroot'] = env.Dir('build/debug').abspath
   env['DEBUG'] = True
 
