@@ -49,6 +49,7 @@ subdirs=[
  'net',
  'smart_ptr',
  'util',
+ 'log',
 ]
 
 src_files = []
