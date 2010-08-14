@@ -1,6 +1,10 @@
 #ifndef __EVENTRPC_MUTEX_H__
 #define __EVENTRPC_MUTEX_H__
 
+#include "base/base.h"
+
+EVENTRPC_NAMESPACE_BEGIN
+
 class Mutex {
  public:
   Mutex();
@@ -30,5 +34,7 @@ class MutexLock {
  private:
   Mutex * mutex_;
 };
+
+EVENTRPC_NAMESPACE_END
 
 #endif  // __EVENTRPC_MUTEX_H__

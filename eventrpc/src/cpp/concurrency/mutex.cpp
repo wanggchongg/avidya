@@ -1,6 +1,8 @@
 
 #include <pthread.h>
-#include "mutex.h"
+#include "concurrency/mutex.h"
+
+EVENTRPC_NAMESPACE_BEGIN
 
 class Mutex::Impl {
  public:
@@ -39,3 +41,5 @@ bool Mutex::Lock() {
 bool Mutex::UnLock() {
   return impl_->UnLock();
 }
+
+EVENTRPC_NAMESPACE_END
