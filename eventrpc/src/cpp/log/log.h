@@ -1,13 +1,12 @@
 
-#ifndef __EVENTRPC_LOGGER_H__
-#define __EVENTRPC_LOGGER_H__
+#ifndef __EVENTRPC_LOG_H__
+#define __EVENTRPC_LOG_H__
 
 #include <sstream>
 #include <iostream>
 #include <string>
 #include "base/base.h"
 #include "base/noncopyable.h"
-#include "util/singleton.h"
 
 EVENTRPC_NAMESPACE_BEGIN
 
@@ -19,46 +18,34 @@ enum LogLevel {
   NUM_OF_LOG_LEVEL
 };
 
-#define COLOR_RED            "\033[0;31m"
-#define COLOR_GREEN          "\033[0;32m"
-#define COLOR_YELLOW         "\033[0;33m"
-#define COLOR_BLUE           "\033[0;34m"
-#define COLOR_PURPLE         "\033[0;35m"
-#define COLOR_NONE           "\033[0m"
-#define END_OF_COLOR         COLOR_NONE"\n"
-
 extern const char *kLogColor[];
 extern LogLevel kLogLevel;
+extern char kLogPath[];
 extern void SetLogLevel(LogLevel log_level);
+extern void SetLogPath(const char *log_path);
 
-class Logger {
+class Log {
  public:
-  Logger(const std::string &content, LogLevel log_level)
+  typedef void (Log::*LogFunc)(void);
+
+  Log(const std::string &content, LogLevel log_level, LogFunc log_func)
     : content_(content),
-      log_level_(log_level) {
+      log_level_(log_level),
+      log_func_(log_func) {
   }
 
-  virtual ~Logger() {
-  }
+  ~Log();
+
+  void LogToStderr();
+  void LogToFile();
 
  private:
-  DISALLOW_EVIL_CONSTRUCTOR(Logger);
+  DISALLOW_EVIL_CONSTRUCTOR(Log);
 
  protected:
   const std::string &content_;
   LogLevel log_level_;
-};
-
-class StdoutLogger : public Logger {
- public:
-  StdoutLogger(const std::string &content, LogLevel log_level)
-    : Logger(content, log_level) {
-  }
-
-  virtual ~StdoutLogger() {
-    std::cout << kLogColor[log_level_] << content_
-      << END_OF_COLOR;
-  }
+  LogFunc log_func_;
 };
 
 #define CONSTRUCT_STRINGSTREAM(content) \
@@ -70,7 +57,15 @@ class StdoutLogger : public Logger {
   do{                                                           \
     if (log_level >= eventrpc::kLogLevel) {                   \
       CONSTRUCT_STRINGSTREAM(content);   \
-      StdoutLogger(os.str().c_str(), log_level);               \
+      Log(os.str().c_str(), log_level, &Log::LogToStderr);    \
+    } \
+  } while(0)
+
+#define FILE_LOG(log_level, content)                       \
+  do{                                                           \
+    if (log_level >= eventrpc::kLogLevel) {                   \
+      CONSTRUCT_STRINGSTREAM(content);   \
+      Log(os.str().c_str(), log_level, &Log::LogToFile);    \
     } \
   } while(0)
 
@@ -79,8 +74,13 @@ class StdoutLogger : public Logger {
 #define VLOG_ERROR(content) STDOUT_LOG(eventrpc::ERROR, content)
 #define VLOG_FATAL(content) STDOUT_LOG(eventrpc::FATAL, content)
 
+#define LOG_INFO(content) FILE_LOG(eventrpc::INFO, content)
+#define LOG_WARN(content) FILE_LOG(eventrpc::WARN, content)
+#define LOG_ERROR(content) FILE_LOG(eventrpc::ERROR, content)
+#define LOG_FATAL(content) FILE_LOG(eventrpc::FATAL, content)
+
 EVENTRPC_NAMESPACE_END
 
-using eventrpc::StdoutLogger;
+using eventrpc::Log;
 
-#endif  // __EVENTRPC_LOGGER_H__
+#endif  // __EVENTRPC_LOG_H__
