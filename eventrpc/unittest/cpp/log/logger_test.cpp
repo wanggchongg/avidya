@@ -1,10 +1,15 @@
-#include "log/logger.h"
+#include "log/log.h"
 
 int main() {
-  VLOG_INFO("this is a info vlog" << "\n");
-  VLOG_WARN("this is a warn vlog" << "\n");
-  VLOG_ERROR("this is a error vlog" << "\n");
-  VLOG_FATAL("this is a fatal vlog" << "\n");
+  VLOG_INFO("this is a info vlog");
+  VLOG_WARN("this is a warn vlog");
+  VLOG_ERROR("this is a error vlog");
+  VLOG_FATAL("this is a fatal vlog");
+
+  LOG_INFO("this is a info log");
+  LOG_WARN("this is a warn log");
+  LOG_ERROR("this is a error log");
+  LOG_FATAL("this is a fatal log");
 
   return 0;
 }

@@ -10,6 +10,9 @@ unittest_cpp_env.Append(LIBPATH=[src_cpp_env['objroot']])
 unittest_cpp_env.Prepend(LIBS=
   [
     'eventrpc',
+    'pthread',
+    'event',
+    'protobuf',
   ])
 
 Export('unittest_cpp_env')

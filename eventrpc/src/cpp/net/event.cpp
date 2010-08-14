@@ -1,74 +1,31 @@
-
-#ifndef __EVENTRPC_EVENTI_H__
-#define __EVENTRPC_EVENTI_H__
-
-#include <event.h>
-#include <stdio.h>
-#include "base/base.h"
-
-#define READ_EVENT  (EV_READ  | EV_PERSIST)
-#define WRITE_EVENT (EV_WRITE | EV_PERSIST)
+#include <unistd.h>
+#include <string.h>
+#include "net/event.h"
+#include "net/dispatcher.h"
 
 EVENTRPC_NAMESPACE_BEGIN
 
-class Dispatcher;
-
-class Event {
- public:
-  virtual ~Event() {
-    Close();
+void Event::Close() {
+  if (fd_ != -1) {
+    dispatcher_->DelEvent(this);
+    close(fd_);
+    fd_ = -1;
+    event_flags_ = -1;
   }
+}
 
-  struct event* event() {
-    return &event_;
+bool Event::UpdateEvent(short new_event_flags) {
+  if (event_flags_ == new_event_flags) {
+    return true;
   }
-
-  short event_flags() {
-    return event_flags_;
+  if (event_flags_ != -1 && !dispatcher_->DelEvent(this)) {
+    return false;
   }
-
-  void set_event_flags(short event_flags) {
-    event_flags_ = event_flags;
+  event_flags_ = new_event_flags;
+  if (!dispatcher_->AddEvent(this)) {
+    return false;
   }
-
-  bool UpdateEvent(short new_event_flags);
-
-  int fd() {
-    return fd_;
-  }
-
-  void set_fd(int fd) {
-    fd_ = fd;
-  }
-
-  Dispatcher* dispatcher() {
-    return dispatcher_;
-  }
-
-  void set_dispatcher(Dispatcher *dispatcher) {
-    dispatcher_ = dispatcher;
-  }
-
-  virtual bool OnWrite() = 0;
-
-  virtual bool OnRead() = 0;
-
-  void Close();
-
- protected:
-  Event()
-    : event_flags_(-1)
-    , fd_(-1)
-    , dispatcher_(NULL) {
-  }
-
- protected:
-  short event_flags_;
-  int fd_;
-  struct event event_;
-  Dispatcher *dispatcher_;
-};
+  return true;
+}
 
 EVENTRPC_NAMESPACE_END
-
-#endif  // __EVENTRPC_EVENTI_H__
