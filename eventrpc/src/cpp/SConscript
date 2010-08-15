@@ -5,14 +5,6 @@ src_cpp_env['objroot'] += '/cpp'
 src_cpp_env['srcroot'] += '/cpp'
 src_cpp_env['extension'] = 'cpp'
 
-if (src_cpp_env['DEBUG'] == True):
-  src_cpp_env.Append(CCFLAGS=' -g ')
-else:
-  src_cpp_env.Append(CCFLAGS=' -g -O ')
-
-src_cpp_env.Append(CPPPATH=[src_cpp_env['srcroot']])
-Export('src_cpp_env')
-
 def CheckDependencies():
   global src_cpp_env
   conf = Configure(src_cpp_env)
@@ -23,22 +15,28 @@ def CheckDependencies():
     print 'Did not find protobuf existing'
     Exit(1)
   src_cpp_env = conf.Finish()
-
 CheckDependencies()
 
+platform = ' '
 def CheckPlatform():
   global src_cpp_env
+  global platform
   conf = Configure(src_cpp_env)
-  platform = ' '
   if src_cpp_env['CC'] == 'gcc':
     platform += '-DUSE_GCC '
 
   if conf.CheckCHeader('pthread.h'):
     platform += '-DUSE_PTHREAD '
-  src_cpp_env['CCFLAGS'] += platform
   src_cpp_env = conf.Finish()
-
 CheckPlatform()
+
+if (src_cpp_env['DEBUG'] == True):
+  src_cpp_env.Append(CCFLAGS=' -g ' + platform)
+else:
+  src_cpp_env.Append(CCFLAGS=' -g -O ' + platform)
+
+src_cpp_env.Append(CPPPATH=[src_cpp_env['srcroot']])
+Export('src_cpp_env')
 
 subdirs=[
  'base',
