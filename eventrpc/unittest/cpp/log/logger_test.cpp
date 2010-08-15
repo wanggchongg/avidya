@@ -2,7 +2,7 @@
 
 int main() {
   VLOG_INFO("this is a info vlog " << 1);
-  VLOG_WARN("this is a warn vlog");
+  VLOG_WARN("this is a warn vlog" << 2);
   VLOG_ERROR("this is a error vlog");
   VLOG_FATAL("this is a fatal vlog");
 

@@ -4,6 +4,7 @@
 #ifdef USE_PTHREAD
 #include <pthread.h>
 #endif
+#include <stdlib.h>
 #include "base/base.h"
 
 #ifdef USE_PTHREAD
