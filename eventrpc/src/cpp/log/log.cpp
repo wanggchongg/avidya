@@ -4,6 +4,7 @@
 #include <iomanip>    // for setw
 #include "log/log.h"
 #include "concurrency/mutex.h"
+#include "util/utility.h"
 
 using std::string;
 using std::ostringstream;
@@ -71,6 +72,10 @@ class FileLogger {
 };
 
 void FileLogger::CreateLogFile() {
+  if (log_filename_.empty()) {
+    log_filename_ = string(kLogPath) + GetMyUserName() +
+      + "." + kLogLevelStr[loglevel];
+  }
   file_ = fopen(log_filename_.c_str(), "w");
 }
 
@@ -79,9 +84,6 @@ void FileLogger::Write(LogLevel loglevel,
                        const string &content) {
   MutexLock lock(&mutex_);
 
-  if (log_filename_.empty()) {
-    log_filename_ = string(kLogPath) + kLogLevelStr[loglevel];
-  }
   if (file_ == NULL) {
     CreateLogFile();
   }
