@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
-#include "utility.h"
+#include <stdlib.h>
+#include "util/utility.h"
+#include "util/global_init.h"
 
 extern uint32_t hashword(
     const uint32_t *k,
@@ -32,5 +34,19 @@ int GetCpuNum() {
 
   return count;
 }
+
+static string kUserName;
+const string& GetMyUserName() {
+  return kUserName;
+}
+
+static void MyUserNameInitlizer() {
+  const char *user = getenv("USER");
+
+  if (user != NULL) {
+    kUserName = user;
+  }
+}
+REGISTER_MODULE_INITIALIZER(utility, MyUserNameInitlizer())
 
 EVENTRPC_NAMESPACE_END
