@@ -1,5 +1,6 @@
 
 #include <string.h>
+#include <stdio.h>
 #include <iomanip>    // for setw
 #include "log/log.h"
 #include "concurrency/mutex.h"
