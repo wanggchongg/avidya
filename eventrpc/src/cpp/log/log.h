@@ -64,7 +64,7 @@ class Log {
 
 #define CONSTRUCT_STRINGSTREAM(content) \
   std::ostringstream os;                                      \
-  os << content
+  os << content << "\n"
 
 #define STDOUT_LOG(log_level, content)                       \
   do{                                                           \

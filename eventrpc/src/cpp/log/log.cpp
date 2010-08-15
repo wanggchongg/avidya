@@ -67,11 +67,11 @@ class FileLogger {
   LogLevel log_level_;
   FILE *file_;
   Mutex mutex_;
-  string base_name_;
+  string log_filename_;
 };
 
 void FileLogger::CreateLogFile() {
-  file_ = fopen(base_name_.c_str(), "w");
+  file_ = fopen(log_filename_.c_str(), "w");
 }
 
 void FileLogger::Write(LogLevel loglevel,
@@ -79,8 +79,8 @@ void FileLogger::Write(LogLevel loglevel,
                        const string &content) {
   MutexLock lock(&mutex_);
 
-  if (base_name_.empty()) {
-    base_name_ = string(kLogPath) + kLogLevelStr[loglevel];
+  if (log_filename_.empty()) {
+    log_filename_ = string(kLogPath) + kLogLevelStr[loglevel];
   }
   if (file_ == NULL) {
     CreateLogFile();
