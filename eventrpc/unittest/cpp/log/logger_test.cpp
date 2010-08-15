@@ -1,7 +1,7 @@
 #include "log/log.h"
 
 int main() {
-  VLOG_INFO("this is a info vlog");
+  VLOG_INFO("this is a info vlog " << 1);
   VLOG_WARN("this is a warn vlog");
   VLOG_ERROR("this is a error vlog");
   VLOG_FATAL("this is a fatal vlog");

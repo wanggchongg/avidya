@@ -28,10 +28,13 @@ class Log {
  public:
   typedef void (Log::*LogFunc)(void);
 
-  Log(const std::string &content, LogLevel log_level, LogFunc log_func)
+  Log(const std::string &content, LogLevel log_level,
+      LogFunc log_func, int line, const char *file)
     : content_(content),
       log_level_(log_level),
-      log_func_(log_func) {
+      log_func_(log_func),
+      line_(line),
+      file_(file) {
   }
 
   ~Log();
@@ -46,18 +49,20 @@ class Log {
   const std::string &content_;
   LogLevel log_level_;
   LogFunc log_func_;
+  int line_;
+  const char *file_;
 };
 
 #define CONSTRUCT_STRINGSTREAM(content) \
   std::ostringstream os;                                      \
-  os << "[" << __FILE__ << ":" << __LINE__ << "]";       \
   os << content
 
 #define STDOUT_LOG(log_level, content)                       \
   do{                                                           \
     if (log_level >= eventrpc::kLogLevel) {                   \
       CONSTRUCT_STRINGSTREAM(content);   \
-      Log(os.str().c_str(), log_level, &Log::LogToStderr);    \
+      Log(os.str().c_str(), log_level, &Log::LogToStderr, \
+          __LINE__, __FILE__);    \
     } \
   } while(0)
 
@@ -65,7 +70,8 @@ class Log {
   do{                                                           \
     if (log_level >= eventrpc::kLogLevel) {                   \
       CONSTRUCT_STRINGSTREAM(content);   \
-      Log(os.str().c_str(), log_level, &Log::LogToFile);    \
+      Log(os.str().c_str(), log_level, &Log::LogToFile,         \
+          __LINE__, __FILE__);    \
     } \
   } while(0)
 

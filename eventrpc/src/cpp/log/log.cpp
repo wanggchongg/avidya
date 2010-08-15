@@ -2,6 +2,8 @@
 #include <string.h>
 #include "log/log.h"
 
+using std::string;
+
 EVENTRPC_NAMESPACE_BEGIN
 
 #define COLOR_RED            "\033[0;31m"
@@ -33,20 +35,34 @@ void SetLogPath(const char *log_path) {
 
 class FileLogger {
  public:
-  FileLogger();
+  FileLogger() {
+  }
 
   void Write();
+ private:
+  LogLevel log_level_;
 };
 
-static FileLogger kFileLogger[NUM_OF_LOG_LEVEL];
+class LoggerManager {
+ public:
+  LoggerManager() {
+  }
+
+  void Log(LogLevel log_level, const string &content);
+
+  FileLogger file_logger_;
+  static LoggerManager *logger_manager_[NUM_OF_LOG_LEVEL];
+};
+
+static LoggerManager kLogManager;
 
 Log::~Log() {
   (this->*(log_func_))();
 }
 
 void Log::LogToStderr() {
-  std::cout << kLogColor[log_level_] << content_
-    << END_OF_COLOR;
+  std::cout << kLogColor[log_level_] << file_ << ":" << line_
+    << "] " << content_ << END_OF_COLOR;
 }
 
 void Log::LogToFile() {
