@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iostream>
 #include <string>
+#include "util/time_utility.h"
 #include "base/base.h"
 #include "base/noncopyable.h"
 
@@ -23,6 +24,7 @@ extern LogLevel kLogLevel;
 extern char kLogPath[];
 extern void SetLogLevel(LogLevel log_level);
 extern void SetLogPath(const char *log_path);
+//extern void SetLogPath(const char *log_path);
 
 class Log {
  public:
@@ -35,7 +37,10 @@ class Log {
       log_func_(log_func),
       line_(line),
       file_(file) {
+      Init();
   }
+
+  void Init();
 
   ~Log();
 
@@ -51,6 +56,10 @@ class Log {
   LogFunc log_func_;
   int line_;
   const char *file_;
+  WallTime now_;
+  time_t timestamp_;
+  struct ::tm tm_time;
+  std::ostringstream time_pid_stream_;
 };
 
 #define CONSTRUCT_STRINGSTREAM(content) \
