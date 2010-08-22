@@ -20,8 +20,14 @@ int main() {
   sleep(2);
   LOG_INFO() << "this is another info log";
 
+  eventrpc::SetMaxLogFileSize(1000000);
   LOG_INFO_IF(1 == 1) << "this log will be print";
   LOG_INFO_IF(1 == 0) << "this log will not be print";
+
+  eventrpc::SetLogLevel(INFO);
+  LOG_DEBUG1() << "this log will not be print";
+  eventrpc::SetLogLevel(DEBUG1);
+  LOG_DEBUG1() << "this log will be print";
 
   return 0;
 }

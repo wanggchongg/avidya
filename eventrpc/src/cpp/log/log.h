@@ -11,14 +11,14 @@
 EVENTRPC_NAMESPACE_BEGIN
 
 enum LogLevel {
-  INFO = 0,
-  WARN = 1,
-  ERROR = 2,
-  FATAL = 3,
-  DEBUG1 = 4,
-  DEBUG2 = 5,
-  DEBUG3 = 6,
-  DEBUG4 = 7,
+  DEBUG1 = 0,
+  DEBUG2 = 1,
+  DEBUG3 = 2,
+  DEBUG4 = 3,
+  INFO = 4,
+  WARN = 5,
+  ERROR = 6,
+  FATAL = 7,
   NUM_OF_LOG_LEVEL
 };
 
@@ -69,7 +69,7 @@ class Log {
   std::ostringstream input_stream_;
 };
 
-#define LOG_IS_ON(log_level) (log_level <= eventrpc::kLogLevel)
+#define LOG_IS_ON(log_level) (log_level >= eventrpc::kLogLevel)
 
 #define LOG_IF(log_level, condition, func) \
   if (condition) Log(log_level, func, __LINE__, __FILE__).stream()
@@ -130,5 +130,13 @@ class Log {
 EVENTRPC_NAMESPACE_END
 
 using eventrpc::Log;
+using eventrpc::INFO;
+using eventrpc::WARN;
+using eventrpc::ERROR;
+using eventrpc::FATAL;
+using eventrpc::DEBUG1;
+using eventrpc::DEBUG2;
+using eventrpc::DEBUG3;
+using eventrpc::DEBUG4;
 
 #endif  // __EVENTRPC_LOG_H__

@@ -20,25 +20,29 @@ EVENTRPC_NAMESPACE_BEGIN
 #define END_OF_COLOR         COLOR_NONE"\n"
 
 Mutex kMutex;
-LogLevel kLogLevel = DEBUG4;
+LogLevel kLogLevel = DEBUG1;
 static const int kLogPathLength = 200;
 static char kLogPath[kLogPathLength] = "/tmp/";
 static char kProgramName[kLogPathLength] = "";
 static uint32 kMaxLogSize = 1 << 20;
 
 static const char *kLogLevelStr[] = {
+  "DEBUG1",
+  "DEBUG2",
+  "DEBUG3",
+  "DEBUG4",
   "INFO",
   "WARN",
   "ERROR",
   "FATAL",
-  "DEBUG1",
-  "DEBUG2",
-  "DEBUG3",
-  "DEBUG3",
   NULL
 };
 
 const char *kLogColor[] = {
+  COLOR_NONE,
+  COLOR_NONE,
+  COLOR_NONE,
+  COLOR_NONE,
   COLOR_NONE,   /* none for info */
   COLOR_GREEN,  /* green for warn*/
   COLOR_YELLOW, /* yellow for error */
