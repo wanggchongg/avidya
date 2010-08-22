@@ -1,17 +1,11 @@
 #ifndef __EVENTRPC_MUTEX_H__
 #define __EVENTRPC_MUTEX_H__
 
-#ifdef USE_PTHREAD
 #include <pthread.h>
-#endif
 #include <stdlib.h>
 #include "base/base.h"
 
-#ifdef USE_PTHREAD
 typedef pthread_rwlock_t MutexType;
-#else
-typedef int MutexType;
-#endif
 
 EVENTRPC_NAMESPACE_BEGIN
 
@@ -37,7 +31,6 @@ class Mutex {
   MutexType mutex_;
 };
 
-#ifdef USE_PTHREAD
 #define SAFE_PTHREAD_CALL(fn)           \
 do {                                    \
   if (fn(&mutex_) != 0) abort();        \
@@ -68,7 +61,6 @@ void Mutex::ReaderLock() {
 void Mutex::ReaderUnlock() {
   SAFE_PTHREAD_CALL(pthread_rwlock_unlock);
 }
-#endif
 
 void Mutex::WriterLock() {
   Lock();
