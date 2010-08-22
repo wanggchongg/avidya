@@ -1,4 +1,5 @@
 
+#include <sys/time.h>
 #include <string.h>
 #include <stdio.h>
 #include <iomanip>    // for setw
@@ -58,11 +59,11 @@ class FileLogger {
   }
 
   void Write(LogLevel loglevel,
-             const ostringstream &time_pid_stream,
+             const string &log_time,
              const string &content);
 
  private:
-  void CreateLogFile();
+  void CreateLogFile(LogLevel loglovel);
 
  private:
   LogLevel log_level_;
@@ -71,7 +72,7 @@ class FileLogger {
   string log_filename_;
 };
 
-void FileLogger::CreateLogFile() {
+void FileLogger::CreateLogFile(LogLevel loglevel) {
   if (log_filename_.empty()) {
     log_filename_ = string(kLogPath) + GetMyUserName() +
       + "." + kLogLevelStr[loglevel];
@@ -80,18 +81,16 @@ void FileLogger::CreateLogFile() {
 }
 
 void FileLogger::Write(LogLevel loglevel,
-                       const ostringstream &time_pid_stream,
+                       const string &log_time,
                        const string &content) {
   MutexLock lock(&mutex_);
 
   if (file_ == NULL) {
-    CreateLogFile();
+    CreateLogFile(loglevel);
   }
 
-  fwrite(time_pid_stream.str().c_str(), 1,
-         time_pid_stream.str().length(), file_);
-  fwrite(content.c_str(), 1,
-         content.length(), file_);
+  fwrite(log_time.c_str(), 1, log_time.length(), file_);
+  fwrite(content.c_str(), 1, content.length(), file_);
 }
 
 static FileLogger kFileLogger[NUM_OF_LOG_LEVEL];
@@ -101,21 +100,18 @@ Log::~Log() {
 }
 
 void Log::Init() {
-  now_ = WallTime_Now();
-  timestamp_ = static_cast<time_t>(now_);
-  localtime_r(&timestamp_, &tm_time);
-  int usecs = static_cast<int>((now_ - timestamp_) * 1000000);
-  time_pid_stream_.fill('0');
-  time_pid_stream_ << setw(2) << 1+tm_time.tm_mon
-    << setw(2) << tm_time.tm_mday
+  NowTime();
+  log_header_.fill('0');
+  log_header_ << setw(2) << 1 + tm_time_.tm_mon
+    << setw(2) << tm_time_.tm_mday
     << ' '
-    << setw(2) << tm_time.tm_hour
+    << setw(2) << tm_time_.tm_hour
     << ':'
-    << setw(2) << tm_time.tm_min
+    << setw(2) << tm_time_.tm_min
     << ':'
-    << setw(2) << tm_time.tm_sec
+    << setw(2) << tm_time_.tm_sec
     << '.'
-    << setw(2)  << usecs
+    << setw(2)  << timeval_.tv_usec
     << ' '
     << file_
     << ":"
@@ -124,14 +120,20 @@ void Log::Init() {
     << '\0';
 }
 
+void Log::NowTime() {
+  ::gettimeofday(&timeval_, 0);
+  ::localtime_r(&timeval_.tv_sec, &tm_time_);
+}
+
 void Log::LogToStderr() {
-  std::cout << kLogColor[log_level_] << time_pid_stream_.str()
-    << content_ << END_OF_COLOR;
+  std::cout << kLogColor[log_level_] << log_header_.str()
+    << input_stream_.str() << END_OF_COLOR;
 }
 
 void Log::LogToFile() {
-  kFileLogger[log_level_].Write(log_level_, time_pid_stream_,
-                                content_);
+  input_stream_ << "\n";
+  kFileLogger[log_level_].Write(log_level_, log_header_.str(),
+                                input_stream_.str());
 }
 
 EVENTRPC_NAMESPACE_END

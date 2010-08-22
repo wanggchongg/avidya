@@ -30,69 +30,60 @@ class Log {
  public:
   typedef void (Log::*LogFunc)(void);
 
-  Log(const std::string &content, LogLevel log_level,
+  Log(LogLevel log_level,
       LogFunc log_func, int line, const char *file)
-    : content_(content),
-      log_level_(log_level),
+    : log_level_(log_level),
       log_func_(log_func),
       line_(line),
       file_(file) {
       Init();
   }
 
-  void Init();
-
   ~Log();
+
+  std::ostringstream &stream() {
+    return input_stream_;
+  }
 
   void LogToStderr();
   void LogToFile();
 
  private:
+  void Init();
+  void NowTime();
+
   DISALLOW_EVIL_CONSTRUCTOR(Log);
 
  protected:
-  const std::string &content_;
   LogLevel log_level_;
   LogFunc log_func_;
   int line_;
   const char *file_;
+  struct timeval timeval_;
+  std::ostringstream log_header_;
+
   WallTime now_;
   time_t timestamp_;
-  struct ::tm tm_time;
-  std::ostringstream time_pid_stream_;
+  struct ::tm tm_time_;
+  std::ostringstream input_stream_;
 };
 
-#define CONSTRUCT_STRINGSTREAM(content) \
-  std::ostringstream os;                                      \
-  os << content << "\n"
+#define LOG_IS_ON(log_level) (log_level >= eventrpc::kLogLevel)
 
-#define STDOUT_LOG(log_level, content)                       \
-  do{                                                           \
-    if (log_level >= eventrpc::kLogLevel) {                   \
-      CONSTRUCT_STRINGSTREAM(content);   \
-      Log(os.str().c_str(), log_level, &Log::LogToStderr, \
-          __LINE__, __FILE__);    \
-    } \
-  } while(0)
+#define LOG_IF(log_level, condition, func) \
+  if (condition) Log(log_level, func, __LINE__, __FILE__).stream()
 
-#define FILE_LOG(log_level, content)                       \
-  do{                                                           \
-    if (log_level >= eventrpc::kLogLevel) {                   \
-      CONSTRUCT_STRINGSTREAM(content);   \
-      Log(os.str().c_str(), log_level, &Log::LogToFile,         \
-          __LINE__, __FILE__);    \
-    } \
-  } while(0)
+#define LOG(log_level, func) LOG_IF(log_level, LOG_IS_ON(log_level), func)
 
-#define VLOG_INFO(content) STDOUT_LOG(eventrpc::INFO, content)
-#define VLOG_WARN(content) STDOUT_LOG(eventrpc::WARN, content)
-#define VLOG_ERROR(content) STDOUT_LOG(eventrpc::ERROR, content)
-#define VLOG_FATAL(content) STDOUT_LOG(eventrpc::FATAL, content)
+#define VLOG_INFO() LOG(eventrpc::INFO, &Log::LogToStderr)
+#define VLOG_WARN() LOG(eventrpc::WARN, &Log::LogToStderr)
+#define VLOG_ERROR() LOG(eventrpc::ERROR, &Log::LogToStderr)
+#define VLOG_FATAL() LOG(eventrpc::FATAL, &Log::LogToStderr)
 
-#define LOG_INFO(content) FILE_LOG(eventrpc::INFO, content)
-#define LOG_WARN(content) FILE_LOG(eventrpc::WARN, content)
-#define LOG_ERROR(content) FILE_LOG(eventrpc::ERROR, content)
-#define LOG_FATAL(content) FILE_LOG(eventrpc::FATAL, content)
+#define LOG_INFO() LOG(eventrpc::INFO, &Log::LogToFile)
+#define LOG_WARN() LOG(eventrpc::WARN, &Log::LogToFile)
+#define LOG_ERROR() LOG(eventrpc::ERROR, &Log::LogToFile)
+#define LOG_FATAL() LOG(eventrpc::FATAL, &Log::LogToFile)
 
 EVENTRPC_NAMESPACE_END
 
