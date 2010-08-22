@@ -87,6 +87,45 @@ class Log {
 #define LOG_FATAL() LOG(eventrpc::FATAL, &Log::LogToFile)
 
 #define LOG_DEBUG1() LOG(eventrpc::DEBUG1, &Log::LogToFile)
+#define LOG_DEBUG2() LOG(eventrpc::DEBUG2, &Log::LogToFile)
+#define LOG_DEBUG3() LOG(eventrpc::DEBUG3, &Log::LogToFile)
+#define LOG_DEBUG4() LOG(eventrpc::DEBUG4, &Log::LogToFile)
+
+#define LOG_INFO_IF(condition) \
+  if (condition) LOG_INFO()
+#define LOG_WARN_IF(condition) \
+  if (condition) LOG_WARN()
+#define LOG_ERROR_IF(condition) \
+  if (condition) LOG_ERROR()
+#define LOG_FATAL_IF(condition) \
+  if (condition) LOG_FATAL()
+
+#define LOG_INFO_IF_NOT(condition) \
+  if (!(condition)) LOG_INFO()
+#define LOG_WARN_IF_NOT(condition) \
+  if (!(condition)) LOG_WARN()
+#define LOG_ERROR_IF_NOT(condition) \
+  if (!(condition)) LOG_ERROR()
+#define LOG_FATAL_IF_NOT(condition) \
+  if (!(condition)) LOG_FATAL()
+
+#define LOG_DEBUG1_IF(condition) \
+  if (condition) LOG_DEBUG1()
+#define LOG_DEBUG2_IF(condition) \
+  if (condition) LOG_DEBUG2()
+#define LOG_DEBUG3_IF(condition) \
+  if (condition) LOG_DEBUG3()
+#define LOG_DEBUG4_IF(condition) \
+  if (condition) LOG_DEBUG4()
+
+#define LOG_DEBUG1_IF_NOT(condition) \
+  if (!(condition)) LOG_DEBUG1()
+#define LOG_DEBUG2_IF_NOT(condition) \
+  if (!(condition)) LOG_DEBUG2()
+#define LOG_DEBUG3_IF_NOT(condition) \
+  if (!(condition)) LOG_DEBUG3()
+#define LOG_DEBUG4_IF_NOT(condition) \
+  if (!(condition)) LOG_DEBUG4()
 
 EVENTRPC_NAMESPACE_END
 

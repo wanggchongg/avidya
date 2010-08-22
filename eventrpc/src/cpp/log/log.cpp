@@ -119,9 +119,9 @@ void FileLogger::CreateLogFile(LogLevel loglevel,
       << setw(2) << tm_time.tm_sec;
     log_filename_ = log_file_base_name_ + "." + log_file_time.str()
       + "." + kLogLevelStr[loglevel];
-  }
-  if (file_) {
-    fclose(file_);
+    if (file_) {
+      fclose(file_);
+    }
   }
   file_ = fopen(log_filename_.c_str(), "w");
   CreateSymFile();
