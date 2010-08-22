@@ -33,7 +33,7 @@ CheckPlatform()
 if (src_cpp_env['DEBUG'] == True):
   src_cpp_env.Append(CCFLAGS=' -g ' + platform)
 else:
-  src_cpp_env.Append(CCFLAGS=' -g -O ' + platform)
+  src_cpp_env.Append(CCFLAGS=' -g -O -DNDEBUG' + platform)
 
 src_cpp_env.Append(CPPPATH=[src_cpp_env['srcroot']])
 Export('src_cpp_env')

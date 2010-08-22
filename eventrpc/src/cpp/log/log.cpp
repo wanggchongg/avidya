@@ -19,15 +19,22 @@ EVENTRPC_NAMESPACE_BEGIN
 #define COLOR_NONE           "\033[0m"
 #define END_OF_COLOR         COLOR_NONE"\n"
 
-LogLevel kLogLevel = INFO;
+Mutex kMutex;
+LogLevel kLogLevel = DEBUG4;
 static const int kLogPathLength = 200;
-char kLogPath[kLogPathLength] = "/tmp/";
+static char kLogPath[kLogPathLength] = "/tmp/";
+static char kProgramName[kLogPathLength] = "";
+static uint32 kMaxLogSize = 1 << 20;
 
 static const char *kLogLevelStr[] = {
   "INFO",
   "WARN",
   "ERROR",
   "FATAL",
+  "DEBUG1",
+  "DEBUG2",
+  "DEBUG3",
+  "DEBUG3",
   NULL
 };
 
@@ -39,17 +46,30 @@ const char *kLogColor[] = {
 };
 
 void SetLogLevel(LogLevel log_level) {
+  MutexLock lock(&kMutex);
   kLogLevel = log_level;
 }
 
 void SetLogPath(const char *log_path) {
+  MutexLock lock(&kMutex);
   strcpy(kLogPath, log_path);
+}
+
+void SetMaxLogFileSize(uint32 size) {
+  MutexLock lock(&kMutex);
+  kMaxLogSize = size;
+}
+
+void SetProgramName(const char *name) {
+  MutexLock lock(&kMutex);
+  strcpy(kProgramName, name);
 }
 
 class FileLogger {
  public:
   FileLogger()
-    : file_(NULL) {
+    : file_(NULL),
+      log_file_size_(0) {
   }
 
   ~FileLogger() {
@@ -59,38 +79,74 @@ class FileLogger {
   }
 
   void Write(LogLevel loglevel,
-             const string &log_time,
+             const tm &tm_time,
+             const string &log_header,
              const string &content);
 
  private:
-  void CreateLogFile(LogLevel loglovel);
+  void CreateLogFile(LogLevel loglovel,
+                     const tm &tm_time);
+  void CreateSymFile();
 
  private:
   LogLevel log_level_;
   FILE *file_;
   Mutex mutex_;
   string log_filename_;
+  string log_file_base_name_;
+  string log_symlink_filename_;
+  uint log_file_size_;
 };
 
-void FileLogger::CreateLogFile(LogLevel loglevel) {
-  if (log_filename_.empty()) {
-    log_filename_ = string(kLogPath) + GetMyUserName() +
+void FileLogger::CreateLogFile(LogLevel loglevel,
+                               const tm &tm_time) {
+  if (log_file_base_name_.empty()) {
+    log_file_base_name_ = string(kLogPath);
+    if (kProgramName[0] != ' ') {
+      log_file_base_name_ += string(kProgramName) + ".";
+    }
+    log_file_base_name_ += GetMyUserName();
+    log_symlink_filename_ = log_file_base_name_ +
+      "." + kLogLevelStr[loglevel];
+  }
+  if (log_file_size_ > kMaxLogSize || log_filename_.empty()) {
+    std::ostringstream log_file_time;
+    log_file_time.fill('0');
+    log_file_time << setw(2) << 1 + tm_time.tm_mon
+      << setw(2) << tm_time.tm_mday
+      << setw(2) << tm_time.tm_hour
+      << setw(2) << tm_time.tm_min
+      << setw(2) << tm_time.tm_sec;
+    log_filename_ = log_file_base_name_ + "." + log_file_time.str()
       + "." + kLogLevelStr[loglevel];
   }
+  if (file_) {
+    fclose(file_);
+  }
   file_ = fopen(log_filename_.c_str(), "w");
+  CreateSymFile();
+}
+
+void FileLogger::CreateSymFile() {
+  unlink(log_symlink_filename_.c_str());
+  symlink(log_filename_.c_str(), log_symlink_filename_.c_str());
 }
 
 void FileLogger::Write(LogLevel loglevel,
-                       const string &log_time,
+                       const tm &time_tm,
+                       const string &log_header,
                        const string &content) {
   MutexLock lock(&mutex_);
 
-  if (file_ == NULL) {
-    CreateLogFile(loglevel);
+  if (log_file_size_ > kMaxLogSize || file_ == NULL) {
+    CreateLogFile(loglevel, time_tm);
   }
 
-  fwrite(log_time.c_str(), 1, log_time.length(), file_);
-  fwrite(content.c_str(), 1, content.length(), file_);
+  fprintf(file_, "%s", log_header.c_str());
+  fprintf(file_, "%s\n", content.c_str());
+  // is it need to be fflush every log?
+  fflush(file_);
+  log_file_size_ += log_header.length() + content.length();
 }
 
 static FileLogger kFileLogger[NUM_OF_LOG_LEVEL];
@@ -116,7 +172,7 @@ void Log::Init() {
     << file_
     << ":"
     << line_
-    << "]"
+    << "] "
     << '\0';
 }
 
@@ -131,8 +187,8 @@ void Log::LogToStderr() {
 }
 
 void Log::LogToFile() {
-  input_stream_ << "\n";
-  kFileLogger[log_level_].Write(log_level_, log_header_.str(),
+  kFileLogger[log_level_].Write(log_level_, tm_time_,
+                                log_header_.str(),
                                 input_stream_.str());
 }
 

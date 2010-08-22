@@ -5,7 +5,6 @@
 #include <sstream>
 #include <iostream>
 #include <string>
-#include "util/time_utility.h"
 #include "base/base.h"
 #include "base/noncopyable.h"
 
@@ -16,15 +15,19 @@ enum LogLevel {
   WARN = 1,
   ERROR = 2,
   FATAL = 3,
+  DEBUG1 = 4,
+  DEBUG2 = 5,
+  DEBUG3 = 6,
+  DEBUG4 = 7,
   NUM_OF_LOG_LEVEL
 };
 
 extern const char *kLogColor[];
 extern LogLevel kLogLevel;
-extern char kLogPath[];
 extern void SetLogLevel(LogLevel log_level);
 extern void SetLogPath(const char *log_path);
-//extern void SetLogPath(const char *log_path);
+extern void SetMaxLogFileSize(uint32 size);
+extern void SetProgramName(const char *name);
 
 class Log {
  public:
@@ -61,14 +64,12 @@ class Log {
   const char *file_;
   struct timeval timeval_;
   std::ostringstream log_header_;
-
-  WallTime now_;
   time_t timestamp_;
   struct ::tm tm_time_;
   std::ostringstream input_stream_;
 };
 
-#define LOG_IS_ON(log_level) (log_level >= eventrpc::kLogLevel)
+#define LOG_IS_ON(log_level) (log_level <= eventrpc::kLogLevel)
 
 #define LOG_IF(log_level, condition, func) \
   if (condition) Log(log_level, func, __LINE__, __FILE__).stream()
@@ -84,6 +85,8 @@ class Log {
 #define LOG_WARN() LOG(eventrpc::WARN, &Log::LogToFile)
 #define LOG_ERROR() LOG(eventrpc::ERROR, &Log::LogToFile)
 #define LOG_FATAL() LOG(eventrpc::FATAL, &Log::LogToFile)
+
+#define LOG_DEBUG1() LOG(eventrpc::DEBUG1, &Log::LogToFile)
 
 EVENTRPC_NAMESPACE_END
 
