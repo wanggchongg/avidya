@@ -90,6 +90,7 @@ class FileLogger {
  private:
   void CreateLogFile(LogLevel loglovel,
                      const tm &tm_time);
+
   void CreateSymFile();
 
  private:
@@ -160,7 +161,7 @@ Log::~Log() {
 }
 
 void Log::Init() {
-  NowTime();
+  GetNowTime();
   log_header_.fill('0');
   log_header_ << setw(2) << 1 + tm_time_.tm_mon
     << setw(2) << tm_time_.tm_mday
@@ -180,7 +181,7 @@ void Log::Init() {
     << '\0';
 }
 
-void Log::NowTime() {
+void Log::GetNowTime() {
   ::gettimeofday(&timeval_, 0);
   ::localtime_r(&timeval_.tv_sec, &tm_time_);
 }

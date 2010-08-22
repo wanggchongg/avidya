@@ -53,7 +53,7 @@ class Log {
 
  private:
   void Init();
-  void NowTime();
+  void GetNowTime();
 
   DISALLOW_EVIL_CONSTRUCTOR(Log);
 
