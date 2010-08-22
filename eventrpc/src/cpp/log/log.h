@@ -127,6 +127,46 @@ class Log {
 #define LOG_DEBUG4_IF_NOT(condition) \
   if (!(condition)) LOG_DEBUG4()
 
+// check condition macros
+#define CHECK(condition)                                \
+ if (!(condition)) {                                    \
+   LOG_FATAL() << "Check failed: " #condition " ";      \
+ }
+
+#define DEFINE_CHECK_OP_IMPL(name, op)                  \
+template<class t1, class t2>                            \
+inline bool                                             \
+Check##name##impl(const t1& v1, const t2 &v2) {         \
+  return (v1 op v2);                                    \
+}
+
+DEFINE_CHECK_OP_IMPL(EQ, ==)
+DEFINE_CHECK_OP_IMPL(NE, !=)
+DEFINE_CHECK_OP_IMPL(LE, <=)
+DEFINE_CHECK_OP_IMPL(LT, <)
+DEFINE_CHECK_OP_IMPL(GE, >=)
+DEFINE_CHECK_OP_IMPL(GT, >)
+#undef DEFINE_CHECK_OP_IMPL
+
+#define CHECK_OP(name, op, val1, val2)                  \
+  if (!eventrpc::Check##name##impl(val1, val2))         \
+    LOG_FATAL() << "Check failed: "                     \
+      << #val1 " " #op " " #val2                         \
+      << "(" #val1 << " vs. " << #val2 ")"; 
+
+#define CHECK_EQ(expected, actual)                  \
+  CHECK_OP(EQ, ==, expected, actual)
+#define CHECK_NE(expected, actual)                  \
+  CHECK_OP(NE, !=, expected, actual)
+#define CHECK_LE(expected, actual)                  \
+  CHECK_OP(LE, <=, expected, actual)
+#define CHECK_LT(expected, actual)                  \
+  CHECK_OP(LT, <, expected, actual)
+#define CHECK_GE(expected, actual)                  \
+  CHECK_OP(GE, >=, expected, actual)
+#define CHECK_GT(expected, actual)                  \
+  CHECK_OP(GT, >, expected, actual)
+
 EVENTRPC_NAMESPACE_END
 
 using eventrpc::Log;

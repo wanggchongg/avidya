@@ -29,5 +29,9 @@ int main() {
   eventrpc::SetLogLevel(DEBUG1);
   LOG_DEBUG1() << "this log will be print";
 
+  CHECK(1 == 0);
+  CHECK_EQ(1, 0);
+  CHECK_GE(1, 0);
+
   return 0;
 }
