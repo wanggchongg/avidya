@@ -148,7 +148,7 @@ void FileLogger::Write(LogLevel loglevel,
 
   fprintf(file_, "%s", log_header.c_str());
   fprintf(file_, "%s\n", content.c_str());
-  // is it need to be fflush every log?
+  // is it need to fflush every log?
   fflush(file_);
   log_file_size_ += log_header.length() + content.length();
 }
