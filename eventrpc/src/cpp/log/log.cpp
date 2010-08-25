@@ -56,7 +56,8 @@ void SetLogLevel(LogLevel log_level) {
 
 void SetLogPath(const char *log_path) {
   MutexLock lock(&kMutex);
-  strcpy(kLogPath, log_path);
+  CHECK_GE(kLogPathLength, strlen(log_path));
+  strncpy(kLogPath, log_path, strlen(log_path));
 }
 
 void SetMaxLogFileSize(uint32 size) {
@@ -66,7 +67,8 @@ void SetMaxLogFileSize(uint32 size) {
 
 void SetProgramName(const char *name) {
   MutexLock lock(&kMutex);
-  strcpy(kProgramName, name);
+  CHECK_GE(kLogPathLength, strlen(name));
+  strncpy(kProgramName, name, strlen(name));
 }
 
 class FileLogger {
@@ -195,6 +197,13 @@ void Log::LogToFile() {
   kFileLogger[log_level_].Write(log_level_, tm_time_,
                                 log_header_.str(),
                                 input_stream_.str());
+}
+
+void Log::FatalLogToFile() {
+  kFileLogger[log_level_].Write(log_level_, tm_time_,
+                                log_header_.str(),
+                                input_stream_.str());
+  abort();
 }
 
 EVENTRPC_NAMESPACE_END

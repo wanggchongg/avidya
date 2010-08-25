@@ -50,6 +50,7 @@ class Log {
 
   void LogToStderr();
   void LogToFile();
+  void FatalLogToFile();
 
  private:
   void Init();
@@ -84,7 +85,7 @@ class Log {
 #define LOG_INFO() LOG(eventrpc::INFO, &Log::LogToFile)
 #define LOG_WARN() LOG(eventrpc::WARN, &Log::LogToFile)
 #define LOG_ERROR() LOG(eventrpc::ERROR, &Log::LogToFile)
-#define LOG_FATAL() LOG(eventrpc::FATAL, &Log::LogToFile)
+#define LOG_FATAL() LOG(eventrpc::FATAL, &Log::FatalLogToFile)
 
 #define LOG_DEBUG1() LOG(eventrpc::DEBUG1, &Log::LogToFile)
 #define LOG_DEBUG2() LOG(eventrpc::DEBUG2, &Log::LogToFile)
@@ -151,20 +152,20 @@ DEFINE_CHECK_OP_IMPL(GT, >)
 #define CHECK_OP(name, op, val1, val2)                  \
   if (!eventrpc::Check##name##impl(val1, val2))         \
     LOG_FATAL() << "Check failed: "                     \
-      << #val1 " " #op " " #val2                         \
-      << "(" #val1 << " vs. " << #val2 ")"; 
+      << #val1 " " #op " " #val2                        \
+      << "(" #val1 << " vs. " << #val2 ")";
 
-#define CHECK_EQ(expected, actual)                  \
+#define CHECK_EQ(expected, actual)                      \
   CHECK_OP(EQ, ==, expected, actual)
-#define CHECK_NE(expected, actual)                  \
+#define CHECK_NE(expected, actual)                      \
   CHECK_OP(NE, !=, expected, actual)
-#define CHECK_LE(expected, actual)                  \
+#define CHECK_LE(expected, actual)                      \
   CHECK_OP(LE, <=, expected, actual)
-#define CHECK_LT(expected, actual)                  \
+#define CHECK_LT(expected, actual)                      \
   CHECK_OP(LT, <, expected, actual)
-#define CHECK_GE(expected, actual)                  \
+#define CHECK_GE(expected, actual)                      \
   CHECK_OP(GE, >=, expected, actual)
-#define CHECK_GT(expected, actual)                  \
+#define CHECK_GT(expected, actual)                      \
   CHECK_OP(GT, >, expected, actual)
 
 EVENTRPC_NAMESPACE_END

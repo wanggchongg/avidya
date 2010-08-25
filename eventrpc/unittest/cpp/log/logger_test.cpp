@@ -10,7 +10,6 @@ int main() {
   LOG_INFO() << "this is a info log";
   LOG_WARN() << "this is a warn log";
   LOG_ERROR() << "this is a error log";
-  LOG_FATAL() << "this is a fatal log";
 
   LOG_DEBUG1_IF(1 == 1) << "this log will be print";
   LOG_DEBUG1_IF(1 == 0) << "this log will not be print";
@@ -32,6 +31,7 @@ int main() {
   CHECK(1 == 0);
   CHECK_EQ(1, 0);
   CHECK_GE(1, 0);
+  CHECK_LE(1, 0);
 
   return 0;
 }
