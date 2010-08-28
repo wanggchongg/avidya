@@ -129,6 +129,21 @@ class Log {
   if (!(condition)) LOG_DEBUG4()
 
 // check condition macros
+#ifdef NDEBUG
+// define a null stream that actually has no effect
+// cause CHECK marco has no effect in release version
+#define NULL_STREAM                             \
+  if (0) std::ostringstream()
+
+#define CHECK(condition)                NULL_STREAM
+
+#define CHECK_EQ(expected, actual)      NULL_STREAM
+#define CHECK_NE(expected, actual)      NULL_STREAM
+#define CHECK_LE(expected, actual)      NULL_STREAM
+#define CHECK_LT(expected, actual)      NULL_STREAM
+#define CHECK_GE(expected, actual)      NULL_STREAM
+#define CHECK_GT(expected, actual)      NULL_STREAM
+#else   // ifdef NDEBUG
 #define CHECK(condition)                                \
  if (!(condition))                                      \
    LOG_FATAL() << "Check failed: " #condition "\n"
@@ -166,6 +181,7 @@ DEFINE_CHECK_OP_IMPL(GT, >)
   CHECK_OP(GE, >=, expected, actual)
 #define CHECK_GT(expected, actual)                      \
   CHECK_OP(GT, >, expected, actual)
+#endif // ifndef NDEBUG
 
 EVENTRPC_NAMESPACE_END
 
