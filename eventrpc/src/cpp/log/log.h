@@ -130,9 +130,8 @@ class Log {
 
 // check condition macros
 #define CHECK(condition)                                \
- if (!(condition)) {                                    \
-   LOG_FATAL() << "Check failed: " #condition " ";      \
- }
+ if (!(condition))                                      \
+   LOG_FATAL() << "Check failed: " #condition "\n"
 
 #define DEFINE_CHECK_OP_IMPL(name, op)                  \
 template<class t1, class t2>                            \
@@ -153,7 +152,7 @@ DEFINE_CHECK_OP_IMPL(GT, >)
   if (!eventrpc::Check##name##impl(val1, val2))         \
     LOG_FATAL() << "Check failed: "                     \
       << #val1 " " #op " " #val2                        \
-      << "(" #val1 << " vs. " << #val2 ")";
+      << "(" #val1 << " vs. " << #val2 ")\n"
 
 #define CHECK_EQ(expected, actual)                      \
   CHECK_OP(EQ, ==, expected, actual)
