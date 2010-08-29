@@ -128,59 +128,59 @@ class Log {
 #define LOG_DEBUG4_IF_NOT(condition) \
   if (!(condition)) LOG_DEBUG4()
 
-// check condition macros
+// ASSERT condition macros
 #ifdef NDEBUG
 // define a null stream that actually has no effect
-// cause CHECK marco has no effect in release version
+// cause ASSERT marco has no effect in release version
 #define NULL_STREAM                             \
   if (0) std::ostringstream()
 
-#define CHECK(condition)                NULL_STREAM
+#define ASSERT(condition)                NULL_STREAM
 
-#define CHECK_EQ(expected, actual)      NULL_STREAM
-#define CHECK_NE(expected, actual)      NULL_STREAM
-#define CHECK_LE(expected, actual)      NULL_STREAM
-#define CHECK_LT(expected, actual)      NULL_STREAM
-#define CHECK_GE(expected, actual)      NULL_STREAM
-#define CHECK_GT(expected, actual)      NULL_STREAM
+#define ASSERT_EQ(expected, actual)      NULL_STREAM
+#define ASSERT_NE(expected, actual)      NULL_STREAM
+#define ASSERT_LE(expected, actual)      NULL_STREAM
+#define ASSERT_LT(expected, actual)      NULL_STREAM
+#define ASSERT_GE(expected, actual)      NULL_STREAM
+#define ASSERT_GT(expected, actual)      NULL_STREAM
 #else   // ifdef NDEBUG
-#define CHECK(condition)                                \
+#define ASSERT(condition)                                \
  if (!(condition))                                      \
-   LOG_FATAL() << "Check failed: " #condition "\n"
+   LOG_FATAL() << "ASSERT failed: " #condition "\n"
 
-#define DEFINE_CHECK_OP_IMPL(name, op)                  \
+#define DEFINE_ASSERT_OP_IMPL(name, op)                  \
 template<class t1, class t2>                            \
 inline bool                                             \
-Check##name##impl(const t1& v1, const t2 &v2) {         \
+ASSERT##name##impl(const t1& v1, const t2 &v2) {         \
   return (v1 op v2);                                    \
 }
 
-DEFINE_CHECK_OP_IMPL(EQ, ==)
-DEFINE_CHECK_OP_IMPL(NE, !=)
-DEFINE_CHECK_OP_IMPL(LE, <=)
-DEFINE_CHECK_OP_IMPL(LT, <)
-DEFINE_CHECK_OP_IMPL(GE, >=)
-DEFINE_CHECK_OP_IMPL(GT, >)
-#undef DEFINE_CHECK_OP_IMPL
+DEFINE_ASSERT_OP_IMPL(EQ, ==)
+DEFINE_ASSERT_OP_IMPL(NE, !=)
+DEFINE_ASSERT_OP_IMPL(LE, <=)
+DEFINE_ASSERT_OP_IMPL(LT, <)
+DEFINE_ASSERT_OP_IMPL(GE, >=)
+DEFINE_ASSERT_OP_IMPL(GT, >)
+#undef DEFINE_ASSERT_OP_IMPL
 
-#define CHECK_OP(name, op, val1, val2)                  \
-  if (!eventrpc::Check##name##impl(val1, val2))         \
-    LOG_FATAL() << "Check failed: "                     \
+#define ASSERT_OP(name, op, val1, val2)                  \
+  if (!eventrpc::ASSERT##name##impl(val1, val2))         \
+    LOG_FATAL() << "ASSERT failed: "                     \
       << #val1 " " #op " " #val2                        \
       << "(" #val1 << " vs. " << #val2 ")\n"
 
-#define CHECK_EQ(expected, actual)                      \
-  CHECK_OP(EQ, ==, expected, actual)
-#define CHECK_NE(expected, actual)                      \
-  CHECK_OP(NE, !=, expected, actual)
-#define CHECK_LE(expected, actual)                      \
-  CHECK_OP(LE, <=, expected, actual)
-#define CHECK_LT(expected, actual)                      \
-  CHECK_OP(LT, <, expected, actual)
-#define CHECK_GE(expected, actual)                      \
-  CHECK_OP(GE, >=, expected, actual)
-#define CHECK_GT(expected, actual)                      \
-  CHECK_OP(GT, >, expected, actual)
+#define ASSERT_EQ(expected, actual)                      \
+  ASSERT_OP(EQ, ==, expected, actual)
+#define ASSERT_NE(expected, actual)                      \
+  ASSERT_OP(NE, !=, expected, actual)
+#define ASSERT_LE(expected, actual)                      \
+  ASSERT_OP(LE, <=, expected, actual)
+#define ASSERT_LT(expected, actual)                      \
+  ASSERT_OP(LT, <, expected, actual)
+#define ASSERT_GE(expected, actual)                      \
+  ASSERT_OP(GE, >=, expected, actual)
+#define ASSERT_GT(expected, actual)                      \
+  ASSERT_OP(GT, >, expected, actual)
 #endif // ifndef NDEBUG
 
 EVENTRPC_NAMESPACE_END

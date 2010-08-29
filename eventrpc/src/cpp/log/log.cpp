@@ -56,7 +56,7 @@ void SetLogLevel(LogLevel log_level) {
 
 void SetLogPath(const char *log_path) {
   MutexLock lock(&kMutex);
-  CHECK_GE(kLogPathLength, strlen(log_path));
+  ASSERT_GE(kLogPathLength, strlen(log_path));
   strncpy(kLogPath, log_path, strlen(log_path));
 }
 
@@ -67,7 +67,7 @@ void SetMaxLogFileSize(uint32 size) {
 
 void SetProgramName(const char *name) {
   MutexLock lock(&kMutex);
-  CHECK_GE(kLogPathLength, strlen(name));
+  ASSERT_GE(kLogPathLength, strlen(name));
   strncpy(kProgramName, name, strlen(name));
 }
 
