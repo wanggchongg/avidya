@@ -8,9 +8,11 @@ release = ARGUMENTS.get('release', 0)
 if int(release) == 1:
   env['objroot'] = env.Dir('build/release').abspath
   env['DEBUG'] = False
+  src_env.Append(CCFLAGS=' -g -O -DNDEBUG')
 else:
   env['objroot'] = env.Dir('build/debug').abspath
   env['DEBUG'] = True
+  env.Append(CCFLAGS=' -g ')
 
 env['srcroot'] = env.Dir('.').abspath
 objroot = env['objroot']
@@ -18,8 +20,18 @@ srcroot = env['srcroot']
 env.Append(CPPPATH=[env['objroot'],])
 Export('env')
 
-#subdir = ['src', 'unittest', 'samples']
-subdir = ['src', 'unittest']
+deps_libs = ['event', 'protobuf', 'pthread', ]
+def CheckDependencies():
+  global env
+  conf = Configure(env)
+  for lib in deps_libs:
+    if not conf.CheckLib(lib):
+      print 'Did not find lib' + lib + ' existing'
+      Exit(1)
+  env = conf.Finish()
+CheckDependencies()
+
+subdir = ['src', 'unittest', ]
 
 for x in subdir:
   target_dir = '%s/%s' % (env['objroot'], x)

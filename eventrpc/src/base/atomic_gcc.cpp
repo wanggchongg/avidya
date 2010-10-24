@@ -1,6 +1,4 @@
 
-#ifdef USE_GCC
-
 #include "base/atomic.h"
 
 #ifdef __cplusplus
@@ -54,5 +52,4 @@ void* atomic_xchgptr(volatile void **mem, void *val) {
 
 #ifdef __cplusplus
 }
-#endif
 #endif

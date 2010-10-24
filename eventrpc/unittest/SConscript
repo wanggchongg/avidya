@@ -1,12 +1,12 @@
 Import('env')
 
-unittest_cpp_env = env.Clone()
-unittest_cpp_env['objroot'] += '/unittest'
-unittest_cpp_env['srcroot'] += '/src'
-unittest_cpp_env['extension'] = 'cpp'
-unittest_cpp_env.Append(CPPPATH=[unittest_cpp_env['srcroot']])
-unittest_cpp_env.Append(LIBPATH=[env['objroot']+'/src',])
-unittest_cpp_env.Prepend(LIBS=
+unittest_env = env.Clone()
+unittest_env['objroot'] += '/unittest'
+unittest_env['srcroot'] += '/src'
+unittest_env['extension'] = 'cpp'
+unittest_env.Append(CPPPATH=[unittest_env['srcroot']])
+unittest_env.Append(LIBPATH=[env['objroot']+'/src',])
+unittest_env.Prepend(LIBS=
   [
     'eventrpc',
     'pthread',
@@ -14,7 +14,7 @@ unittest_cpp_env.Prepend(LIBS=
     'protobuf',
   ])
 
-Export('unittest_cpp_env')
+Export('unittest_env')
 
 subdirs=[
  'base',
@@ -25,12 +25,12 @@ subdirs=[
  'log',
 ]
 
-unittest_cpp_env['CCFLAGS'] = env['CCFLAGS']
+unittest_env['CCFLAGS'] = env['CCFLAGS']
 src_files = []
 for x in subdirs:
-  target_dir='%s/%s/' % (unittest_cpp_env['objroot'], x)
+  target_dir='%s/%s/' % (unittest_env['objroot'], x)
   print target_dir
-  src_files += Glob(target_dir + '*.' + unittest_cpp_env['extension'])
+  src_files += Glob(target_dir + '*.' + unittest_env['extension'])
 
 for file in src_files:
-  unittest_cpp_env.Program(file)
+  unittest_env.Program(file)

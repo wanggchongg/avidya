@@ -1,43 +1,12 @@
 Import('env')
 
-src_cpp_env = env.Clone()
-src_cpp_env['extension'] = 'cpp'
-src_cpp_env['srcroot'] += '/src'
-src_cpp_env['objroot'] += '/src'
+src_env = env.Clone()
+src_env['extension'] = 'cpp'
+src_env['srcroot'] += '/src'
+src_env['objroot'] += '/src'
 
-def CheckDependencies():
-  global src_cpp_env
-  conf = Configure(src_cpp_env)
-  if not conf.CheckLib('event'):
-    print 'Did not find libevent existing'
-    Exit(1)
-  if not conf.CheckLib('protobuf'):
-    print 'Did not find protobuf existing'
-    Exit(1)
-  src_cpp_env = conf.Finish()
-CheckDependencies()
-
-platform = ' '
-def CheckPlatform():
-  global src_cpp_env
-  global platform
-  conf = Configure(src_cpp_env)
-  if src_cpp_env['CC'] == 'gcc':
-    platform += '-DUSE_GCC '
-
-  if conf.CheckCHeader('pthread.h'):
-    platform += '-DUSE_PTHREAD '
-  src_cpp_env = conf.Finish()
-CheckPlatform()
-
-if (src_cpp_env['DEBUG'] == True):
-  src_cpp_env.Append(CCFLAGS=' -g ' + platform)
-else:
-  src_cpp_env.Append(CCFLAGS=' -g -O -DNDEBUG' + platform)
-
-print src_cpp_env['srcroot']
-src_cpp_env.Append(CPPPATH=[src_cpp_env['srcroot']])
-Export('src_cpp_env')
+src_env.Append(CPPPATH=[src_env['srcroot']])
+Export('src_env')
 
 subdirs=[
  'base',
@@ -50,8 +19,8 @@ subdirs=[
 
 src_files = []
 for x in subdirs:
-  target_dir='%s/%s/' % (src_cpp_env['objroot'], x)
-  src_files += Glob(target_dir + '*.' + src_cpp_env['extension'])
+  target_dir='%s/%s/' % (src_env['objroot'], x)
+  src_files += Glob(target_dir + '*.' + src_env['extension'])
 
-src_cpp_env.StaticLibrary('eventrpc', src_files)
-#src_cpp_env.SharedLibrary('eventrpc', src_files)
+src_env.StaticLibrary('eventrpc', src_files)
+#src_env.SharedLibrary('eventrpc', src_files)
