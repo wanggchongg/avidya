@@ -1,8 +1,8 @@
 #ifndef __EVENTRPC_THREAD_H__
 #define __EVENTRPC_THREAD_H__
 
-#include "smart_ptr/shared_ptr.h"
-#include "base/base.h"
+#include <smart_ptr/shared_ptr.h>
+#include <base/base.h>
 
 EVENTRPC_NAMESPACE_BEGIN
 

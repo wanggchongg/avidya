@@ -3,7 +3,7 @@
 #define __EVENTRPC_SINGLETON_H__
 
 #include <pthread.h>
-#include "base/base.h"
+#include <base/base.h>
 
 EVENTRPC_NAMESPACE_BEGIN
 

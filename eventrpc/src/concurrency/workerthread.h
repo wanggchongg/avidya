@@ -1,8 +1,8 @@
 #ifndef __EVENTRPC_WORKERTHREAD_H__
 #define __EVENTRPC_WORKERTHREAD_H__
 
-#include "base/base.h"
-#include "net/connectionevent.h"
+#include <base/base.h>
+#include <net/connectionevent.h>
 
 EVENTRPC_NAMESPACE_BEGIN
 

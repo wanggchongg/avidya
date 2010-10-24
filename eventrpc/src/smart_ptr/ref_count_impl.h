@@ -1,7 +1,7 @@
 #ifndef __RefCountImpl_H__
 #define __RefCountImpl_H__
 
-#include "ref_count_pt.h"
+#include <smart_ptr/ref_count_pt.h>
 
 template<typename T>
 class RefCountImpl : public RefCount {

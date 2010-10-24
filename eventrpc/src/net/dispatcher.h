@@ -2,7 +2,7 @@
 #ifndef __EVENTRPC_EVENT_DISPATCHER_H_
 #define __EVENTRPC_EVENT_DISPATCHER_H_
 
-#include "base/base.h"
+#include <base/base.h>
 
 EVENTRPC_NAMESPACE_BEGIN
 

@@ -3,8 +3,8 @@
 #define __SHARED_PTR_H__
 
 #include <algorithm>  // for swap
-#include "ref_count_impl.h"
-#include "weak_ptr.h"
+#include <smart_ptr/ref_count_impl.h>
+#include <smart_ptr/weak_ptr.h>
 
 template <typename T>
 class shared_ptr {
