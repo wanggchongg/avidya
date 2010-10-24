@@ -6,20 +6,15 @@ src_env['srcroot'] += '/src'
 src_env['objroot'] += '/src'
 
 src_env.Append(CPPPATH=[src_env['srcroot']])
-Export('src_env')
 
 subdirs=[
  'proto',
+ 'common',
 ]
-
-src_files = []
-for x in subdirs:
-  target_dir='%s/%s/' % (src_env['objroot'], x)
-  SConscript('%s/%s/SConscript' % (src_env['srcroot'], x), build_dir=target_dir,
-  duplicate=0)
 
 src_env.Append(LIBPATH=[
  '$objroot/proto',
+ '$objroot/common',
 ])
 
 src_env.Append(CPPPATH=[
@@ -31,6 +26,15 @@ src_env.Prepend(LIBS=[
   'event',
   'eventrpc',
   'global_proto',
+  'global_common',
 ])
+
+Export('src_env')
+
+src_files = []
+for x in subdirs:
+  target_dir='%s/%s/' % (src_env['objroot'], x)
+  SConscript('%s/%s/SConscript' % (src_env['srcroot'], x), build_dir=target_dir,
+  duplicate=0)
 
 src_env.Program('global_main', 'main.cpp')
