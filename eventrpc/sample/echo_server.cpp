@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <iostream>
-#include <avidya/eventrpc/rpcserverevent.h>
-#include <avidya/eventrpc/eventpoller.h>
+#include "net/rpcserverevent.h"
+#include "net/dispatcher.h"
 #include "echo.pb.h"
 
 using namespace eventrpc;
@@ -26,7 +26,7 @@ class EchoServiceImpl : public echo::EchoService {
 };
 
 int main() {
-  EventPoller eventpoller;
+  Dispatcher eventpoller;
   RpcServerEvent *event = new RpcServerEvent("127.0.0.1", 2008);
   gpb::Service *service = new EchoServiceImpl();
   event->RegisterService(service);

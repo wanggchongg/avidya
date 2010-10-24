@@ -1,0 +1,26 @@
+import os
+Import('env')
+
+sample_env = env.Clone()
+sample_env['objroot'] += '/sample'
+sample_env['srcroot'] += '/src'
+sample_env['extension'] = 'cpp'
+sample_env.Append(CPPPATH=[sample_env['srcroot'],
+  env['objroot'] + '/sample'])
+sample_env.Append(LIBPATH=[env['objroot']+'/src',])
+sample_env.Prepend(LIBS=
+  [
+    'eventrpc',
+    'pthread',
+    'event',
+    'protobuf',
+  ])
+
+env.ProtocolBuffer('echo.proto')
+
+echo_objfiles = []
+echo_objfiles += sample_env.Object('echo.pb.cc')
+
+sample_env.Program('echo_client', ['echo_client.cpp', 'echo.pb.cc'])
+sample_env.Program('echo_server', ['echo_server.cpp', 'echo.pb.cc'])
+

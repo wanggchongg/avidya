@@ -1,7 +1,7 @@
 #include <iostream>
 #include <stdio.h>
-#include <avidya/eventrpc/rpcclientevent.h>
-#include <avidya/eventrpc/eventpoller.h>
+#include "net/rpcclientevent.h"
+#include "net/dispatcher.h"
 #include "echo.pb.h"
 
 using namespace eventrpc;
@@ -15,9 +15,9 @@ void echo_done(echo::EchoResponse* resp, RpcClientEvent *event)
 }
 
 int main() {
-  EventPoller eventpoller;
+  Dispatcher dispatcher;
   RpcClientEvent *event = new RpcClientEvent("127.0.0.1", 2008);
-  eventpoller.AddEvent(event);
+  dispatcher.AddEvent(event);
 
   echo::EchoService::Stub stub(event);
   echo::EchoRequest request;
@@ -32,7 +32,8 @@ int main() {
             gpb::NewCallback(::echo_done, &response, event));
   */
 
-  eventpoller.Loop();
+  dispatcher.Loop();
+  delete event;
 
   return 0;
 }

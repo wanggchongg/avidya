@@ -29,7 +29,6 @@ unittest_env['CCFLAGS'] = env['CCFLAGS']
 src_files = []
 for x in subdirs:
   target_dir='%s/%s/' % (unittest_env['objroot'], x)
-  print target_dir
   src_files += Glob(target_dir + '*.' + unittest_env['extension'])
 
 for file in src_files:

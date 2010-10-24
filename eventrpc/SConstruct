@@ -31,7 +31,33 @@ def CheckDependencies():
   env = conf.Finish()
 CheckDependencies()
 
-subdir = ['src', 'unittest', ]
+def ProtoEmitter(target, source, env):
+  ret_source = []
+  ret_target = []
+  for s in source:
+    s_abspath = s.abspath
+    target_prefix = s_abspath[:s_abspath.find('.proto')]
+    ret_target += [
+      target_prefix + ".pb.cc",
+      target_prefix + ".pb.h"
+    ]
+    output = s_abspath.replace(env.Dir('$objroot').abspath,
+			env.Dir('$srcroot').abspath)
+    ret_source += [output]
+  return ret_target, ret_source
+
+def ProtoGenerator(target, source, env, for_signature):
+  action = "protoc " + "--proto_path=$srcroot " + \
+	 "--cpp_out=$objroot "
+  for s in source:
+    action += s.abspath + " "
+  return action
+
+proto_builder = Builder(generator = ProtoGenerator,
+			emitter=ProtoEmitter)
+env['BUILDERS']['ProtocolBuffer'] = proto_builder
+
+subdir = ['src', 'unittest', 'sample']
 
 for x in subdir:
   target_dir = '%s/%s' % (env['objroot'], x)
