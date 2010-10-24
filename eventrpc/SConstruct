@@ -20,7 +20,7 @@ srcroot = env['srcroot']
 env.Append(CPPPATH=[env['objroot'],])
 Export('env')
 
-deps_libs = ['event', 'protobuf', 'pthread', ]
+deps_libs = ['event', 'protobuf', 'pthread', 'gtest']
 def CheckDependencies():
   global env
   conf = Configure(env)
