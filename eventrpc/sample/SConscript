@@ -1,4 +1,3 @@
-import os
 Import('env')
 
 sample_env = env.Clone()
@@ -17,8 +16,6 @@ sample_env.Prepend(LIBS=
   ])
 
 env.ProtocolBuffer('echo.proto')
-
-sample_env.Object('echo.pb.cc')
 
 sample_env.Program('echo_client', ['echo_client.cpp', 'echo.pb.cc'])
 sample_env.Program('echo_server', ['echo_server.cpp', 'echo.pb.cc'])
