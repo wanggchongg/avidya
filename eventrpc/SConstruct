@@ -15,9 +15,11 @@ else:
 env['srcroot'] = env.Dir('.').abspath
 objroot = env['objroot']
 srcroot = env['srcroot']
+env.Append(CPPPATH=[env['objroot'],])
 Export('env')
 
-subdir = ['src', 'unittest']
+#subdir = ['src', 'unittest', 'samples']
+subdir = ['src', ]
 
 for x in subdir:
   target_dir = '%s/%s' % (env['objroot'], x)
