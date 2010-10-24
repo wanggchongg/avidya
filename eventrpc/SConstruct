@@ -19,7 +19,7 @@ env.Append(CPPPATH=[env['objroot'],])
 Export('env')
 
 #subdir = ['src', 'unittest', 'samples']
-subdir = ['src', ]
+subdir = ['src', 'unittest']
 
 for x in subdir:
   target_dir = '%s/%s' % (env['objroot'], x)
