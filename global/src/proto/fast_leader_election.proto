@@ -1,0 +1,35 @@
+package fast_leader_election;
+
+enum ServerState {
+  LOOKING = 0;
+  FOLLOWING = 1;
+  LEADING = 2;
+  OBSERVING = 3;
+};
+
+message Request {
+  required uint64 leader = 1;
+  required uint64 gid = 2;
+  required uint64 epoch = 3;
+  required uint64 sid = 4;
+  required ServerState state = 5;
+};
+
+enum mType {
+  CREQUEST = 0;
+  CHALLENGE = 1;
+  NOTIFICATION = 2;
+  ACK = 3;
+};
+
+message Response {
+  required uint64 leader = 1;
+  required uint64 gid = 2;
+  required uint64 epoch = 3;
+  required uint64 sid = 4;
+  required mType type = 5;
+};
+
+service FastLeaderElectionService {
+  rpc Election(Request) returns (Response);
+};

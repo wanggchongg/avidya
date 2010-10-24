@@ -1,0 +1,7 @@
+package server_config;
+
+message ServerConfig {
+  required uint32 client_port = 1;
+  required uint32 server_port = 2;
+  required string host = 3;
+};

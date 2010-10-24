@@ -1,0 +1,36 @@
+Import('env')
+
+src_env = env.Clone()
+src_env['extension'] = 'cpp'
+src_env['srcroot'] += '/src'
+src_env['objroot'] += '/src'
+
+src_env.Append(CPPPATH=[src_env['srcroot']])
+Export('src_env')
+
+subdirs=[
+ 'proto',
+]
+
+src_files = []
+for x in subdirs:
+  target_dir='%s/%s/' % (src_env['objroot'], x)
+  SConscript('%s/%s/SConscript' % (src_env['srcroot'], x), build_dir=target_dir,
+  duplicate=0)
+
+src_env.Append(LIBPATH=[
+ '$objroot/proto',
+])
+
+src_env.Append(CPPPATH=[
+  src_env['objroot'],
+])
+
+src_env.Prepend(LIBS=[
+  'pthread',
+  'event',
+  'eventrpc',
+  'global_proto',
+])
+
+src_env.Program('global_main', 'main.cpp')
