@@ -18,8 +18,7 @@ sample_env.Prepend(LIBS=
 
 env.ProtocolBuffer('echo.proto')
 
-echo_objfiles = []
-echo_objfiles += sample_env.Object('echo.pb.cc')
+sample_env.Object('echo.pb.cc')
 
 sample_env.Program('echo_client', ['echo_client.cpp', 'echo.pb.cc'])
 sample_env.Program('echo_server', ['echo_server.cpp', 'echo.pb.cc'])
