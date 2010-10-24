@@ -1,0 +1,36 @@
+Import('env')
+
+unittest_cpp_env = env.Clone()
+unittest_cpp_env['objroot'] += '/unittest'
+unittest_cpp_env['srcroot'] += '/src'
+unittest_cpp_env['extension'] = 'cpp'
+unittest_cpp_env.Append(CPPPATH=[unittest_cpp_env['srcroot']])
+unittest_cpp_env.Append(LIBPATH=[env['objroot']+'/src',])
+unittest_cpp_env.Prepend(LIBS=
+  [
+    'eventrpc',
+    'pthread',
+    'event',
+    'protobuf',
+  ])
+
+Export('unittest_cpp_env')
+
+subdirs=[
+ 'base',
+ 'concurrency',
+ 'net',
+ 'smart_ptr',
+ 'util',
+ 'log',
+]
+
+unittest_cpp_env['CCFLAGS'] = env['CCFLAGS']
+src_files = []
+for x in subdirs:
+  target_dir='%s/%s/' % (unittest_cpp_env['objroot'], x)
+  print target_dir
+  src_files += Glob(target_dir + '*.' + unittest_cpp_env['extension'])
+
+for file in src_files:
+  unittest_cpp_env.Program(file)
