@@ -5,28 +5,28 @@
 #include <string>
 #include <list>
 #include "server/common.h"
+#include "proto/server_config.pb.h"
+#include "net/dispatcher.h"
 
 using std::string;
 using std::list;
-using std::pair;
 
 GLOBAL_NAMESPACE_BEGIN
 
-typedef pair<string, uint32> ServerAddrPair;
-
 class FastLeaderElectioner {
  public:
-  FastLeaderElectioner(string host, uint32 port,
-                       list<ServerAddrPair> addr_pair_list);
+  FastLeaderElectioner(uint32 server_id,
+                       const list<server_config::ServerInfo> &addr_list);
+
+  ~FastLeaderElectioner();
 
   void Start();
 
   void Stop();
 
  private:
-  string host_;
-  uint32 port_;
-  list<ServerAddrPair> addr_pair_list_;
+  class Impl;
+  Impl *impl_;
 };
 
 GLOBAL_NAMESPACE_END
