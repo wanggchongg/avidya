@@ -13,13 +13,19 @@ void Usage() {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc < 2) {
+  if (argc < 3) {
     Usage();
     exit(-1);
   }
 
   server_config::ServerConfig config;
-  ASSERT(google::protobuf::TextFormat::ParseFromString(argv[1],
+  string content;
+  FILE *file = fopen(argv[2], "r");
+  char buf[200];
+  while (fgets(buf, 200, file)) {
+    content.append(buf);
+  }
+  ASSERT(google::protobuf::TextFormat::ParseFromString(content,
                                                        &config));
   list<server_config::ServerInfo> server_info_list;
   for (int i = 0; i < config.server_info_list().size(); ++i) {
