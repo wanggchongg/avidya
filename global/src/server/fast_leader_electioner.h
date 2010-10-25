@@ -4,9 +4,9 @@
 
 #include <string>
 #include <list>
-#include "server/common.h"
-#include "proto/server_config.pb.h"
-#include "net/dispatcher.h"
+#include <server/common.h>
+#include <proto/server_config.pb.h>
+#include <net/dispatcher.h>
 
 using std::string;
 using std::list;
@@ -16,7 +16,7 @@ GLOBAL_NAMESPACE_BEGIN
 class FastLeaderElectioner {
  public:
   FastLeaderElectioner(uint32 server_id,
-                       const list<server_config::ServerInfo> &addr_list);
+                       const list<server_config::ServerInfo> &server_info_list);
 
   ~FastLeaderElectioner();
 

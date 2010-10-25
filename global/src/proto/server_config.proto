@@ -10,5 +10,5 @@ message ServerInfo {
 message ServerConfig {
   required uint32 client_port = 1;
   required uint32 server_id = 2;
-  repeated ServerInfo server_addr_list = 3;
+  repeated ServerInfo server_info_list = 3;
 };

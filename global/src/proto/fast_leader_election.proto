@@ -9,9 +9,9 @@ enum ServerState {
 
 message Request {
   required uint64 leader = 1;
-  required uint64 gid = 2;
+  required uint64 global_id = 2;
   required uint64 epoch = 3;
-  required uint64 sid = 4;
+  required uint64 server_id = 4;
   required ServerState state = 5;
 };
 

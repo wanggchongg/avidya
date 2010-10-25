@@ -12,7 +12,6 @@ subdirs=[
  'server',
 ]
 
-
 Export('src_env')
 
 src_files = []
