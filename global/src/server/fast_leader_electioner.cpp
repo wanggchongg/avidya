@@ -2,7 +2,7 @@
 #include <eventrpc/net/dispatcher.h>
 #include <eventrpc/net/rpcclientevent.h>
 #include <eventrpc/net/rpcserverevent.h>
-#include "common/fast_leader_electioner.h"
+#include "server/fast_leader_electioner.h"
 #include "proto/fast_leader_election.pb.h"
 
 GLOBAL_NAMESPACE_BEGIN

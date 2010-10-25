@@ -4,7 +4,7 @@
 
 #include <string>
 #include <list>
-#include "common/common.h"
+#include "server/common.h"
 
 using std::string;
 using std::list;
