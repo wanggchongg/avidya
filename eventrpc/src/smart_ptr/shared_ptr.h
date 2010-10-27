@@ -5,6 +5,7 @@
 #include <algorithm>  // for swap
 #include <smart_ptr/ref_count_impl.h>
 #include <smart_ptr/weak_ptr.h>
+#include <base/base.h>
 
 template <typename T>
 class shared_ptr {

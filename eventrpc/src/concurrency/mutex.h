@@ -7,7 +7,7 @@
 
 typedef pthread_rwlock_t MutexType;
 
-EVENTRPC_NAMESPACE_BEGIN
+namespace eventrpc {
 
 class Mutex {
  public:
@@ -85,6 +85,6 @@ class MutexLock {
   Mutex *mutex_;
 };
 
-EVENTRPC_NAMESPACE_END
+};
 
 #endif  // __EVENTRPC_MUTEX_H__

@@ -1,0 +1,26 @@
+Import('env')
+
+src_env = env.Clone()
+src_env['extension'] = 'cpp'
+src_env['srcroot'] += '/eventrpc'
+src_env['objroot'] += '/eventrpc'
+
+src_env.Append(CPPPATH=[src_env['srcroot']])
+Export('src_env')
+
+subdirs=[
+ 'base',
+ 'concurrency',
+ 'net',
+ 'smart_ptr',
+ 'util',
+ 'log',
+]
+
+src_files = []
+for x in subdirs:
+  target_dir='%s/%s/' % (src_env['objroot'], x)
+  #src_files += Glob(target_dir + '*.' + src_env['extension'])
+  src_files += Glob('./*.' + src_env['extension'])
+
+src_env.StaticLibrary('eventrpc', src_files)
