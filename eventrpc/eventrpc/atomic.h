@@ -7,23 +7,23 @@
 extern "C" {
 #endif
 
-extern uint32_t atomic_read32(volatile uint32_t *mem);
+extern uint32_t atomic_read(volatile uint32_t *mem);
 
-extern void atomic_set32(volatile uint32_t *mem, uint32_t val);
+extern void atomic_set(volatile uint32_t *mem, uint32_t val);
 
-extern uint32_t atomic_add32(volatile uint32_t *mem, uint32_t val);
+extern uint32_t atomic_add(volatile uint32_t *mem, uint32_t val);
 
-extern uint32_t atomic_sub32(volatile uint32_t *mem, uint32_t val);
+extern uint32_t atomic_sub(volatile uint32_t *mem, uint32_t val);
 
-extern uint32_t atomic_inc32(volatile uint32_t *mem);
+extern uint32_t atomic_inc(volatile uint32_t *mem);
 
-extern uint32_t atomic_dec32(volatile uint32_t *mem);
+extern uint32_t atomic_dec(volatile uint32_t *mem);
 
-extern uint32_t atomic_cas32(volatile uint32_t *mem,
+extern uint32_t atomic_cas(volatile uint32_t *mem,
                              uint32_t oldval,
                              uint32_t newval);
 
-extern uint32_t atomic_xchg32(volatile uint32_t *mem,
+extern uint32_t atomic_xchg(volatile uint32_t *mem,
                               uint32_t val);
 
 extern void* atomic_casptr(volatile void **mem,
