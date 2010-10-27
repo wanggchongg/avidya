@@ -4,7 +4,7 @@ test_env = env.Clone()
 test_env['objroot'] += '/test'
 test_env['extension'] = 'cpp'
 test_env.Append(CPPPATH=[test_env['srcroot']])
-test_env.Append(LIBPATH=[env['objroot']+'/src',])
+test_env.Append(LIBPATH=[env['objroot']+'/eventrpc',])
 test_env.Prepend(LIBS=
   [
     'eventrpc',

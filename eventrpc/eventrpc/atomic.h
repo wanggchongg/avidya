@@ -20,17 +20,18 @@ extern uint32_t atomic_inc(volatile uint32_t *mem);
 extern uint32_t atomic_dec(volatile uint32_t *mem);
 
 extern uint32_t atomic_cas(volatile uint32_t *mem,
-                             uint32_t oldval,
-                             uint32_t newval);
+                           uint32_t oldval,
+                           uint32_t newval);
 
 extern uint32_t atomic_xchg(volatile uint32_t *mem,
-                              uint32_t val);
+                            uint32_t val);
 
 extern void* atomic_casptr(volatile void **mem,
                            void *oldval,
                            const void *newval);
 
-extern void* atomic_xchgptr(volatile void **mem, void *val);
+extern void* atomic_xchgptr(volatile void **mem,
+                            void *val);
 
 #ifdef __cplusplus
 }
