@@ -14,18 +14,8 @@ class shared_ptr {
  private:
   template <typename U> friend class weak_ptr;
 
- private:
-  typedef T element_type;
-  typedef T value_type;
-  typedef T* pointer;
-  typedef const T const_value_type;
-  typedef const T* const_pointer;
-  typedef T& reference;
-  typedef const T& const_reference;
-  typedef shared_ptr<T> this_type;
-
  public:
-  shared_ptr(pointer ptr = NULL)
+  shared_ptr(T* ptr = NULL)
     : ptr_(ptr),
       ref_count_(ptr != NULL ? new RefCountImpl<T>(ptr) : NULL) {
   }
@@ -106,7 +96,7 @@ class shared_ptr {
   }
 
  private:
-  pointer ptr_;
+  T* ptr_;
   RefCount *ref_count_;
 };
 };
