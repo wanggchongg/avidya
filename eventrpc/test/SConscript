@@ -16,8 +16,10 @@ test_env.Prepend(LIBS=
 Export('test_env')
 
 test_env['CCFLAGS'] = env['CCFLAGS']
-src_files = []
-src_files = Glob('./*.' + test_env['extension'])
+src_files = [
+  'atomic_test.cpp',
+  'smart_ptr_test.cpp',
+]
 
 for file in src_files:
   test_env.Program(file)

@@ -8,7 +8,9 @@ src_env['objroot'] += '/eventrpc'
 src_env.Append(CPPPATH=[src_env['srcroot']])
 Export('src_env')
 
-src_files = []
-src_files = Glob('./*.' + src_env['extension'])
+src_files = [
+  'atomic.cpp',
+  'ref_count.cpp'
+]
 
 src_env.StaticLibrary('eventrpc', src_files)
