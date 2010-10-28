@@ -3,6 +3,8 @@
 
 #include <eventrpc/ref_count.h>
 
+namespace eventrpc {
+
 template<typename T>
 class RefCountImpl : public RefCount {
  public:
@@ -20,6 +22,7 @@ class RefCountImpl : public RefCount {
   inline virtual void dispose() {
     delete ptr_;
   }
+};
 };
 
 #endif  //  __EVENTRPC_REF_COUNT_IMPL_H__

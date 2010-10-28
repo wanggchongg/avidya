@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+namespace eventrpc {
 template <typename T> class shared_ptr;
 template <typename T> class weak_ptr;
 
@@ -30,6 +31,7 @@ class RefCount {
  private:
   volatile uint32_t use_count_;
   volatile uint32_t weak_count_;
+};
 };
 
 #endif  //  __EVENTRPC_REF_COUNT_H__

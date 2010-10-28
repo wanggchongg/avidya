@@ -2,6 +2,7 @@
 #include "ref_count.h"
 #include "atomic.h"
 
+namespace eventrpc {
 RefCount::RefCount(unsigned int use_count, unsigned int weak_count)
   : use_count_(use_count),
     weak_count_(weak_count) {
@@ -34,3 +35,4 @@ void RefCount::inc_weak_ref() {
 void RefCount::destroy() {
   delete this;
 }
+};

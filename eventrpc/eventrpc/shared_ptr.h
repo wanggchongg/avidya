@@ -7,6 +7,8 @@
 #include <eventrpc/weak_ptr.h>
 #include <eventrpc/base.h>
 
+namespace eventrpc {
+
 template <typename T>
 class shared_ptr {
  private:
@@ -106,6 +108,7 @@ class shared_ptr {
  private:
   pointer ptr_;
   RefCount *ref_count_;
+};
 };
 
 #endif  // __EVENTRPC_SHARED_PTR_H__
