@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <eventrpc/base.h>
+#include <eventrpc/noncopyable.h>
 
 namespace eventrpc {
 
@@ -35,6 +36,7 @@ class Mutex {
 
  private:
   mutable pthread_mutex_t pthread_mutex_;
+  DISALLOW_EVIL_CONSTRUCTOR(Mutex);
 };
 
 class MutexLock {
