@@ -14,10 +14,10 @@ class TimeUtil {
 
   static void MakeTimeval(timeval *result, uint64_t value);
 
-  static void MakeTimeSpecToMs(int64_t *result,
+  static void MakeTimespecToMs(int64_t *result,
                                const struct timespec& value);
 
-  static void MakeTimeValToMs(int64_t *result,
+  static void MakeTimevalToMs(int64_t *result,
                               const struct timeval& value);
 
   static const int64_t GetCurrentTime();

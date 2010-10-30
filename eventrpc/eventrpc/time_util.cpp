@@ -22,7 +22,7 @@ void TimeUtil::MakeTimeval(timeval *result, uint64_t value) {
   result->tv_usec = (value % MS_PER_S) * US_PER_MS; // ms to us
 }
 
-void TimeUtil::MakeTimeSpecToMs(int64_t *result,
+void TimeUtil::MakeTimespecToMs(int64_t *result,
                                 const struct timespec& value) {
   ASSERT_NE(static_cast<int64_t*>(NULL), result);
   *result = (value.tv_sec * MS_PER_S) + (value.tv_nsec / NS_PER_MS);
@@ -32,7 +32,7 @@ void TimeUtil::MakeTimeSpecToMs(int64_t *result,
   }
 }
 
-void TimeUtil::MakeTimeValToMs(int64_t *result,
+void TimeUtil::MakeTimevalToMs(int64_t *result,
                                const struct timeval& value) {
   ASSERT_NE(static_cast<int64_t*>(NULL), result);
   *result = (value.tv_sec * MS_PER_S) + (value.tv_usec / US_PER_MS);
@@ -46,7 +46,7 @@ const int64_t TimeUtil::GetCurrentTime() {
   struct timeval now;
   int ret = gettimeofday(&now, NULL);
   ASSERT_EQ(0, ret);
-  MakeTimeValToMs(&result, now);
+  MakeTimevalToMs(&result, now);
   return result;
 }
 };

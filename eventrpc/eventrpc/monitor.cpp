@@ -17,11 +17,15 @@ Monitor::~Monitor() {
 }
 
 void Monitor::Lock() const {
-  pthread_mutex_lock(&pthread_mutex_);
+  ASSERT_EQ(0, pthread_mutex_lock(&pthread_mutex_));
 }
 
 void Monitor::Unlock() const {
-  pthread_mutex_unlock(&pthread_mutex_);
+  ASSERT_EQ(0, pthread_mutex_unlock(&pthread_mutex_));
+}
+
+void Monitor::Wait() const {
+  ASSERT_EQ(0, pthread_cond_wait(&pthread_cond_, &pthread_mutex_));
 }
 
 bool Monitor::TimeWait(uint32_t timeout_ms) const {

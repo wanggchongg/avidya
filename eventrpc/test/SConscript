@@ -21,6 +21,7 @@ src_files = [
   'smart_ptr_test.cpp',
   'thread_test.cpp',
   'mutex_test.cpp',
+  'monitor_test.cpp',
 ]
 
 for file in src_files:

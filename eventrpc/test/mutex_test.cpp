@@ -30,19 +30,19 @@ class IncTask : public Runnable {
 TEST_F(MutexTest, TestMultiThread) {
   Mutex mutex;
   int value = 0;
-  int test_num = 100;
+  int loop_num = 100;
   vector<shared_ptr<Thread> > threads;
 
-  for (int i = 0; i < test_num; ++i) {
+  for (int i = 0; i < loop_num; ++i) {
     shared_ptr<Runnable> task = new IncTask(&value, &mutex);
     shared_ptr<Thread> thread = new Thread("test thread", task);
     threads.push_back(thread);
     thread->Start();
   }
-  for (int i = 0; i < test_num; ++i) {
+  for (int i = 0; i < loop_num; ++i) {
     threads[i]->Join();
   }
-  ASSERT_EQ(100, test_num);
+  ASSERT_EQ(loop_num, value);
 }
 
 int main(int argc, char *argv[]) {
