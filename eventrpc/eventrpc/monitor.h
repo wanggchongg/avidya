@@ -33,6 +33,20 @@ class Monitor {
   DISALLOW_EVIL_CONSTRUCTOR(Monitor);
 };
 
+class Synchronized {
+ public:
+  Synchronized(const Monitor& value)
+    : monitor_(value) {
+      monitor_.Lock();
+  }
+
+  ~Synchronized() {
+    monitor_.Unlock();
+  }
+
+ private:
+  const Monitor& monitor_;
+};
 };
 
 #endif  //  __EVENTRPC_MONITOR_H__
