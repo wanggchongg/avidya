@@ -17,7 +17,7 @@ else:
 env['srcroot'] = env.Dir('.').abspath
 objroot = env['objroot']
 srcroot = env['srcroot']
-env.Append(CPPPATH=[env['objroot'],])
+env.Append(CPPPATH=[env['objroot'], env['srcroot']])
 Export('env')
 
 deps_libs = ['event', 'protobuf', 'pthread', 'gtest']
