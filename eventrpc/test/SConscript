@@ -19,6 +19,7 @@ test_env['CCFLAGS'] = env['CCFLAGS']
 src_files = [
   'atomic_test.cpp',
   'smart_ptr_test.cpp',
+  'thread_test.cpp',
 ]
 
 for file in src_files:

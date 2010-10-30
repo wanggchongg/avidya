@@ -24,6 +24,9 @@ Thread::Thread(Runnable *runnable)
     policy_(SCHED_RR) {
 }
 
+Thread::~Thread() {
+}
+
 bool Thread::Init() {
   pthread_attr_t thread_attr;
   if (pthread_attr_init(&thread_attr) != 0) {

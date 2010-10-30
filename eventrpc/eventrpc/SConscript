@@ -13,7 +13,8 @@ src_files = [
   'ref_count.cpp',
   'log.cpp',
   'thread.cpp',
-  'utility.cpp'
+  'utility.cpp',
+  'lookup3.cpp',
 ]
 
 src_env.StaticLibrary('eventrpc', src_files)
