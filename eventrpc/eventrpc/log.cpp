@@ -24,7 +24,7 @@ LogLevel kLogLevel = DEBUG1;
 static const int kLogPathLength = 200;
 static char kLogPath[kLogPathLength] = "/tmp/";
 static char kProgramName[kLogPathLength] = "";
-static uint32 kMaxLogSize = 1 << 20;
+static uint32_t kMaxLogSize = 1 << 20;
 
 static const char *kLogLevelStr[] = {
   "DEBUG1",
@@ -60,7 +60,7 @@ void SetLogPath(const char *log_path) {
   strncpy(kLogPath, log_path, strlen(log_path));
 }
 
-void SetMaxLogFileSize(uint32 size) {
+void SetMaxLogFileSize(uint32_t size) {
   MutexLock lock(&kMutex);
   kMaxLogSize = size;
 }

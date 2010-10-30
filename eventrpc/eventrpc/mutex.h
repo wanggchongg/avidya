@@ -3,7 +3,6 @@
 
 #include <pthread.h>
 #include <stdlib.h>
-#include <eventrpc/base.h>
 #include <eventrpc/noncopyable.h>
 
 namespace eventrpc {

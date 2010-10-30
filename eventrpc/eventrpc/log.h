@@ -2,11 +2,11 @@
 #ifndef __EVENTRPC_LOG_H__
 #define __EVENTRPC_LOG_H__
 
+#include <stdint.h>
 #include <sstream>
 #include <iostream>
 #include <string>
 #include <sys/time.h>
-#include <eventrpc/base.h>
 #include <eventrpc/noncopyable.h>
 
 namespace eventrpc {
@@ -27,7 +27,7 @@ extern const char *kLogColor[];
 extern LogLevel kLogLevel;
 extern void SetLogLevel(LogLevel log_level);
 extern void SetLogPath(const char *log_path);
-extern void SetMaxLogFileSize(uint32 size);
+extern void SetMaxLogFileSize(uint32_t size);
 extern void SetProgramName(const char *name);
 
 class Log {

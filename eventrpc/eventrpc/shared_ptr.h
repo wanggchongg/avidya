@@ -5,7 +5,6 @@
 #include <algorithm>  // for swap
 #include <eventrpc/ref_count_impl.h>
 #include <eventrpc/weak_ptr.h>
-#include <eventrpc/base.h>
 
 namespace eventrpc {
 

@@ -2,8 +2,8 @@
 #ifndef __EVENTRPC_UTILITY_H__
 #define __EVENTRPC_UTILITY_H__
 
+#include <stdlib.h>
 #include <string>
-#include <eventrpc/base.h>
 
 using std::string;
 

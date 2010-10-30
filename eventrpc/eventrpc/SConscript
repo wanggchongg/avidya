@@ -14,6 +14,8 @@ src_files = [
   'log.cpp',
   'thread.cpp',
   'utility.cpp',
+  'time_util.cpp',
+  'monitor.cpp',
   'lookup3.cpp',
 ]
 
