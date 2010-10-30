@@ -52,16 +52,6 @@ bool Thread::Init() {
     return false;
   }
 
-  /*
-  struct sched_param sched_param;
-  sched_param.sched_priority = priority_;
-
-  if (pthread_attr_setschedparam(&thread_attr, &sched_param) != 0) {
-    LOG_ERROR() << "pthread_attr_setschedparam error";
-    return false;
-  }
-  */
-
   if (pthread_create(&thread_id_, &thread_attr,
                      &Thread::threadMain, (void*)this) != 0) {
     LOG_ERROR() << "pthread_create error";
@@ -89,9 +79,7 @@ void * Thread::threadMain(void *arg) {
 }
 
 void Thread::Start() {
-  if (!Init()) {
-    return;
-  }
+  ASSERT_EQ(true, Init());
 }
 
 void Thread::Join() {
