@@ -4,6 +4,7 @@
 #include <string>
 #include <pthread.h>
 #include <eventrpc/noncopyable.h>
+#include <eventrpc/shared_ptr.h>
 
 namespace eventrpc {
 
@@ -26,8 +27,8 @@ class Thread {
  public:
   typedef unsigned long thread_id_t;
 
-  Thread(const std::string &name, Runnable *runnable);
-  Thread(Runnable *runnable);
+  Thread(const std::string &name, shared_ptr<Runnable> runnable);
+  Thread(shared_ptr<Runnable> runnable);
 
   ~Thread();
 
@@ -80,7 +81,7 @@ class Thread {
 
  private:
   std::string name_;
-  Runnable *runnable_;
+  shared_ptr<Runnable> runnable_;
   int cpu_affinity_;
   bool detach_;
   int stack_size_;

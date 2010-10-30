@@ -5,70 +5,37 @@
 #include <stdlib.h>
 #include <eventrpc/base.h>
 
-typedef pthread_rwlock_t MutexType;
-
 namespace eventrpc {
 
 class Mutex {
  public:
-  inline Mutex();
+  Mutex() {
+    if (pthread_mutex_init(&pthread_mutex_, NULL) != 0) {
+      abort();
+    }
+  }
 
-  inline ~Mutex();
+  ~Mutex() {
+    if (pthread_mutex_destroy(&pthread_mutex_) != 0) {
+      abort();
+    }
+  }
 
-  inline void Lock();
+  void Lock() const {
+    pthread_mutex_lock(&pthread_mutex_);
+  }
 
-  inline void Unlock();
+  bool Trylock() const {
+    return (pthread_mutex_trylock(&pthread_mutex_) == 0);
+  }
 
-  inline void ReaderLock();
-
-  inline void ReaderUnlock();
-
-  inline void WriterLock();
-
-  inline void WriterUnlock();
+  void Unlock() const {
+    pthread_mutex_unlock(&pthread_mutex_);
+  }
 
  private:
-  MutexType mutex_;
+  mutable pthread_mutex_t pthread_mutex_;
 };
-
-#define SAFE_PTHREAD_CALL(fn)           \
-do {                                    \
-  if (fn(&mutex_) != 0) abort();        \
-} while(0)
-
-Mutex::Mutex() {
-  if (pthread_rwlock_init(&mutex_, NULL) != 0) {
-    abort();
-  }
-}
-
-Mutex::~Mutex() {
-  SAFE_PTHREAD_CALL(pthread_rwlock_destroy);
-}
-
-void Mutex::Lock() {
-  SAFE_PTHREAD_CALL(pthread_rwlock_wrlock);
-}
-
-void Mutex::Unlock() {
-  SAFE_PTHREAD_CALL(pthread_rwlock_unlock);
-}
-
-void Mutex::ReaderLock() {
-  SAFE_PTHREAD_CALL(pthread_rwlock_rdlock);
-}
-
-void Mutex::ReaderUnlock() {
-  SAFE_PTHREAD_CALL(pthread_rwlock_unlock);
-}
-
-void Mutex::WriterLock() {
-  Lock();
-}
-
-void Mutex::WriterUnlock() {
-  Unlock();
-}
 
 class MutexLock {
  public:

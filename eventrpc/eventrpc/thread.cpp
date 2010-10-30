@@ -6,7 +6,7 @@ namespace eventrpc {
 
 static const int MB = 1024 * 1024;
 
-Thread::Thread(const std::string &name, Runnable *runnable)
+Thread::Thread(const std::string &name, shared_ptr<Runnable> runnable)
   : name_(name),
     runnable_(runnable),
     cpu_affinity_(0),
@@ -15,7 +15,7 @@ Thread::Thread(const std::string &name, Runnable *runnable)
     policy_(SCHED_RR) {
 }
 
-Thread::Thread(Runnable *runnable)
+Thread::Thread(shared_ptr<Runnable> runnable)
   : name_("Anonymous Thread"),
     runnable_(runnable),
     cpu_affinity_(0),

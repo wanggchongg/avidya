@@ -34,7 +34,7 @@ class shared_ptr {
 
   shared_ptr<T>& operator=(const shared_ptr<T> &sp) {
     if (sp.ptr_ != ptr_) {
-      this_type(sp).swap(*this);
+      shared_ptr<T>(sp).swap(*this);
     }
     return *this;
   }

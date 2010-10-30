@@ -24,8 +24,8 @@ class AssignTask : public Runnable {
 
 TEST_F(ThreadTest, TestAssignThread) {
   int value = 1;
-  AssignTask task(&value, 100);
-  Thread thread("test thread", &task);
+  shared_ptr<Runnable> task = new AssignTask(&value, 100);
+  Thread thread("test thread", task);
   thread.Start();
   thread.Join();
   ASSERT_EQ(100, value);
