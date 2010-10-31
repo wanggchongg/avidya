@@ -30,8 +30,8 @@ void Monitor::Wait() const {
 
 bool Monitor::TimeWait(uint32_t timeout_ms) const {
   struct timespec abstime;
-  int64_t now = TimeUtil::GetCurrentTime();
-  TimeUtil::MakeTimespec(&abstime, now + timeout_ms);
+  int64_t now = TimeUtility::GetCurrentTime();
+  TimeUtility::MakeTimespec(&abstime, now + timeout_ms);
   return pthread_cond_timedwait(&pthread_cond_,
                                 &pthread_mutex_,
                                 &abstime) == 0;

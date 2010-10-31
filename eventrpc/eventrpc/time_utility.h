@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 namespace eventrpc {
-class TimeUtil {
+class TimeUtility {
 
  public:
   static void MakeTimespec(timespec *result, uint64_t value);
