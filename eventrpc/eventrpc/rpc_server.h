@@ -2,6 +2,7 @@
 #define __EVENTRPC_RPC_SERVER_H__
 
 #include <string>
+#include <google/protobuf/service.h>
 #include "dispatcher.h"
 
 using std::string;
@@ -19,6 +20,8 @@ class RpcServer {
   }
 
   virtual void Run() = 0;
+
+  virtual bool RegisterService(gpb::Service *service) = 0;
 
   void set_host_and_port(const string &host, uint32 port) {
     host_ = host;
