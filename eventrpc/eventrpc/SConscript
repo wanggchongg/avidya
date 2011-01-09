@@ -1,0 +1,20 @@
+Import('env')
+
+src_env = env.Clone()
+src_env['extension'] = 'cpp'
+src_env['srcroot'] += '/eventrpc'
+src_env['objroot'] += '/eventrpc'
+
+Export('src_env')
+
+src_files = [
+  'log.cpp',
+  'lookup3.cpp',
+  'utility.cpp',
+  'net_utility.cpp',
+  'rpc_server.cpp',
+  'reactor_rpc_server.cpp',
+  'dispatcher.cpp',
+]
+
+src_env.StaticLibrary('eventrpc', src_files)

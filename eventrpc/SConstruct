@@ -57,7 +57,7 @@ proto_builder = Builder(generator = ProtoGenerator,
   emitter=ProtoEmitter)
 env['BUILDERS']['ProtocolBuffer'] = proto_builder
 
-subdir = ['eventrpc', 'test']
+subdir = ['eventrpc', 'sample']
 
 for x in subdir:
   target_dir = '%s/%s' % (env['objroot'], x)
