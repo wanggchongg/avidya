@@ -2,6 +2,7 @@
 #include "reactor_rpc_server.h"
 #include "log.h"
 #include "net_utility.h"
+#include "connection.h"
 
 namespace eventrpc {
 ReactorRpcServer::ReactorRpcServer()
@@ -9,7 +10,7 @@ ReactorRpcServer::ReactorRpcServer()
 }
 
 ReactorRpcServer::~ReactorRpcServer() {
-  dispatcher_.DelEvent(event_);
+  dispatcher_.DeleteEvent(event_);
   delete event_;
 }
 
@@ -27,17 +28,13 @@ void ReactorRpcServer::Run() {
 
 int ReactorRpcServer::HandleAccept() {
   int fd;
-  char buf[100];
-  int len;
   for (int i = 0; i < 200; ++i) {
     fd = NetUtility::Accept(listen_fd_);
     if (fd == -1) {
       break;
     }
-    if (!NetUtility::Recv(fd, buf, 100, &len)) {
-      continue;
-    }
-    printf("buf: %s\n", buf);
+    Connection* connection = new Connection(fd, &rpc_method_manager_);
+    dispatcher_.AddEvent(connection->event());
   }
 }
 

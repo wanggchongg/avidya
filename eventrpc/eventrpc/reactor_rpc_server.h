@@ -15,6 +15,7 @@ class ReactorRpcServer
 
  protected:
   virtual int HandleAccept();
+
 };
 }; // namespace eventrpc
 #endif // __EVENTRPC_REACTOR_RPC_SERVER_H__

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include "net_utility.h"
+#include "log.h"
 
 namespace eventrpc {
 
@@ -25,7 +26,8 @@ int NetUtility::Connect(const char *host, int port) {
   servaddr.sin_port = htons(port);
   inet_pton(AF_INET, host, &servaddr.sin_addr);
 
-  if (::connect(fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
+  if (::connect(fd, (struct sockaddr *)&servaddr,
+                sizeof(servaddr)) < 0) {
     ::close(fd);
     return -1;
   }
@@ -46,7 +48,8 @@ int NetUtility::Listen(const char *ip, int port) {
   }
 
   int one = 1;
-  if (::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0) {
+  if (::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+                   &one, sizeof(one)) < 0) {
     return -1;
   }
   struct sockaddr_in servaddr;
@@ -72,14 +75,29 @@ int NetUtility::Listen(const char *ip, int port) {
 }
 
 int NetUtility::Accept(int listen_fd) {
-  int fd;
+  int fd, errno_copy;
   struct sockaddr_in addr;
   socklen_t len = sizeof(addr);
 
-  fd = ::accept(listen_fd, (struct sockaddr *)&addr, &len);
-  if (fd == -1) {
-    return -1;
-  }
+  do {
+    fd = ::accept(listen_fd, (struct sockaddr *)&addr, &len);
+    if (fd > 0) {
+      break;
+    }
+    errno_copy = errno;
+    if (fd < 0) {
+      if (errno_copy == EINTR) {
+        continue;
+      } else if (errno_copy == EAGAIN) {
+        return -1;
+      } else {
+        LOG_ERROR() << "Fail to accept, "
+          << " error: "
+          << strerror(errno_copy);
+        return -1;
+      }
+    }
+  } while (true);
 
   if (!NetUtility::SetNonBlocking(fd)) {
     close(fd);

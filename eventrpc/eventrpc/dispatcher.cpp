@@ -19,17 +19,19 @@ void Dispatcher::AddEvent(Event *event) {
   event_entry->event = event;
   event->entry_ = static_cast<Event::entry_t>(event_entry);
   if (event->event_flags_ & EVENT_READ) {
-    event_entry->epoll_ev.events = EPOLLIN;
+    event_entry->epoll_ev.events |= EPOLLIN;
   }
   if (event->event_flags_ & EVENT_WRITE) {
-    event_entry->epoll_ev.events = EPOLLOUT;
+    event_entry->epoll_ev.events |= EPOLLOUT;
   }
   event_entry->epoll_ev.data.ptr = event_entry;
-  ASSERT_NE(-1, epoll_ctl(epoll_fd_, EPOLL_CTL_ADD,
-                          event->fd_, &(event_entry->epoll_ev)));
+  ASSERT_NE(-1, epoll_ctl(epoll_fd_,
+                          EPOLL_CTL_ADD,
+                          event->fd_,
+                          &(event_entry->epoll_ev)));
 }
 
-void Dispatcher::DelEvent(Event *event) {
+void Dispatcher::DeleteEvent(Event *event) {
   EventEntry *event_entry = static_cast<EventEntry*>(event->entry_);
   ASSERT_NE(-1, epoll_ctl(epoll_fd_, EPOLL_CTL_DEL,
                           event->fd_, &(event_entry->epoll_ev)));
@@ -37,10 +39,23 @@ void Dispatcher::DelEvent(Event *event) {
   retired_events_.push_back(event_entry);
 }
 
+void Dispatcher::ModifyEvent(Event *event) {
+  EventEntry *event_entry = static_cast<EventEntry*>(event->entry_);
+  event_entry->epoll_ev.events = 0;
+  if (event->event_flags_ & EVENT_READ) {
+    event_entry->epoll_ev.events |= EPOLLIN;
+  }
+  if (event->event_flags_ & EVENT_WRITE) {
+    event_entry->epoll_ev.events |= EPOLLOUT;
+  }
+  ASSERT_NE(-1, epoll_ctl(epoll_fd_, EPOLL_CTL_MOD,
+                          event->fd_, &(event_entry->epoll_ev)));
+}
+
 int Dispatcher::Poll() {
   while (true) {
     int number = epoll_wait(epoll_fd_, &epoll_event_buf_[0],
-                            EPOLL_MAX_EVENTS, NULL);
+                            EPOLL_MAX_EVENTS, 100);
     if (number == -1) {
       if (errno == EINTR) {
         continue;

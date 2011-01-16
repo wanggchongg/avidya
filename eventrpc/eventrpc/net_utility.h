@@ -3,7 +3,6 @@
 #define __EVENTRPC_NET_UTILITY_H__
 
 namespace eventrpc {
-
 class NetUtility {
  public:
   static int Connect(const char *host, int port);

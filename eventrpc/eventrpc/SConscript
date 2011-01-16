@@ -12,9 +12,11 @@ src_files = [
   'lookup3.cpp',
   'utility.cpp',
   'net_utility.cpp',
-  'rpc_server.cpp',
+  'connection.cpp',
+  'rpc_method_manager.cpp',
   'reactor_rpc_server.cpp',
   'dispatcher.cpp',
+  'meta.cpp',
 ]
 
 src_env.StaticLibrary('eventrpc', src_files)

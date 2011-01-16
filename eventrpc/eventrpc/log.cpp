@@ -197,12 +197,14 @@ void Log::LogToFile() {
   kFileLogger[log_level_].Write(log_level_, tm_time_,
                                 log_header_.str(),
                                 input_stream_.str());
+  fflush(NULL);
 }
 
 void Log::FatalLogToFile() {
   kFileLogger[log_level_].Write(log_level_, tm_time_,
                                 log_header_.str(),
                                 input_stream_.str());
+  fflush(NULL);
   abort();
 }
 

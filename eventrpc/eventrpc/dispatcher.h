@@ -21,7 +21,9 @@ class Dispatcher {
 
   void AddEvent(Event *event);
 
-  void DelEvent(Event *event);
+  void DeleteEvent(Event *event);
+
+  void ModifyEvent(Event *event);
 
   int Poll();
 
