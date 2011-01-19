@@ -63,4 +63,3 @@ for x in subdir:
   target_dir = '%s/%s' % (env['objroot'], x)
   SConscript('%s/%s/SConscript' % (env['srcroot'], x), build_dir=target_dir,
   duplicate=0)
-
