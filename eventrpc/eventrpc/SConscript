@@ -12,7 +12,7 @@ src_files = [
   'lookup3.cpp',
   'utility.cpp',
   'net_utility.cpp',
-  'connection.cpp',
+  'rpc_connection.cpp',
   'rpc_method_manager.cpp',
   'reactor_rpc_server.cpp',
   'dispatcher.cpp',

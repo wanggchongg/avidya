@@ -2,7 +2,7 @@
 #include "reactor_rpc_server.h"
 #include "log.h"
 #include "net_utility.h"
-#include "connection.h"
+#include "rpc_connection.h"
 
 namespace eventrpc {
 ReactorRpcServer::ReactorRpcServer()
@@ -33,7 +33,7 @@ int ReactorRpcServer::HandleAccept() {
     if (fd == -1) {
       break;
     }
-    Connection* connection = new Connection(fd, &rpc_method_manager_);
+    RpcConnection* connection = new RpcConnection(fd, &rpc_method_manager_);
     dispatcher_.AddEvent(connection->event());
   }
 }
