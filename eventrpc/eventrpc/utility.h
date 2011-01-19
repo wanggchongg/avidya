@@ -4,12 +4,13 @@
 
 #include <stdlib.h>
 #include <string>
+#include "base.h"
 
 using std::string;
 
 namespace eventrpc {
 
-uint32_t hash_string(const string &str);
+uint32 hash_string(const string &str);
 
 int GetCpuNum();
 
