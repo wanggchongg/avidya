@@ -1,5 +1,5 @@
-#ifndef __EVENTRPC_CONNECTION_H__
-#define __EVENTRPC_CONNECTION_H__
+#ifndef __EVENTRPC_RPC_CONNECTION_H__
+#define __EVENTRPC_RPC_CONNECTION_H__
 
 #include <string>
 #include "event.h"
@@ -9,15 +9,29 @@ using std::string;
 
 namespace eventrpc {
 class RpcMethodManager;
+class RpcConnectionManager;
 class RpcConnection {
  public:
-  RpcConnection(int fd, RpcMethodManager *rpc_method_manager)
-    : event_(fd, this),
+  RpcConnection()
+    : event_(-1, this),
     state_(READ_META),
     message_(""),
     expect_recv_count_(META_LEN),
-    rpc_method_manager_(rpc_method_manager) {
-   }
+    rpc_method_manager_(NULL) {
+  }
+
+  void set_fd(int fd) {
+    event_.fd_ = fd;
+  }
+
+  void set_rpc_method_manager(RpcMethodManager *rpc_method_manager) {
+    rpc_method_manager_ = rpc_method_manager;
+  }
+
+  void set_rpc_connection_manager(
+      RpcConnectionManager *rpc_connection_manager) {
+    rpc_connection_manager_ = rpc_connection_manager;
+  }
 
   Event* event() {
     return &event_;
@@ -52,7 +66,8 @@ class RpcConnection {
   string message_;
   ssize_t expect_recv_count_;
   RpcMethodManager *rpc_method_manager_;
+  RpcConnectionManager *rpc_connection_manager_;
   Meta meta_;
 };
 };
-#endif  // __EVENTRPC_CONNECTION_H__
+#endif  // __EVENTRPC_RPC_CONNECTION_H__

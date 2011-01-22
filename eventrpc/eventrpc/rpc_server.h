@@ -4,6 +4,7 @@
 #include <string>
 #include "dispatcher.h"
 #include "rpc_method_manager.h"
+#include "rpc_connection_manager.h"
 
 using std::string;
 
@@ -58,6 +59,7 @@ class RpcServer {
   };
   RpcServerEvent *event_;
   RpcMethodManager rpc_method_manager_;
+  RpcConnectionManager rpc_connection_manager_;
 };
 };
 #endif  //  __EVENTRPC_RPC_SERVER_H__

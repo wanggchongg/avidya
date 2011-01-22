@@ -33,7 +33,10 @@ int ReactorRpcServer::HandleAccept() {
     if (fd == -1) {
       break;
     }
-    RpcConnection* connection = new RpcConnection(fd, &rpc_method_manager_);
+    RpcConnection* connection = rpc_connection_manager_.GetConnection();
+    connection->set_fd(fd);
+    connection->set_rpc_method_manager(&rpc_method_manager_);
+    connection->set_rpc_connection_manager(&rpc_connection_manager_);
     dispatcher_.AddEvent(connection->event());
   }
 }
