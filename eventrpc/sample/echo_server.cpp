@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include <iostream>
-#include "reactor_rpc_server.h"
+#include "rpc_server.h"
 #include "echo.pb.h"
 
 using namespace eventrpc;
@@ -24,11 +24,11 @@ class EchoServiceImpl : public echo::EchoService {
 };
 
 int main() {
-  ReactorRpcServer reactor_rpc_server;
+  RpcServer rpc_server;
   gpb::Service *service = new EchoServiceImpl();
-  reactor_rpc_server.rpc_method_manager()->RegisterService(service);
-  reactor_rpc_server.set_host_and_port("127.0.0.1", 21118);
-  reactor_rpc_server.Run();
+  rpc_server.rpc_method_manager()->RegisterService(service);
+  rpc_server.set_host_and_port("127.0.0.1", 21118);
+  rpc_server.Run();
 
   return 0;
 }

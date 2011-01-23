@@ -12,16 +12,11 @@ namespace eventrpc {
 
 class RpcServer {
  public:
-  RpcServer()
-    : host_(""),
-      port_(0),
-      listen_fd_(0) {
-  }
+  RpcServer();
 
-  virtual ~RpcServer() {
-  }
+  ~RpcServer();
 
-  virtual void Run() = 0;
+  void Run();
 
   void set_host_and_port(const string &host, uint32 port) {
     host_ = host;
@@ -36,10 +31,10 @@ class RpcServer {
     return &dispatcher_;
   }
 
- protected:
-  virtual int HandleAccept() = 0;
+ private:
+  int HandleAccept();
 
- protected:
+ private:
   string host_;
   uint32 port_;
   int listen_fd_;
