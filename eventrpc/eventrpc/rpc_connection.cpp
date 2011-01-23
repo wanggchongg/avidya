@@ -1,5 +1,6 @@
 
 #include "log.h"
+#include "dispatcher.h"
 #include "net_utility.h"
 #include "rpc_method_manager.h"
 #include "rpc_connection.h"
@@ -11,7 +12,7 @@ int RpcConnection::RpcConnectionEvent::HandleRead() {
 }
 
 int RpcConnection::RpcConnectionEvent::HandleWrite() {
-  ASSERT_NE(0, event_flags_ & EVENT_READ);
+  ASSERT_NE(0, event_flags_ & EVENT_WRITE);
   return connection_->HandleWrite();
 }
 
@@ -20,10 +21,10 @@ int RpcConnection::HandleRead() {
   bool ret = false;
   ssize_t recv_count = 0;
   while (true) {
-    if (expect_recv_count_ > RpcConnection::BUFFER_LENGTH) {
+    if (expect_count_ > RpcConnection::BUFFER_LENGTH) {
       recv_count = RpcConnection::BUFFER_LENGTH;
     } else {
-      recv_count = expect_recv_count_;
+      recv_count = expect_count_;
     }
     ret = NetUtility::Recv(event_.fd_, buffer_,
                            recv_count, &recv_length);
@@ -42,7 +43,33 @@ int RpcConnection::HandleRead() {
   return 0;
 }
 
+void RpcConnection::Close() {
+  if (event_.fd_ > 0) {
+    dispatcher_->DeleteEvent(&event_);
+  }
+}
+
 int RpcConnection::HandleWrite() {
+  int send_length = 0;
+  bool ret = false;
+  while (true) {
+    ret = NetUtility::Send(event_.fd_,
+                           message_.c_str() + sent_count_,
+                           expect_count_, &send_length);
+    if (!ret) {
+      Close();
+      return -1;
+    } else if (send_length < expect_count_) {
+      sent_count_ += send_length;
+      expect_count_ -= send_length;
+      return 0;
+    } else if (send_length == expect_count_) {
+      // waiting for the next request
+      event_.event_flags_ = EVENT_READ;
+      dispatcher_->ModifyEvent(&event_);
+      return 0;
+    }
+  }
   return 0;
 }
 
@@ -51,29 +78,17 @@ int RpcConnection::StateMachine() {
     case READ_META:
       {
         meta_.Encode(message_.c_str());
-        if (!rpc_method_manager_->IsServiceRegisted(meta_.method_id())) {
+        if (!rpc_method_manager_->IsServiceRegistered(meta_.method_id())) {
           close(event_.fd_);
           return -1;
         }
-          expect_recv_count_ = meta_.message_len();
+          expect_count_ = meta_.message_len();
           state_ = READ_MESSAGE;
           message_ = "";
       }
       break;
     case READ_MESSAGE:
-      rpc_method_manager_->HandleService(&message_, &meta_);
-      /*
-      method_ = rpc_method_->method_;;
-      request_ = rpc_method_->request_->New();
-      response_ = rpc_method_->response_->New();
-      request_->ParseFromString(message_);
-      gpb::Closure *done = gpb::NewCallback(
-          this,
-          &RpcConnectionEvent::Impl::HandleServiceDone);
-      rpc_method_->service_->CallMethod(method_,
-                                        NULL,
-                                        request_, response_, done);
-                                        */
+      rpc_method_manager_->HandleService(&message_, &meta_, &callback_);
       break;
     default:
       LOG_FATAL() << "should not reach here";
@@ -82,4 +97,14 @@ int RpcConnection::StateMachine() {
   return 0;
 }
 
+void RpcConnection::HandleServiceDone() {
+  event_.event_flags_ = EVENT_WRITE;
+  expect_count_ = message_.length();
+  sent_count_ = 0;
+  dispatcher_->ModifyEvent(&event_);
+}
+
+void RpcConnection::RpcConnectionCallback::Run() {
+  connection_->HandleServiceDone();
+}
 };

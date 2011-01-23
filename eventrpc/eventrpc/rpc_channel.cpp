@@ -11,7 +11,9 @@ RpcChannel::RpcChannel(const char *host, int port,
   : host_(host),
     port_(port),
     dispatcher_(dispatcher),
-    event_(-1, this) {
+    event_(-1, this),
+    response_(NULL),
+    done_(NULL) {
 }
 
 RpcChannel::~RpcChannel() {
@@ -39,6 +41,8 @@ void RpcChannel::CallMethod(const gpb::MethodDescriptor* method,
   count_ = message_.length();
   sent_count_ = 0;
   method_id_ = meta_.method_id();
+  response_ = response;
+  done_ = done;
   dispatcher_->AddEvent(&event_);
 }
 
@@ -105,7 +109,7 @@ int RpcChannel::HandleWrite() {
       sent_count_ += len;
       return 0;
     } else if (len == count_) {
-      event_.event_flags_ = EVENT_WRITE;
+      event_.event_flags_ = EVENT_READ;
       dispatcher_->ModifyEvent(&event_);
       return 0;
     }

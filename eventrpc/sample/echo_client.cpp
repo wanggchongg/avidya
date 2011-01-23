@@ -26,7 +26,9 @@ int main() {
   stub.Echo(NULL, &request, &response,
             gpb::NewCallback(::echo_done, &response, channel));
 
-  dispatcher.Poll();
+  while (dispatcher.Poll() == 0) {
+    ;
+  }
   delete channel;
 
   return 0;

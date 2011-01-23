@@ -29,15 +29,16 @@ struct RpcMethod {
 typedef map<uint32, RpcMethod*> RpcMethodMap;
 
 class Meta;
+struct Callback;
 class RpcMethodManager {
  public:
   RpcMethodManager();
 
   void RegisterService(gpb::Service *service);
   // TODO: add more check, not only method id!
-  bool IsServiceRegisted(uint32 method_id);
+  bool IsServiceRegistered(uint32 method_id);
 
-  int  HandleService(string *message, Meta *meta);
+  int  HandleService(string *message, Meta *meta, Callback *callback);
 
  private:
   RpcMethodMap rpc_methods_;

@@ -6,6 +6,7 @@
 #include "log.h"
 #include "utility.h"
 #include "meta.h"
+#include "callback.h"
 
 namespace eventrpc {
 RpcMethodManager::RpcMethodManager() {
@@ -29,7 +30,7 @@ void RpcMethodManager::RegisterService(gpb::Service *service) {
   }
 }
 
-bool RpcMethodManager::IsServiceRegisted(uint32 method_id) {
+bool RpcMethodManager::IsServiceRegistered(uint32 method_id) {
   return (rpc_methods_.find(method_id) != rpc_methods_.end());
 }
 
@@ -38,30 +39,36 @@ struct HandleServiceEntry {
                      gpb::Message *request,
                      gpb::Message *response,
                      string *message,
-                     Meta *meta)
+                     Meta *meta,
+                     Callback *callback)
     : method_(method),
       request_(request),
       response_(response),
       message_(message),
-      meta_(meta) {
+      meta_(meta),
+      callback_(callback) {
   }
   const gpb::MethodDescriptor *method_;
   gpb::Message *request_;
   gpb::Message *response_;
   string *message_;
   Meta *meta_;
+  Callback *callback_;
 };
 
 static void HandleServiceDone(HandleServiceEntry *entry) {
   *(entry->message_) = "";
   entry->meta_->EncodeWithMessage(entry->method_->full_name(),
                                   entry->response_, entry->message_);
+  Callback *callback = entry->callback_;
   delete entry->request_;
   delete entry->response_;
   delete entry;
+  callback->Run();
 }
 
-int  RpcMethodManager::HandleService(string *message, Meta *meta) {
+int  RpcMethodManager::HandleService(string *message,
+                                     Meta *meta, Callback *callback) {
   RpcMethod *rpc_method = rpc_methods_[meta->method_id()];
   const gpb::MethodDescriptor *method = rpc_method->method_;
   gpb::Message *request = rpc_method->request_->New();
@@ -71,7 +78,8 @@ int  RpcMethodManager::HandleService(string *message, Meta *meta) {
                                                      request,
                                                      response,
                                                      message,
-                                                     meta);
+                                                     meta,
+                                                     callback);
   gpb::Closure *done = gpb::NewCallback(
       &HandleServiceDone, entry);
   rpc_method->service_->CallMethod(method,

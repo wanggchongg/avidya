@@ -4,6 +4,7 @@
 #include <string>
 #include "event.h"
 #include "meta.h"
+#include "callback.h"
 
 using std::string;
 
@@ -15,10 +16,11 @@ class RpcConnection {
  public:
   RpcConnection()
     : event_(-1, this),
-    state_(READ_META),
-    message_(""),
-    expect_recv_count_(META_LEN),
-    rpc_method_manager_(NULL) {
+      callback_(this),
+      state_(READ_META),
+      message_(""),
+      expect_count_(META_LEN),
+      rpc_method_manager_(NULL) {
   }
 
   void set_fd(int fd) {
@@ -42,6 +44,8 @@ class RpcConnection {
     return &event_;
   }
 
+  void Close();
+
  private:
   int StateMachine();
   struct RpcConnectionEvent : public Event {
@@ -59,17 +63,37 @@ class RpcConnection {
 
     RpcConnection *connection_;
   };
+
+  struct RpcConnectionCallback : public Callback {
+   public:
+    RpcConnectionCallback(RpcConnection *connection)
+      : connection_(connection) {
+    }
+
+    virtual ~RpcConnectionCallback() {
+    }
+
+    void Run();
+
+    RpcConnection *connection_;
+  };
  private:
   int HandleRead();
 
   int HandleWrite();
+
+  void HandleServiceDone();
+
   friend class RpcConnectionEvent;
+  friend class RpcConnectionCallback;
+  RpcConnectionCallback callback_;
   RpcConnectionEvent event_;
   RequestState state_;
   static const int BUFFER_LENGTH = 100;
   char buffer_[BUFFER_LENGTH];
   string message_;
-  ssize_t expect_recv_count_;
+  ssize_t expect_count_;
+  ssize_t sent_count_;
   RpcMethodManager *rpc_method_manager_;
   RpcConnectionManager *rpc_connection_manager_;
   Dispatcher *dispatcher_;
