@@ -28,11 +28,18 @@ class RpcServer {
     port_ = port;
   }
 
+  RpcMethodManager *rpc_method_manager() {
+    return &rpc_method_manager_;
+  }
+
+  Dispatcher* dispatcher() {
+    return &dispatcher_;
+  }
+
  protected:
   virtual int HandleAccept() = 0;
 
  protected:
-  Dispatcher dispatcher_;
   string host_;
   uint32 port_;
   int listen_fd_;
@@ -60,6 +67,7 @@ class RpcServer {
   RpcServerEvent *event_;
   RpcMethodManager rpc_method_manager_;
   RpcConnectionManager rpc_connection_manager_;
+  Dispatcher dispatcher_;
 };
 };
 #endif  //  __EVENTRPC_RPC_SERVER_H__

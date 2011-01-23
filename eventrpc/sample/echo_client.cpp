@@ -1,39 +1,33 @@
 #include <iostream>
 #include <stdio.h>
-#include "net/rpcclientevent.h"
-#include "net/dispatcher.h"
+#include "dispatcher.h"
+#include "rpc_channel.h"
 #include "echo.pb.h"
 
 using namespace eventrpc;
 using namespace std;
 
-void echo_done(echo::EchoResponse* resp, RpcClientEvent *event)
-{
+void echo_done(echo::EchoResponse* resp, RpcChannel *channel) {
   printf("response: %s\n", resp->response().c_str());
-  event = event;
-  event->Close();
+  channel->Close();
 }
 
 int main() {
   Dispatcher dispatcher;
-  RpcClientEvent *event = new RpcClientEvent("127.0.0.1", 2008);
-  dispatcher.AddEvent(event);
-
-  echo::EchoService::Stub stub(event);
+  RpcChannel *channel = new RpcChannel("127.0.0.1", 21118, &dispatcher);
+  if (!channel->Connect()) {
+    printf("connect to server failed, abort\n");
+    exit(-1);
+  }
+  echo::EchoService::Stub stub(channel);
   echo::EchoRequest request;
   echo::EchoResponse response;
   request.set_message("hello");
   stub.Echo(NULL, &request, &response,
-            gpb::NewCallback(::echo_done, &response, event));
+            gpb::NewCallback(::echo_done, &response, channel));
 
-  /*
-  request.set_message("hello2");
-  stub.Echo(NULL, &request, &response,
-            gpb::NewCallback(::echo_done, &response, event));
-  */
-
-  dispatcher.Loop();
-  delete event;
+  dispatcher.Poll();
+  delete channel;
 
   return 0;
 }

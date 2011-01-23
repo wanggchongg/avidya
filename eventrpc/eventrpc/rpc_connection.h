@@ -10,6 +10,7 @@ using std::string;
 namespace eventrpc {
 class RpcMethodManager;
 class RpcConnectionManager;
+class Dispatcher;
 class RpcConnection {
  public:
   RpcConnection()
@@ -31,6 +32,10 @@ class RpcConnection {
   void set_rpc_connection_manager(
       RpcConnectionManager *rpc_connection_manager) {
     rpc_connection_manager_ = rpc_connection_manager;
+  }
+
+  void set_dispacher(Dispatcher *dispatcher) {
+    dispatcher_ = dispatcher;
   }
 
   Event* event() {
@@ -67,6 +72,7 @@ class RpcConnection {
   ssize_t expect_recv_count_;
   RpcMethodManager *rpc_method_manager_;
   RpcConnectionManager *rpc_connection_manager_;
+  Dispatcher *dispatcher_;
   Meta meta_;
 };
 };

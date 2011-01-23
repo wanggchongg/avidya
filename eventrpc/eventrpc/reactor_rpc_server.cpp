@@ -37,6 +37,7 @@ int ReactorRpcServer::HandleAccept() {
     connection->set_fd(fd);
     connection->set_rpc_method_manager(&rpc_method_manager_);
     connection->set_rpc_connection_manager(&rpc_connection_manager_);
+    connection->set_dispacher(&dispatcher_);
     dispatcher_.AddEvent(connection->event());
   }
 }

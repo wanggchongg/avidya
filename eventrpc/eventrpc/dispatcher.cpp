@@ -35,6 +35,8 @@ void Dispatcher::DeleteEvent(Event *event) {
   EventEntry *event_entry = static_cast<EventEntry*>(event->entry_);
   ASSERT_NE(-1, epoll_ctl(epoll_fd_, EPOLL_CTL_DEL,
                           event->fd_, &(event_entry->epoll_ev)));
+  close(event->fd_);
+  event->fd_ = -1;
   event_entry->event = NULL;
   retired_events_.push_back(event_entry);
 }

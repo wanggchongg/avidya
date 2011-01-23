@@ -12,8 +12,8 @@ sample_env.Prepend(LIBS=
     'eventrpc',
   ])
 
-#env.ProtocolBuffer('echo.proto')
+env.ProtocolBuffer('echo.proto')
 
-#sample_env.Program('echo_client', ['echo_client.cpp', 'echo.pb.cc'])
-sample_env.Program('echo_server', ['echo_server.cpp', ])
+sample_env.Program('echo_client', ['echo_client.cpp', 'echo.pb.cc'])
+sample_env.Program('echo_server', ['echo_server.cpp', 'echo.pb.cc'])
 
