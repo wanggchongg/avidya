@@ -2,12 +2,10 @@
 #ifndef __EVENTRPC_DISPATCHER_H__
 #define __EVENTRPC_DISPATCHER_H__
 
-#include <map>
 #include <vector>
 #include <sys/epoll.h>
 #include "event.h"
 
-using std::map;
 using std::vector;
 
 #define EPOLL_MAX_EVENTS 1024
