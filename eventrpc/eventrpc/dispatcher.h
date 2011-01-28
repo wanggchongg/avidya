@@ -74,7 +74,6 @@ class Dispatcher {
   epoll_event epoll_event_buf_[EPOLL_MAX_EVENTS];
   DispatcherRunnable runnable_;
   Thread thread_;
-  bool has_notify_events_;
 };
 };
 

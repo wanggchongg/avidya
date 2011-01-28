@@ -9,8 +9,7 @@ Dispatcher::Dispatcher()
   : runnable_(this),
     thread_(&runnable_),
     current_operate_events_(&operated_events_[0]),
-    waiting_operate_events_(&operated_events_[1]),
-    has_notify_events_(false) {
+    waiting_operate_events_(&operated_events_[1]) {
 }
 
 Dispatcher::~Dispatcher() {
@@ -40,7 +39,6 @@ void Dispatcher::AddEvent(Event *event) {
   event_entry->epoll_ev.data.ptr = event_entry;
   event_entry->event_operation_type = EVENT_OPERATION_ADD;
   MutexLock lock(&mutex_);
-  has_notify_events_ = true;
   waiting_operate_events_->push_back(event_entry);
 }
 
@@ -53,7 +51,6 @@ void Dispatcher::DeleteEvent(Event *event) {
   event_entry->event = NULL;
   event_entry->event_operation_type = EVENT_OPERATION_DELETE;
   MutexLock lock(&mutex_);
-  has_notify_events_ = true;
   waiting_operate_events_->push_back(event_entry);
 }
 
@@ -68,13 +65,15 @@ void Dispatcher::ModifyEvent(Event *event) {
   }
   event_entry->event_operation_type = EVENT_OPERATION_MODIFY;
   MutexLock lock(&mutex_);
-  has_notify_events_ = true;
   waiting_operate_events_->push_back(event_entry);
 }
 
 int Dispatcher::Poll() {
   while (true) {
-    OperateEvents();
+    // no need to lock
+    if (!waiting_operate_events_->empty()) {
+      OperateEvents();
+    }
     int number = epoll_wait(epoll_fd_, &epoll_event_buf_[0],
                             EPOLL_MAX_EVENTS, 100);
     if (number == -1) {
@@ -118,13 +117,9 @@ void Dispatcher::DispatcherRunnable::Run() {
 int Dispatcher::OperateEvents() {
   {
     MutexLock lock(&mutex_);
-    if (!has_notify_events_) {
-      return 0;
-    }
     EventVector *tmp_event_vector = current_operate_events_;
     current_operate_events_ = waiting_operate_events_;
     waiting_operate_events_ = tmp_event_vector;
-    has_notify_events_ = false;
   }
 
   EventEntry *event_entry;
