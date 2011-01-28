@@ -70,7 +70,7 @@ class Dispatcher {
   EventVector operated_events_[2];
   EventVector *current_operate_events_;
   EventVector *waiting_operate_events_;
-  Mutex mutex_;
+  SpinMutex spin_mutex_;
   epoll_event epoll_event_buf_[EPOLL_MAX_EVENTS];
   DispatcherRunnable runnable_;
   Thread thread_;
