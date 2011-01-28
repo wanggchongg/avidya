@@ -5,6 +5,8 @@
 #include <vector>
 #include <sys/epoll.h>
 #include "event.h"
+#include "thread.h"
+#include "mutex.h"
 
 using std::vector;
 
@@ -25,16 +27,54 @@ class Dispatcher {
 
   int Poll();
 
+  void Start();
+
+  void Stop();
+
  private:
+  int OperateEvents();
+
+  enum EventOperationType {
+    EVENT_OPERATION_ADD,
+    EVENT_OPERATION_DELETE,
+    EVENT_OPERATION_MODIFY,
+  };
+
+  // for event information
   struct EventEntry {
+    EventOperationType event_operation_type;
     Event *event;
     struct epoll_event epoll_ev;
   };
 
+  // for Dispatcher thread
+  struct DispatcherRunnable : public Runnable {
+   public:
+    DispatcherRunnable(Dispatcher *dispatcher)
+      : dispatcher_(dispatcher) {
+    }
+
+    virtual ~DispatcherRunnable() {
+    }
+
+    void Run();
+
+    Dispatcher *dispatcher_;
+  };
+
+  friend struct DispatcherRunnable;
+
   int epoll_fd_;
-  typedef vector<EventEntry*> RetiredEventVector;
-  RetiredEventVector retired_events_;
+  typedef vector<EventEntry*> EventVector;
+  EventVector retired_events_;
+  EventVector operated_events_[2];
+  EventVector *current_operate_events_;
+  EventVector *waiting_operate_events_;
+  Mutex mutex_;
   epoll_event epoll_event_buf_[EPOLL_MAX_EVENTS];
+  DispatcherRunnable runnable_;
+  Thread thread_;
+  bool has_notify_events_;
 };
 };
 

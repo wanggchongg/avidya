@@ -28,7 +28,7 @@ int main() {
   gpb::Service *service = new EchoServiceImpl();
   rpc_server.rpc_method_manager()->RegisterService(service);
   rpc_server.set_host_and_port("127.0.0.1", 21118);
-  rpc_server.Run();
+  rpc_server.Start();
 
   return 0;
 }

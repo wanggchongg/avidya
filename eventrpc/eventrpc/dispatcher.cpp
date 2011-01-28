@@ -1,16 +1,29 @@
-
+#include <unistd.h>
 #include <errno.h>
 #include "log.h"
 #include "dispatcher.h"
+#include "net_utility.h"
 
 namespace eventrpc {
-Dispatcher::Dispatcher() {
-  epoll_fd_ = epoll_create(1024);
-  ASSERT_NE(-1, epoll_fd_);
+Dispatcher::Dispatcher()
+  : runnable_(this),
+    thread_(&runnable_),
+    current_operate_events_(&operated_events_[0]),
+    waiting_operate_events_(&operated_events_[1]),
+    has_notify_events_(false) {
 }
 
 Dispatcher::~Dispatcher() {
   close(epoll_fd_);
+}
+
+void Dispatcher::Start() {
+  epoll_fd_ = epoll_create(1024);
+  ASSERT_NE(-1, epoll_fd_);
+  thread_.Start();
+}
+
+void Dispatcher::Stop() {
 }
 
 void Dispatcher::AddEvent(Event *event) {
@@ -25,10 +38,10 @@ void Dispatcher::AddEvent(Event *event) {
     event_entry->epoll_ev.events |= EPOLLOUT;
   }
   event_entry->epoll_ev.data.ptr = event_entry;
-  ASSERT_NE(-1, epoll_ctl(epoll_fd_,
-                          EPOLL_CTL_ADD,
-                          event->fd_,
-                          &(event_entry->epoll_ev)));
+  event_entry->event_operation_type = EVENT_OPERATION_ADD;
+  MutexLock lock(&mutex_);
+  has_notify_events_ = true;
+  waiting_operate_events_->push_back(event_entry);
 }
 
 void Dispatcher::DeleteEvent(Event *event) {
@@ -38,7 +51,10 @@ void Dispatcher::DeleteEvent(Event *event) {
   close(event->fd_);
   event->fd_ = -1;
   event_entry->event = NULL;
-  retired_events_.push_back(event_entry);
+  event_entry->event_operation_type = EVENT_OPERATION_DELETE;
+  MutexLock lock(&mutex_);
+  has_notify_events_ = true;
+  waiting_operate_events_->push_back(event_entry);
 }
 
 void Dispatcher::ModifyEvent(Event *event) {
@@ -50,12 +66,15 @@ void Dispatcher::ModifyEvent(Event *event) {
   if (event->event_flags_ & EVENT_WRITE) {
     event_entry->epoll_ev.events |= EPOLLOUT;
   }
-  ASSERT_NE(-1, epoll_ctl(epoll_fd_, EPOLL_CTL_MOD,
-                          event->fd_, &(event_entry->epoll_ev)));
+  event_entry->event_operation_type = EVENT_OPERATION_MODIFY;
+  MutexLock lock(&mutex_);
+  has_notify_events_ = true;
+  waiting_operate_events_->push_back(event_entry);
 }
 
 int Dispatcher::Poll() {
   while (true) {
+    OperateEvents();
     int number = epoll_wait(epoll_fd_, &epoll_event_buf_[0],
                             EPOLL_MAX_EVENTS, 100);
     if (number == -1) {
@@ -80,13 +99,61 @@ int Dispatcher::Poll() {
         event->HandleWrite();
       }
     }
-    for (RetiredEventVector::iterator iter = retired_events_.begin();
+    for (EventVector::iterator iter = retired_events_.begin();
          iter != retired_events_.end(); ++iter) {
       delete (*iter);
     }
     retired_events_.clear();
     break;
   }
+  return 0;
+}
+
+void Dispatcher::DispatcherRunnable::Run() {
+  while (dispatcher_->Poll() == 0) {
+    ;
+  }
+}
+
+int Dispatcher::OperateEvents() {
+  {
+    MutexLock lock(&mutex_);
+    if (!has_notify_events_) {
+      return 0;
+    }
+    EventVector *tmp_event_vector = current_operate_events_;
+    current_operate_events_ = waiting_operate_events_;
+    waiting_operate_events_ = tmp_event_vector;
+    has_notify_events_ = false;
+  }
+
+  EventEntry *event_entry;
+  Event *event;
+  for (EventVector::iterator iter = current_operate_events_->begin();
+       iter != current_operate_events_->end(); ++iter) {
+    event_entry = *iter;
+    event = event_entry->event;
+    switch (event_entry->event_operation_type) {
+      case EVENT_OPERATION_ADD:
+        if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD,
+                  event->fd_, &(event_entry->epoll_ev)) != 0) {
+          LOG_ERROR() << "epoll_ctl for fd " << event->fd_ << " error";
+        }
+        break;
+      case EVENT_OPERATION_DELETE:
+        retired_events_.push_back(event_entry);
+        break;
+      case EVENT_OPERATION_MODIFY:
+        if (epoll_ctl(epoll_fd_, EPOLL_CTL_MOD,
+                      event->fd_, &(event_entry->epoll_ev)) != 0) {
+          LOG_ERROR() << "epoll_ctl for fd " << event->fd_ << " error";
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  current_operate_events_->clear();
   return 0;
 }
 };

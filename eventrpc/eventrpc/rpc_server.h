@@ -16,7 +16,9 @@ class RpcServer {
 
   ~RpcServer();
 
-  void Run();
+  void Start();
+
+  void Stop();
 
   void set_host_and_port(const string &host, uint32 port) {
     host_ = host;

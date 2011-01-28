@@ -1,4 +1,5 @@
 
+#include <signal.h>
 #include "utility.h"
 #include "rpc_server.h"
 #include "event.h"
@@ -18,16 +19,31 @@ RpcServer::~RpcServer() {
   delete event_;
 }
 
-void RpcServer::Run() {
+void RpcServer::Start() {
+  dispatcher_.Start();
   listen_fd_ = NetUtility::Listen(host_.c_str(), port_);
   ASSERT_TRUE(listen_fd_ > 0);
   event_ = new RpcServer::RpcServerEvent(listen_fd_,
                                          EVENT_READ, this);
   dispatcher_.AddEvent(event_);
   ASSERT_NE(static_cast<RpcServerEvent*>(NULL), event_);
-  while (dispatcher_.Poll() == 0) {
-    ;
-  }
+  sigset_t new_mask;
+  sigfillset(&new_mask);
+  sigset_t old_mask;
+  sigset_t wait_mask;
+  sigemptyset(&wait_mask);
+  sigaddset(&wait_mask, SIGINT);
+  sigaddset(&wait_mask, SIGQUIT);
+  sigaddset(&wait_mask, SIGTERM);
+  pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
+  pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+  pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
+  int sig = 0;
+  sigwait(&wait_mask, &sig);
+}
+
+void RpcServer::Stop() {
+  dispatcher_.Stop();
 }
 
 int RpcServer::HandleAccept() {
