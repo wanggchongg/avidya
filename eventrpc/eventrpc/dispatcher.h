@@ -25,14 +25,14 @@ class Dispatcher {
 
   void ModifyEvent(Event *event);
 
-  int Poll();
-
   void Start();
 
   void Stop();
 
  private:
   int OperateEvents();
+
+  int Poll();
 
   enum EventOperationType {
     EVENT_OPERATION_ADD,
