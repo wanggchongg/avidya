@@ -1,0 +1,23 @@
+package Global;
+
+enum ServerState
+{
+  LOOKING       = 1;
+  FOLLOWING     = 2;
+  LEADING       = 3;
+  OBSERVING     = 4;
+}
+
+message Notification
+{
+  required uint64 leader        = 1;
+  required uint64 zxid          = 2;
+  required uint64 epoch         = 3;
+  required ServerState state    = 4;
+  required uint64 sid           = 5;
+}
+
+service FastLeaderElection
+{
+  rpc LeaderProposal(Notification) returns (Notification);
+}

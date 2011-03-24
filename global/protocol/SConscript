@@ -1,0 +1,3 @@
+Import('env')
+
+env.ProtocolBuffer('fast_leader_election.proto')
