@@ -1,4 +1,4 @@
 Import('env')
 
 env.ProtocolBuffer('server_config.proto')
-env.ProtocolBuffer('fast_leader_election.proto')
+env.ProtocolBuffer('leader_election.proto')

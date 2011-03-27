@@ -9,12 +9,14 @@ Export('global_env')
 
 src_files = [
   'quorum_peer_main.cpp',
+  'quorum_peer_server.cpp',
+  'quorum_peer_manager.cpp',
   'fast_leader_election.cpp',
 ]
 
 protobuf_files = [
   '../protocol/server_config.pb.cc',
-  '../protocol/fast_leader_election.pb.cc',
+  '../protocol/leader_election.pb.cc',
 ]
 
 global_env.Program('quorumpeermain', src_files + protobuf_files)

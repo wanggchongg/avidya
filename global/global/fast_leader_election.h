@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) Lichuang
+ *
+ */
 #ifndef __GLOBAL_FAST_ELECTION_H__
 #define __GLOBAL_FAST_ELECTION_H__
 #include <eventrpc/base.h>
