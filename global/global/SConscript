@@ -1,0 +1,20 @@
+Import('env')
+
+global_env = env.Clone()
+global_env['extension'] = 'cpp'
+global_env['srcroot'] += '/global'
+global_env['objroot'] += '/global'
+
+Export('global_env')
+
+src_files = [
+  'quorum_peer_main.cpp',
+  'fast_leader_election.cpp',
+]
+
+protobuf_files = [
+  '../protocol/server_config.pb.cc',
+  '../protocol/fast_leader_election.pb.cc',
+]
+
+global_env.Program('quorumpeermain', src_files + protobuf_files)
