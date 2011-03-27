@@ -1,4 +1,7 @@
-
+/*
+ * Copyright (C) Lichuang
+ *
+ */
 #ifndef __EVENTRPC_NET_UTILITY_H__
 #define __EVENTRPC_NET_UTILITY_H__
 
