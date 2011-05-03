@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <stdio.h>
 #include <iostream>
 #include "rpc_server.h"
 #include "echo.pb.h"
