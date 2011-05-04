@@ -32,11 +32,13 @@ bool QuorumPeerServer::ParseConfigFile(const string &config_file) {
   for (int i = 0; i < server_config.server_info_size(); ++i) {
     const global::ServerInfo &server_info = server_config.server_info(i);
     server_id = server_info.server_id();
-    quorum_peer_manager_.set_quorum_peer_by_id(
+    QuorumPeer *peer = new QuorumPeer(
         server_id,
-        QuorumPeer(server_id, server_info.server_address(),
-                   server_info.leader_port(),
-                   server_info.election_port()));
+        server_info.server_address(),
+        server_info.leader_port(),
+        server_info.election_port());
+    ASSERT(peer);
+    quorum_peer_manager_.set_quorum_peer_by_id(server_id, peer);
   }
 }
 };
