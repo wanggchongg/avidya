@@ -1,15 +1,17 @@
 package global;
 
-message Notification
-{
+message Dummy {
+  required string dummy = 1;
+}
+
+message Notification {
   required uint64 leader        = 1;
   required uint64 zxid          = 2;
   required uint64 epoch         = 3;
   required uint32 state         = 4;
-  required uint64 sid           = 5;
+  required uint64 server_id     = 5;
 }
 
-service LeaderElection
-{
-  rpc LeaderProposal(Notification) returns (Notification);
+service LeaderElection {
+  rpc LeaderProposal(Notification) returns (Dummy);
 }

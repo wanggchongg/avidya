@@ -16,11 +16,11 @@ enum QuorumPeerState {
 
 struct QuorumPeer {
  public:
-  QuorumPeer(uint64 server_id, const string &server_address,
+  QuorumPeer(uint64 server_id, const string &server_host,
              uint32 leader_port, uint32 election_port)
     : state_(LOOKING),
       server_id_(server_id),
-      server_address_(server_address),
+      server_host_(server_host),
       leader_port_(leader_port),
       election_port_(election_port) {
   }
@@ -31,7 +31,7 @@ struct QuorumPeer {
  public:
   QuorumPeerState state_;
   uint64 server_id_;
-  string server_address_;
+  string server_host_;
   uint32 leader_port_;
   uint32 election_port_;
 };
