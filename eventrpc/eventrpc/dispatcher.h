@@ -4,9 +4,9 @@
 
 #include <vector>
 #include <sys/epoll.h>
-#include "event.h"
-#include "thread.h"
-#include "mutex.h"
+#include "eventrpc/event.h"
+#include "eventrpc/thread.h"
+#include "eventrpc/mutex.h"
 
 using std::vector;
 

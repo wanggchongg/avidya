@@ -13,9 +13,9 @@ class EchoServiceImpl : public echo::EchoService {
   };
 
   virtual void Echo(::google::protobuf::RpcController* controller,
-                       const ::echo::EchoRequest* request,
-                       ::echo::EchoResponse* response,
-                       ::google::protobuf::Closure* done) {
+                    const ::echo::EchoRequest* request,
+                    ::echo::EchoResponse* response,
+                    ::google::protobuf::Closure* done) {
     printf ("request: %s\n", request->message().c_str());
     response->set_response(request->message());
     if (done) {

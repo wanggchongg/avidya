@@ -32,6 +32,14 @@ eventrpc_header_files = [
   'thread.h',
   'file_utility.h',
   'noncopyable.h',
+  'rpc_server.h',
+  'rpc_channel.h',
+  'dispatcher.h',
+  'monitor.h',
+  'event.h',
+  'mutex.h',
+  'rpc_method_manager.h',
+  'rpc_connection_manager.h',
 ]
 eventrpc = src_env.StaticLibrary('eventrpc', src_files)
 env.Install("/usr/local/lib", eventrpc)
