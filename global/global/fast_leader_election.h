@@ -14,7 +14,10 @@ class FastLeaderElection {
   explicit FastLeaderElection(QuorumPeerServer *server);
   ~FastLeaderElection();
 
+  void LookForLeader();
+
  private:
+  uint64 logical_lock_;
   QuorumPeerServer *quorum_peer_server_;
 };
 };

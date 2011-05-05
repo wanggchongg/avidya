@@ -12,16 +12,18 @@ namespace global {
 class QuorumPeer;
 class QuorumPeerManager {
  public:
-  QuorumPeerManager();
+  explicit QuorumPeerManager();
   ~QuorumPeerManager();
 
   uint64 server_id() const;
+
   bool ParseConfigFile(const string &config_file);
+
   QuorumPeer* FindQuorumPeerById(uint64 server_id);
 
+  struct Impl;
  private:
-  map<uint64, QuorumPeer*> quorum_peer_map_;
-  global::ServerConfig server_config_;
+  Impl *impl_;
 };
 };
 #endif // __GLOBAL_QUORUM_PEER_MANAGER_H__

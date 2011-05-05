@@ -8,10 +8,13 @@
 
 namespace global {
 FastLeaderElection::FastLeaderElection(QuorumPeerServer *server)
-  : quorum_peer_server_(server) {
+  : logical_lock_(0),
+    quorum_peer_server_(server) {
 }
 
 FastLeaderElection::~FastLeaderElection() {
 }
 
+void FastLeaderElection::LookForLeader() {
+}
 };
