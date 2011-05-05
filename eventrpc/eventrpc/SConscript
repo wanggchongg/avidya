@@ -29,6 +29,7 @@ src_files = [
 eventrpc_header_files = [
   'log.h',
   'base.h',
+  'thread.h',
   'file_utility.h',
   'noncopyable.h',
 ]
