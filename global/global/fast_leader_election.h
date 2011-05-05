@@ -8,15 +8,14 @@
 #include <string>
 using namespace std;
 namespace global {
+class QuorumPeerServer;
 class FastLeaderElection {
  public:
-  explicit FastLeaderElection();
+  explicit FastLeaderElection(QuorumPeerServer *server);
   ~FastLeaderElection();
 
-  void Start(const string &config_file);
  private:
-  struct Impl;
-  Impl *impl_;
+  QuorumPeerServer *quorum_peer_server_;
 };
 };
 #endif  // __GLOBAL_FAST_ELECTION_H__

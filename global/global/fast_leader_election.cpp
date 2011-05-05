@@ -3,37 +3,15 @@
  *
  */
 #include <eventrpc/log.h>
+#include "quorum_peer_server.h"
 #include "fast_leader_election.h"
 
 namespace global {
-struct FastLeaderElection::Impl {
- public:
-  Impl();
-  ~Impl();
-
-  void Start(const string &config_file);
-
- private:
-};
-
-FastLeaderElection::Impl::Impl() {
-}
-
-FastLeaderElection::Impl::~Impl() {
-}
-
-void FastLeaderElection::Impl::Start(const string &config_file) {
-}
-
-FastLeaderElection::FastLeaderElection()
-  : impl_(new Impl) {
+FastLeaderElection::FastLeaderElection(QuorumPeerServer *server)
+  : quorum_peer_server_(server) {
 }
 
 FastLeaderElection::~FastLeaderElection() {
-  delete impl_;
 }
 
-void FastLeaderElection::Start(const string &config_file) {
-  impl_->Start(config_file);
-}
 };
