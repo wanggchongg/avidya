@@ -1,4 +1,6 @@
-
+/*
+ * Copyright(C) lichuang
+ */
 #ifndef __EVENTRPC_LOG_H__
 #define __EVENTRPC_LOG_H__
 

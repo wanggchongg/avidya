@@ -1,4 +1,5 @@
 
+#include <arpa/inet.h>
 #include <signal.h>
 #include "utility.h"
 #include "rpc_server.h"
@@ -48,13 +49,19 @@ void RpcServer::Stop() {
 
 int RpcServer::HandleAccept() {
   int fd;
+  char buffer[20];
   for (int i = 0; i < 200; ++i) {
-    fd = NetUtility::Accept(listen_fd_);
+    struct sockaddr_in address;
+    fd = NetUtility::Accept(listen_fd_, &address);
     if (fd == -1) {
       break;
     }
+    VLOG_INFO() << "accept connection from "
+      << inet_ntop(AF_INET, &address.sin_addr, buffer, sizeof(buffer))
+      << ":" << ntohs(address.sin_port);
     RpcConnection* connection = rpc_connection_manager_.GetConnection();
     connection->set_fd(fd);
+    connection->set_client_address(address);
     connection->set_rpc_method_manager(&rpc_method_manager_);
     connection->set_rpc_connection_manager(&rpc_connection_manager_);
     connection->set_dispacher(&dispatcher_);

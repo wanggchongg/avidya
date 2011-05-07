@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <iostream>
+#include "log.h"
 #include "rpc_server.h"
 #include "echo.pb.h"
 
@@ -16,7 +17,7 @@ class EchoServiceImpl : public echo::EchoService {
                     const ::echo::EchoRequest* request,
                     ::echo::EchoResponse* response,
                     ::google::protobuf::Closure* done) {
-    printf ("request: %s\n", request->message().c_str());
+    VLOG_INFO() << "request: " << request->message();
     response->set_response(request->message());
     if (done) {
       done->Run();
@@ -24,7 +25,8 @@ class EchoServiceImpl : public echo::EchoService {
   }
 };
 
-int main() {
+int main(int argc, char *argv[]) {
+  SetProgramName(argv[0]);
   RpcServer rpc_server;
   gpb::Service *service = new EchoServiceImpl();
   rpc_server.rpc_method_manager()->RegisterService(service);

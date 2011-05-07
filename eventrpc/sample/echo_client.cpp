@@ -3,6 +3,7 @@
 #include "dispatcher.h"
 #include "rpc_channel.h"
 #include "monitor.h"
+#include "log.h"
 #include "echo.pb.h"
 
 using namespace eventrpc;
@@ -14,7 +15,8 @@ void echo_done(echo::EchoResponse* resp,
   monitor->Notify();
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+  SetProgramName(argv[0]);
   Dispatcher dispatcher;
   RpcChannel channel("127.0.0.1", 21118, &dispatcher);
   dispatcher.Start();
@@ -25,11 +27,12 @@ int main() {
   echo::EchoService::Stub stub(&channel);
   echo::EchoRequest request;
   echo::EchoResponse response;
+  request.set_message("hello 2");
+  stub.Echo(NULL, &request, &response, NULL);
+  sleep(1);
   request.set_message("hello");
-  Monitor monitor;
-  stub.Echo(NULL, &request, &response,
-            gpb::NewCallback(::echo_done, &response, &monitor));
-  monitor.Wait();
+  stub.Echo(NULL, &request, &response, NULL);
+  sleep(1);
   channel.Close();
   dispatcher.Stop();
 

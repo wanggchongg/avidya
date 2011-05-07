@@ -78,13 +78,12 @@ int NetUtility::Listen(const char *ip, int port) {
   return fd;
 }
 
-int NetUtility::Accept(int listen_fd) {
-  int fd, errno_copy;
-  struct sockaddr_in addr;
-  socklen_t len = sizeof(addr);
+int NetUtility::Accept(int listen_fd, struct sockaddr_in *addr) {
+  int fd = 0, errno_copy = 0;
+  socklen_t len = sizeof(*addr);
 
   do {
-    fd = ::accept(listen_fd, (struct sockaddr *)&addr, &len);
+    fd = ::accept(listen_fd, (struct sockaddr *)(addr), &len);
     if (fd > 0) {
       break;
     }
@@ -95,7 +94,7 @@ int NetUtility::Accept(int listen_fd) {
       } else if (errno_copy == EAGAIN) {
         return -1;
       } else {
-        LOG_ERROR() << "Fail to accept, "
+        VLOG_ERROR() << "Fail to accept, "
           << " error: "
           << strerror(errno_copy);
         return -1;
@@ -113,45 +112,57 @@ int NetUtility::Accept(int listen_fd) {
 
 bool NetUtility::Send(int fd, const void *buf, size_t count,
                       int *length) {
-  int ret = 0, errno_copy;
-
+  int ret = 0, errno_copy = 0;
   *length = 0;
   do {
     ret = ::send(fd, ((char*)buf + (*length)),
                  count, MSG_NOSIGNAL | MSG_DONTWAIT);
     errno_copy = errno;
+    if (ret == 0) {
+      return false;
+    }
     if (ret > 0) {
       count -= ret;
       *length += ret;
-    } else if (errno_copy == EINTR) {
       continue;
-    } else if (errno_copy == EAGAIN) {
-      return true;
-    } else {
-      return false;
     }
+    if (errno_copy == EINTR) {
+      continue;
+    }
+    if (errno_copy == EAGAIN || errno_copy == EWOULDBLOCK) {
+      return true;
+    }
+    VLOG_ERROR() << "send error: " << strerror(errno_copy);
+    return false;
   } while (ret > 0 && count > 0);
 
   return true;
 }
 
 bool NetUtility::Recv(int fd, void *buf, size_t count, int *length) {
-  int ret = 0, errno_copy;
-
+  int ret = 0, errno_copy = 0;
   *length = 0;
   do {
     ret = ::recv(fd, (char*)buf + (*length), count, MSG_DONTWAIT);
     errno_copy = errno;
+    if (ret == 0) {
+      // socket has been closed
+      return false;
+    }
     if (ret > 0) {
       count -= ret;
       *length += ret;
-    } else if (errno_copy == EINTR) {
       continue;
-    } else if (errno_copy == EAGAIN) {
-      return true;
-    } else {
-      return false;
     }
+    // if or not try again depends on the error code
+    if (errno_copy == EINTR) {
+      continue;
+    }
+    if (errno_copy == EAGAIN || errno_copy == EWOULDBLOCK) {
+      return true;
+    }
+    VLOG_ERROR() << "recv error: " << strerror(errno_copy);
+    return false;
   } while (ret > 0 && count > 0);
 
   return true;

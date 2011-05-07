@@ -8,13 +8,6 @@
 using std::string;
 
 namespace eventrpc {
-
-enum RequestState {
-  READ_META,
-  READ_MESSAGE,
-  SEND_REQUEST,
-};
-
 // one for method id, the other for message length
 #define META_LEN (sizeof(uint32_t) + sizeof(uint32_t))
 
@@ -33,18 +26,18 @@ class Meta {
 
   const char* Decode();
 
-  void set_message_len(int len);
+  void set_message_length(uint32 message_length);
 
   void set_method_id(const string &method_fullname);
 
-  uint32_t message_len();
+  uint32 message_length() const;
 
-  uint32_t method_id();
+  uint32 method_id() const;
 
  private:
-  struct Impl;
-  Impl *impl_;
+  char buffer_[META_LEN];
+  uint32 method_id_;
+  uint32 message_length_;
 };
-
 };
 #endif  //  __EVENTRPC_META_H__

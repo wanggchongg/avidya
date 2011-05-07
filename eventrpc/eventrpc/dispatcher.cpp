@@ -1,9 +1,12 @@
+#include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include "log.h"
 #include "dispatcher.h"
 #include "net_utility.h"
-
+namespace {
+static const uint32 kMaxPollWaitTime = 1000;
+};
 namespace eventrpc {
 Dispatcher::Dispatcher()
   : runnable_(this),
@@ -75,20 +78,24 @@ int Dispatcher::Poll() {
       OperateEvents();
     }
     int number = epoll_wait(epoll_fd_, &epoll_event_buf_[0],
-                            EPOLL_MAX_EVENTS, 100);
+                            EPOLL_MAX_EVENTS, kMaxPollWaitTime);
     if (number == -1) {
       if (errno == EINTR) {
         continue;
       }
-      LOG_ERROR() << "epoll_wait return -1, errno: " << errno;
+      VLOG_ERROR() << "epoll_wait return -1, errno: "
+        << strerror(errno);
       return -1;
     }
     EventEntry *event_entry;
-    Event* event;
+    Event *event;
     for (int i = 0; i < number; ++i) {
       event_entry = static_cast<EventEntry*>(epoll_event_buf_[i].data.ptr);
       event = event_entry->event;
       if (event == NULL) {
+        continue;
+      }
+      if (event_entry->event_operation_type == EVENT_OPERATION_DELETE) {
         continue;
       }
       if (epoll_event_buf_[i].events & EPOLLIN) {
@@ -131,8 +138,8 @@ int Dispatcher::OperateEvents() {
     switch (event_entry->event_operation_type) {
       case EVENT_OPERATION_ADD:
         if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD,
-                  event->fd_, &(event_entry->epoll_ev)) != 0) {
-          LOG_ERROR() << "epoll_ctl for fd " << event->fd_ << " error";
+                      event->fd_, &(event_entry->epoll_ev)) != 0) {
+          VLOG_ERROR() << "epoll_ctl for fd " << event->fd_ << " error";
         }
         break;
       case EVENT_OPERATION_DELETE:
@@ -141,7 +148,7 @@ int Dispatcher::OperateEvents() {
       case EVENT_OPERATION_MODIFY:
         if (epoll_ctl(epoll_fd_, EPOLL_CTL_MOD,
                       event->fd_, &(event_entry->epoll_ev)) != 0) {
-          LOG_ERROR() << "epoll_ctl for fd " << event->fd_ << " error";
+          VLOG_ERROR() << "epoll_ctl for fd " << event->fd_ << " error";
         }
         break;
       default:

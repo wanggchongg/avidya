@@ -1,50 +1,34 @@
 
 #include <string.h>
 #include <arpa/inet.h>
+#include "log.h"
 #include "meta.h"
 #include "utility.h"
 
 namespace eventrpc {
+Meta::Meta()
+  : method_id_(0),
+    message_length_(0) {
+}
 
-struct Meta::Impl {
- public:
-  Impl()
-    : id_(0)
-    , len_(0) {
-  }
+Meta::~Meta() {
+}
 
-  ~Impl() {
-  }
+void Meta::set_message_length(uint32 message_length) {
+  message_length_ = message_length;
+}
 
-  void Encode(const char *buffer);
+void Meta::set_method_id(const string &method_fullname) {
+  method_id_ = hash_string(method_fullname);
+}
 
-  void EncodeWithMessage(const string &method_fullname,
-                         const gpb::Message *message,
-                         string *buffer);
+uint32 Meta::message_length() const{
+  return message_length_;
+}
 
-  const char* Decode();
-
-  void set_message_len(int len) {
-    len_ = len;
-  }
-
-  void set_method_id(const string &method_fullname) {
-    id_ = hash_string(method_fullname);
-  }
-
-  uint32_t message_len() {
-    return len_;
-  }
-
-  uint32_t method_id() {
-    return id_;
-  }
-
- private:
-  char buffer_[META_LEN];
-  uint32_t id_;
-  uint32_t len_;
-};
+uint32 Meta::method_id() const{
+  return method_id_;
+}
 
 #if 0
 static void DumpBuffer(const char *buffer) {
@@ -56,71 +40,32 @@ static void DumpBuffer(const char *buffer) {
 }
 #endif
 
-void Meta::Impl::Encode(const char *buffer) {
-  uint32_t tmp;
+void Meta::Encode(const char *buffer) {
+  uint32 tmp;
   memcpy(buffer_, buffer, META_LEN);
   memcpy(reinterpret_cast<char*>(&tmp),
          buffer, sizeof(tmp));
-  id_ = ntohl(tmp);
+  method_id_ = ntohl(tmp);
   memcpy(reinterpret_cast<char*>(&tmp),
          buffer + sizeof(tmp), sizeof(tmp));
-  len_ = ntohl(tmp);
+  message_length_ = ntohl(tmp);
 }
 
-void Meta::Impl::EncodeWithMessage(const string &method_fullname,
-                                   const gpb::Message *message,
-                                   string *buffer) {
+void Meta::EncodeWithMessage(const string &method_fullname,
+                             const gpb::Message *message,
+                             string *buffer) {
   set_method_id(method_fullname);
-  set_message_len(message->ByteSize());
+  set_message_length(message->ByteSize());
   buffer->append(Decode(), META_LEN);
   message->AppendToString(buffer);
 }
 
-const char* Meta::Impl::Decode() {
-  uint32_t tmp = htonl(id_);
+const char* Meta::Decode() {
+  uint32 tmp = htonl(method_id_);
   memcpy(buffer_, reinterpret_cast<char*>(&tmp), sizeof(tmp));
-  tmp = htonl(len_);
+  tmp = htonl(message_length_);
   memcpy(buffer_ + sizeof(tmp),
          reinterpret_cast<char*>(&tmp), sizeof(tmp));
   return buffer_;
 }
-
-Meta::Meta()
-  : impl_(new Impl) {
-}
-
-Meta::~Meta() {
-  delete impl_;
-}
-
-void Meta::Encode(const char *buffer) {
-  impl_->Encode(buffer);
-}
-
-void Meta::EncodeWithMessage(const string &method_fullname,
-                                   const gpb::Message *message,
-                                   string *buffer) {
-  impl_->EncodeWithMessage(method_fullname, message, buffer);
-}
-
-const char* Meta::Decode() {
-  return impl_->Decode();
-}
-
-void Meta::set_message_len(int len) {
-  return impl_->set_message_len(len);
-}
-
-void Meta::set_method_id(const string &method_fullname) {
-  return impl_->set_method_id(method_fullname);
-}
-
-uint32_t Meta::message_len() {
-  return impl_->message_len();
-}
-
-uint32_t Meta::method_id() {
-  return impl_->method_id();
-}
-
 };

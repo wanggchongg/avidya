@@ -1,0 +1,15 @@
+Import('env')
+
+test_env = env.Clone()
+test_env['objroot'] += '/test'
+test_env['srcroot'] += '/eventrpc'
+test_env['extension'] = 'cpp'
+test_env.Append(CPPPATH=[test_env['srcroot'],
+  env['objroot'] + '/test'])
+test_env.Append(LIBPATH=[env['objroot']+'/eventrpc',])
+test_env.Prepend(LIBS=
+  [
+    'eventrpc',
+  ])
+
+test_env.Program('log_test', ['log_test.cpp', ])

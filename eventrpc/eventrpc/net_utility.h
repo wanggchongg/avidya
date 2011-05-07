@@ -4,7 +4,7 @@
  */
 #ifndef __EVENTRPC_NET_UTILITY_H__
 #define __EVENTRPC_NET_UTILITY_H__
-
+struct sockaddr_in;
 namespace eventrpc {
 class NetUtility {
  public:
@@ -12,7 +12,7 @@ class NetUtility {
 
   static int Listen(const char *ip, int port);
 
-  static int Accept(int listen_fd);
+  static int Accept(int listen_fd, struct sockaddr_in *addr);
 
   static bool SetNonBlocking(int fd);
 

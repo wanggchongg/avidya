@@ -1,103 +1,38 @@
+/*
+ * Copyright(C) lichuang
+ */
 #ifndef __EVENTRPC_RPC_CONNECTION_H__
 #define __EVENTRPC_RPC_CONNECTION_H__
-
-#include <string>
-#include "event.h"
-#include "meta.h"
-#include "callback.h"
-
-using std::string;
-
+#include <arpa/inet.h>
 namespace eventrpc {
 class RpcMethodManager;
 class RpcConnectionManager;
 class Dispatcher;
+class Event;
 class RpcConnection {
  public:
-  RpcConnection()
-    : event_(-1, this),
-      callback_(this),
-      state_(READ_META),
-      message_(""),
-      expect_count_(META_LEN),
-      rpc_method_manager_(NULL) {
-  }
+  RpcConnection();
 
-  void set_fd(int fd) {
-    event_.fd_ = fd;
-  }
+  ~RpcConnection();
 
-  void set_rpc_method_manager(RpcMethodManager *rpc_method_manager) {
-    rpc_method_manager_ = rpc_method_manager;
-  }
+  void set_fd(int fd);
+
+  void set_client_address(struct sockaddr_in address);
+
+  void set_rpc_method_manager(RpcMethodManager *rpc_method_manager);
 
   void set_rpc_connection_manager(
-      RpcConnectionManager *rpc_connection_manager) {
-    rpc_connection_manager_ = rpc_connection_manager;
-  }
+      RpcConnectionManager *rpc_connection_manager);
 
-  void set_dispacher(Dispatcher *dispatcher) {
-    dispatcher_ = dispatcher;
-  }
+  void set_dispacher(Dispatcher *dispatcher);
 
-  Event* event() {
-    return &event_;
-  }
+  Event* event();
 
   void Close();
 
+  struct Impl;
  private:
-  int StateMachine();
-  struct RpcConnectionEvent : public Event {
-    RpcConnectionEvent(int fd, RpcConnection *connection)
-      : Event(fd, EVENT_READ),
-        connection_(connection) {
-    }
-
-    virtual ~RpcConnectionEvent() {
-    }
-
-    int HandleRead();
-
-    int HandleWrite();
-
-    RpcConnection *connection_;
-  };
-
-  struct RpcConnectionCallback : public Callback {
-   public:
-    RpcConnectionCallback(RpcConnection *connection)
-      : connection_(connection) {
-    }
-
-    virtual ~RpcConnectionCallback() {
-    }
-
-    void Run();
-
-    RpcConnection *connection_;
-  };
- private:
-  int HandleRead();
-
-  int HandleWrite();
-
-  void HandleServiceDone();
-
-  friend class RpcConnectionEvent;
-  friend class RpcConnectionCallback;
-  RpcConnectionCallback callback_;
-  RpcConnectionEvent event_;
-  RequestState state_;
-  static const int BUFFER_LENGTH = 100;
-  char buffer_[BUFFER_LENGTH];
-  string message_;
-  ssize_t expect_count_;
-  ssize_t sent_count_;
-  RpcMethodManager *rpc_method_manager_;
-  RpcConnectionManager *rpc_connection_manager_;
-  Dispatcher *dispatcher_;
-  Meta meta_;
+  struct Impl *impl_;
 };
 };
 #endif  // __EVENTRPC_RPC_CONNECTION_H__

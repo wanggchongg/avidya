@@ -1,6 +1,10 @@
-
+/*
+ * Copyright(C) lichuang
+ */
+#include <libgen.h>
 #include <sys/time.h>
 #include <string.h>
+#include <errno.h>
 #include <stdio.h>
 #include <iomanip>    // for setw
 #include "log.h"
@@ -57,6 +61,10 @@ void SetLogLevel(LogLevel log_level) {
 void SetLogPath(const char *log_path) {
   MutexLock lock(&kMutex);
   ASSERT_GE(kLogPathLength, strlen(log_path));
+  if (strlen(log_path) > kLogPathLength) {
+    printf("log path %s is too long!", log_path);
+    abort();
+  }
   strncpy(kLogPath, log_path, strlen(log_path));
 }
 
@@ -67,8 +75,22 @@ void SetMaxLogFileSize(uint32_t size) {
 
 void SetProgramName(const char *name) {
   MutexLock lock(&kMutex);
-  ASSERT_GE(kLogPathLength, strlen(name));
-  strncpy(kProgramName, name, strlen(name));
+  int length = strlen(name);
+  char *save_name = new char[length + 1];
+  if (save_name == NULL) {
+    printf("SetProgramName error");
+    abort();
+  }
+  strcpy(save_name, name);
+  char *base_name = basename(save_name);
+  length = strlen(base_name);
+  if (length > kLogPathLength) {
+    delete [] save_name;
+    printf("progame base name %s is too long!", base_name);
+    abort();
+  }
+  strncpy(kProgramName, base_name, length);
+  delete [] save_name;
 }
 
 class FileLogger {
@@ -109,7 +131,7 @@ void FileLogger::CreateLogFile(LogLevel loglevel,
                                const tm &tm_time) {
   if (log_file_base_name_.empty()) {
     log_file_base_name_ = string(kLogPath);
-    if (kProgramName[0] != ' ') {
+    if (strlen(kProgramName) != 0) {
       log_file_base_name_ += string(kProgramName) + ".";
     }
     log_file_base_name_ += GetMyUserName();
@@ -131,6 +153,11 @@ void FileLogger::CreateLogFile(LogLevel loglevel,
     }
   }
   file_ = fopen(log_filename_.c_str(), "w");
+  if (file_ == NULL) {
+    printf("cannot open file %s for write, error",
+           log_filename_.c_str(), strerror(errno));
+    abort();
+  }
   CreateSymFile();
 }
 
@@ -191,6 +218,7 @@ void Log::GetNowTime() {
 void Log::LogToStderr() {
   std::cout << kLogColor[log_level_] << log_header_.str()
     << input_stream_.str() << END_OF_COLOR;
+  LogToFile();
 }
 
 void Log::LogToFile() {
@@ -201,11 +229,7 @@ void Log::LogToFile() {
 }
 
 void Log::FatalLogToFile() {
-  kFileLogger[log_level_].Write(log_level_, tm_time_,
-                                log_header_.str(),
-                                input_stream_.str());
-  fflush(NULL);
+  LogToFile();
   abort();
 }
-
 };
