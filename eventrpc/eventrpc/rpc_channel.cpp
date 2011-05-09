@@ -35,6 +35,13 @@ struct RpcChannelCallback : public Callback {
       response(NULL) {
   }
   void Run();
+  void Clear() {
+    done = NULL;
+    method_id = 0;
+    send_message = "";
+    sent_count = 0;
+    response = NULL;
+  }
 };
 
 struct RpcChannelEvent : public Event {
@@ -130,6 +137,7 @@ RpcChannelCallback *RpcChannel::Impl::get_callback() {
   } else {
     RpcChannelCallback *callback = free_callback_list_.front();
     free_callback_list_.pop_front();
+    callback->Clear();
     return callback;
   }
 }
@@ -141,6 +149,7 @@ void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,
                                   gpb::Closure* done) {
   Meta meta;
   RpcChannelCallback *callback = get_callback();
+  ASSERT(callback != NULL);
   callback->sent_count = 0;
   callback->method_id = meta.method_id();
   callback->response = response;
@@ -190,7 +199,7 @@ int RpcChannel::Impl::DecodeBuffer(int length) {
     return kDecodeMessageError;
   }
   if (current_read_callback_->done != NULL) {
-    callback->done->Run();
+    current_read_callback_->done->Run();
   }
   FreeCurrentReadCallback();
   recv_message_ = "";
@@ -199,7 +208,7 @@ int RpcChannel::Impl::DecodeBuffer(int length) {
 
 void RpcChannel::Impl::FreeCurrentReadCallback() {
   callback_map_.erase(current_read_callback_->recv_meta.request_id());
-  delete current_read_callback_;
+  free_callback_list_.push_back(current_read_callback_);
   current_read_callback_ = NULL;
 }
 
