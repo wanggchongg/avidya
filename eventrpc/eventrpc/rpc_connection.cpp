@@ -286,6 +286,7 @@ int RpcConnection::Impl::HandleRead() {
       continue;
     }
     if (result == kRecvMessageNotCompleted) {
+      recv_messsage_buffer_ = "";
       return result;
     }
     VLOG_ERROR() << "handle message from "
@@ -339,7 +340,6 @@ int RpcConnection::Impl::HandleReadMessageState() {
     return kSuccess;
   }
   current_callback_->message_buffer.append(recv_messsage_buffer_);
-  recv_messsage_buffer_ = "";
   return kRecvMessageNotCompleted;
 }
 

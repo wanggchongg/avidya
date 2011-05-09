@@ -83,9 +83,11 @@ int  RpcMethodManager::HandleService(const string& input_message,
                                                      callback);
   gpb::Closure *done = gpb::NewCallback(
       &HandleServiceDone, entry);
+  VLOG_INFO() << "before: request id: " << meta->request_id();
   rpc_method->service_->CallMethod(method,
                                    NULL,
                                    request, response, done);
+  VLOG_INFO() << "after: request id: " << meta->request_id();
   return 0;
 }
 };

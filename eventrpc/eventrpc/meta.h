@@ -30,6 +30,8 @@ class Meta {
 
   void set_method_id(const string &method_fullname);
 
+  void set_request_id(uint32 request_id);
+
   uint32 message_length() const;
 
   uint32 method_id() const;

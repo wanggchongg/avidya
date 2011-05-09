@@ -134,6 +134,9 @@ void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,
   callback->method_id = meta.method_id();
   callback->response = response;
   callback->done = done;
+  static uint32 request_id = 1;
+  meta.set_request_id(request_id);
+  ++request_id;
   meta.EncodeWithMessage(method->full_name(),
                          request,
                          &(callback->send_message));
@@ -159,6 +162,7 @@ int RpcChannel::Impl::DecodeBuffer(int length) {
     RpcChannelCallbackMap::iterator iter;
     iter = callback_map_.find(meta.request_id());
     if (iter == callback_map_.end()) {
+      VLOG_INFO() << "cannot find request id: " << meta.request_id();
       return kCannotFindRequestId;
     }
     callback = iter->second;

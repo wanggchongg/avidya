@@ -34,6 +34,10 @@ uint32 Meta::method_id() const{
 uint64 Meta::request_id() const{
   return request_id_;
 }
+
+void Meta::set_request_id(uint32 request_id) {
+  request_id_ = request_id;
+}
 #if 0
 static void DumpBuffer(const char *buffer) {
   printf("=====DumpBuffer:=====\n");
@@ -81,12 +85,9 @@ const char* Meta::Decode() {
   memcpy(buffer_ + sizeof(tmp),
          reinterpret_cast<char*>(&tmp), sizeof(tmp));
 
-  static uint32 request_id = 1;
-  request_id_ = request_id;
   tmp = htonl(request_id_);
   memcpy(buffer_ + sizeof(request_id_) + sizeof(tmp),
          reinterpret_cast<char*>(&tmp), sizeof(tmp));
-  ++request_id;
   return buffer_;
 }
 };
