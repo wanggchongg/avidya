@@ -42,6 +42,10 @@ int main(int argc, char *argv[]) {
             gpb::NewCallback(::echo_done, &response, &monitor));
   monitor.Wait();
   }
+  echo::DummyRequest dummy_request;
+  dummy_request.set_message("dummy");
+  stub.Dummy(NULL, &dummy_request, NULL, NULL);
+  sleep(2);
   channel.Close();
   dispatcher.Stop();
 

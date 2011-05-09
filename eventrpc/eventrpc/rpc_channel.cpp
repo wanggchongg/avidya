@@ -88,6 +88,7 @@ struct RpcChannel::Impl {
   char buffer_[kBufferLength];
   typedef std::list<RpcChannelCallback*> RpcChannelCallbackList;
   RpcChannelCallbackList send_callback_list_;
+  RpcChannelCallbackList free_callback_list_;
   typedef std::map<uint32, RpcChannelCallback*> RpcChannelCallbackMap;
   RpcChannelCallbackMap callback_map_;
   RpcChannelCallback *current_read_callback_;
@@ -226,6 +227,11 @@ int RpcChannel::Impl::HandleRead() {
 }
 
 int RpcChannel::Impl::SendServiceRequest(RpcChannelCallback *callback) {
+  // is no need response?
+  if (callback->send_message.empty()) {
+    free_callback_list_.push_back(callback);
+    return kSuccess;
+  }
   int length = 0;
   bool ret = false;
   while (true) {
@@ -237,6 +243,7 @@ int RpcChannel::Impl::SendServiceRequest(RpcChannelCallback *callback) {
     if (!ret) {
       VLOG_ERROR() << "send message to [" << host_ << " : " << port_ << "] error";
       Close();
+      free_callback_list_.push_back(callback);
       return kSendMessageError;
     }
     callback->sent_count += length;
@@ -247,6 +254,7 @@ int RpcChannel::Impl::SendServiceRequest(RpcChannelCallback *callback) {
       << callback->send_message.length();
     callback->sent_count = 0;
     callback->send_message = "";
+    free_callback_list_.push_back(callback);
     return kSuccess;
   }
 
@@ -285,7 +293,6 @@ void RpcChannelCallback::Run() {
   }
   if (result == kSendMessageError) {
     VLOG_ERROR() << "send service request error";
-    impl_->Close();
     return;
   }
   impl_->send_callback_list_.push_back(this);

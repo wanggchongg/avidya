@@ -18,7 +18,17 @@ class EchoServiceImpl : public echo::EchoService {
                     ::echo::EchoResponse* response,
                     ::google::protobuf::Closure* done) {
     VLOG_INFO() << "request: " << request->message();
+
     response->set_response(request->message());
+    if (done) {
+      done->Run();
+    }
+  }
+  virtual void Dummy(::google::protobuf::RpcController* controller,
+                     const ::echo::DummyRequest* request,
+                     ::echo::DummyResponse* response,
+                     ::google::protobuf::Closure* done) {
+    VLOG_INFO() << "dummy request: " << request->message();
     if (done) {
       done->Run();
     }

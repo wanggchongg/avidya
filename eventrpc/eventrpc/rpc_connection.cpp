@@ -194,6 +194,11 @@ void RpcConnection::Impl::Close() {
 }
 
 int RpcConnection::Impl::SendServiceResponse(RpcConnectionCallback *callback) {
+  // is no need send response?
+  if (callback->message_buffer.empty()) {
+    free_callback_list_.push_back(callback);
+    return kSuccess;
+  }
   int length = 0;
   bool ret = false;
   while (true) {
@@ -239,7 +244,6 @@ int RpcConnection::Impl::HandleWrite() {
       tmp_iter = iter;
       ++iter;
       handledone_callback_list_.erase(tmp_iter);
-      free_callback_list_.push_back(callback);
       VLOG_INFO() << "send response request id "
         << callback->meta.request_id() << " done";
       continue;

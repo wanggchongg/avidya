@@ -58,8 +58,10 @@ struct HandleServiceEntry {
 
 static void HandleServiceDone(HandleServiceEntry *entry) {
   *(entry->message_) = "";
-  entry->meta_->EncodeWithMessage(entry->method_->full_name(),
-                                  entry->response_, entry->message_);
+  if (entry->response_->ByteSize() > 0) {
+    entry->meta_->EncodeWithMessage(entry->method_->full_name(),
+                                    entry->response_, entry->message_);
+  }
   Callback *callback = entry->callback_;
   delete entry->request_;
   delete entry->response_;
