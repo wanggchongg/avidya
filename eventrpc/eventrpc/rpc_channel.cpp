@@ -124,13 +124,23 @@ void RpcChannel::Impl::Close() {
   }
 }
 
+RpcChannelCallback *RpcChannel::Impl::get_callback() {
+  if (free_callback_list_.empty()) {
+    return new RpcChannelCallback(this);
+  } else {
+    RpcChannelCallback *callback = free_callback_list_.front();
+    free_callback_list_.pop_front();
+    return callback;
+  }
+}
+
 void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,
                                   gpb::RpcController* controller,
                                   const gpb::Message* request,
                                   gpb::Message* response,
                                   gpb::Closure* done) {
   Meta meta;
-  RpcChannelCallback *callback = new RpcChannelCallback(this);
+  RpcChannelCallback *callback = get_callback();
   callback->sent_count = 0;
   callback->method_id = meta.method_id();
   callback->response = response;
