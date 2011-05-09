@@ -38,7 +38,9 @@ class RpcMethodManager {
   // TODO: add more check, not only method id!
   bool IsServiceRegistered(uint32 method_id);
 
-  int  HandleService(string *message, Meta *meta, Callback *callback);
+  int  HandleService(const string& input_message,
+                     string *output_message,
+                     Meta *meta, Callback *callback);
 
  private:
   RpcMethodMap rpc_methods_;

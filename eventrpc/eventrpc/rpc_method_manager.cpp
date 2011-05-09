@@ -67,17 +67,18 @@ static void HandleServiceDone(HandleServiceEntry *entry) {
   callback->Run();
 }
 
-int  RpcMethodManager::HandleService(string *message,
+int  RpcMethodManager::HandleService(const string& input_message,
+                                     string *output_message,
                                      Meta *meta, Callback *callback) {
   RpcMethod *rpc_method = rpc_methods_[meta->method_id()];
   const gpb::MethodDescriptor *method = rpc_method->method_;
   gpb::Message *request = rpc_method->request_->New();
   gpb::Message *response = rpc_method->response_->New();
-  request->ParseFromString(*message);
+  request->ParseFromString(input_message);
   HandleServiceEntry *entry = new HandleServiceEntry(method,
                                                      request,
                                                      response,
-                                                     message,
+                                                     output_message,
                                                      meta,
                                                      callback);
   gpb::Closure *done = gpb::NewCallback(

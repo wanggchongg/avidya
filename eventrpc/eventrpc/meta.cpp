@@ -8,7 +8,8 @@
 namespace eventrpc {
 Meta::Meta()
   : method_id_(0),
-    message_length_(0) {
+    message_length_(0),
+    request_id_(0) {
 }
 
 Meta::~Meta() {
@@ -30,6 +31,9 @@ uint32 Meta::method_id() const{
   return method_id_;
 }
 
+uint64 Meta::request_id() const{
+  return request_id_;
+}
 #if 0
 static void DumpBuffer(const char *buffer) {
   printf("=====DumpBuffer:=====\n");
@@ -40,20 +44,29 @@ static void DumpBuffer(const char *buffer) {
 }
 #endif
 
-void Meta::Encode(const char *buffer) {
-  uint32 tmp;
+void Meta::EncodeWithBuffer(const char *buffer) {
+  uint32 tmp = 0;
   memcpy(buffer_, buffer, META_LEN);
   memcpy(reinterpret_cast<char*>(&tmp),
          buffer, sizeof(tmp));
   method_id_ = ntohl(tmp);
+  buffer += sizeof(tmp);
+
+  tmp = 0;
   memcpy(reinterpret_cast<char*>(&tmp),
-         buffer + sizeof(tmp), sizeof(tmp));
+         buffer, sizeof(tmp));
   message_length_ = ntohl(tmp);
+  buffer += sizeof(tmp);
+
+  memcpy(reinterpret_cast<char*>(&request_id_),
+         buffer, sizeof(request_id_));
+  request_id_ = ntohl(request_id_);
 }
 
 void Meta::EncodeWithMessage(const string &method_fullname,
                              const gpb::Message *message,
                              string *buffer) {
+  *buffer = "";
   set_method_id(method_fullname);
   set_message_length(message->ByteSize());
   buffer->append(Decode(), META_LEN);
@@ -63,9 +76,17 @@ void Meta::EncodeWithMessage(const string &method_fullname,
 const char* Meta::Decode() {
   uint32 tmp = htonl(method_id_);
   memcpy(buffer_, reinterpret_cast<char*>(&tmp), sizeof(tmp));
+
   tmp = htonl(message_length_);
   memcpy(buffer_ + sizeof(tmp),
          reinterpret_cast<char*>(&tmp), sizeof(tmp));
+
+  static uint32 request_id = 1;
+  request_id_ = request_id;
+  tmp = htonl(request_id_);
+  memcpy(buffer_ + sizeof(request_id_) + sizeof(tmp),
+         reinterpret_cast<char*>(&tmp), sizeof(tmp));
+  ++request_id;
   return buffer_;
 }
 };

@@ -2,17 +2,21 @@
 #include <unistd.h>
 #include <errno.h>
 #include "log.h"
+#include "callback.h"
 #include "dispatcher.h"
 #include "net_utility.h"
 namespace {
 static const uint32 kMaxPollWaitTime = 1000;
+static const uint32 kEpollFdCount = 1024;
 };
 namespace eventrpc {
 Dispatcher::Dispatcher()
   : runnable_(this),
     thread_(&runnable_),
     current_operate_events_(&operated_events_[0]),
-    waiting_operate_events_(&operated_events_[1]) {
+    waiting_operate_events_(&operated_events_[1]),
+    current_handle_tasks_(&tasks_[0]),
+    waiting_handle_tasks_(&tasks_[1]) {
 }
 
 Dispatcher::~Dispatcher() {
@@ -20,12 +24,17 @@ Dispatcher::~Dispatcher() {
 }
 
 void Dispatcher::Start() {
-  epoll_fd_ = epoll_create(1024);
+  epoll_fd_ = epoll_create(kEpollFdCount);
   ASSERT_NE(-1, epoll_fd_);
   thread_.Start();
 }
 
 void Dispatcher::Stop() {
+}
+
+void Dispatcher::PushTask(Callback *callback) {
+  SpinMutexLock lock(&task_spin_mutex_);
+  waiting_handle_tasks_->push_back(callback);
 }
 
 void Dispatcher::AddEvent(Event *event) {
@@ -39,6 +48,8 @@ void Dispatcher::AddEvent(Event *event) {
   if (event->event_flags_ & EVENT_WRITE) {
     event_entry->epoll_ev.events |= EPOLLOUT;
   }
+
+  event_entry->epoll_ev.events |= EPOLLET;
   event_entry->epoll_ev.data.ptr = event_entry;
   event_entry->event_operation_type = EVENT_OPERATION_ADD;
   SpinMutexLock lock(&spin_mutex_);
@@ -76,6 +87,10 @@ int Dispatcher::Poll() {
     // no need to lock
     if (!waiting_operate_events_->empty()) {
       OperateEvents();
+    }
+    // no need to lock
+    if (!waiting_handle_tasks_->empty()) {
+      HandleTasks();
     }
     int number = epoll_wait(epoll_fd_, &epoll_event_buf_[0],
                             EPOLL_MAX_EVENTS, kMaxPollWaitTime);
@@ -119,6 +134,23 @@ void Dispatcher::DispatcherRunnable::Run() {
   while (dispatcher_->Poll() == 0) {
     ;
   }
+}
+
+int Dispatcher::HandleTasks() {
+  {
+    SpinMutexLock lock(&task_spin_mutex_);
+    CallbackList *tmp_task_list = current_handle_tasks_;
+    current_handle_tasks_ = waiting_handle_tasks_;
+    waiting_handle_tasks_ = current_handle_tasks_;
+  }
+
+  for (CallbackList::iterator iter = current_handle_tasks_->begin();
+       iter != current_handle_tasks_->end(); ++iter) {
+    VLOG_INFO() << "handle task request id ";
+    (*iter)->Run();
+  }
+  current_handle_tasks_->clear();
+  return 0;
 }
 
 int Dispatcher::OperateEvents() {

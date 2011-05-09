@@ -2,6 +2,7 @@
 #ifndef __EVENTRPC_DISPATCHER_H__
 #define __EVENTRPC_DISPATCHER_H__
 
+#include <list>
 #include <vector>
 #include <sys/epoll.h>
 #include "eventrpc/event.h"
@@ -13,6 +14,7 @@ using std::vector;
 #define EPOLL_MAX_EVENTS 1024
 
 namespace eventrpc {
+class Callback;
 class Dispatcher {
  public:
   Dispatcher();
@@ -29,8 +31,11 @@ class Dispatcher {
 
   void Stop();
 
+  void PushTask(Callback *callback);
  private:
   int OperateEvents();
+
+  int HandleTasks();
 
   int Poll();
 
@@ -71,6 +76,13 @@ class Dispatcher {
   EventVector *current_operate_events_;
   EventVector *waiting_operate_events_;
   SpinMutex spin_mutex_;
+
+  SpinMutex task_spin_mutex_;
+  typedef std::list<Callback*> CallbackList;
+  CallbackList tasks_[2];
+  CallbackList *current_handle_tasks_;
+  CallbackList *waiting_handle_tasks_;
+
   epoll_event epoll_event_buf_[EPOLL_MAX_EVENTS];
   DispatcherRunnable runnable_;
   Thread thread_;

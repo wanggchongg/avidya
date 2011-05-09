@@ -43,7 +43,8 @@ struct RpcConnectionEvent : public Event {
 struct RpcConnectionCallback : public Callback {
  public:
   RpcConnectionCallback(RpcConnection::Impl *impl)
-    : impl_(impl) {
+    : impl_(impl),
+      handle_state(HANDLE_SERVICE) {
   }
 
   virtual ~RpcConnectionCallback() {
@@ -52,16 +53,20 @@ struct RpcConnectionCallback : public Callback {
   void Run();
 
   void Clear() {
-    recv_message = "";
-    send_message = "";
+    message_buffer = "";
     sent_count = 0;
+    handle_state = HANDLE_SERVICE;
   }
 
+  enum HandleState {
+    HANDLE_SERVICE,
+    HANDLE_SERVICE_DONE,
+  };
   RpcConnection::Impl *impl_;
   Meta meta;
-  string recv_message;
-  string send_message;
+  string message_buffer;
   ssize_t sent_count;
+  HandleState handle_state;
 };
 
 struct RpcConnection::Impl {
@@ -96,27 +101,29 @@ struct RpcConnection::Impl {
 
   int HandleReadMessageState();
 
-  void HandleServiceDone();
+  int SendServiceResponse(RpcConnectionCallback *callback);
 
-  RpcConnectionCallback callback_;
+  void HandleServiceDone(RpcConnectionCallback *callback);
+
+  void HandleService(RpcConnectionCallback *callback);
+
   RpcConnectionEvent event_;
   struct sockaddr_in client_address_;
   RequestState state_;
   char recv_buffer_[kBufferLength];
   string recv_messsage_buffer_;
   string send_message_;
-  ssize_t expect_count_;
-  ssize_t sent_count_;
   RpcMethodManager *rpc_method_manager_;
   RpcConnectionManager *rpc_connection_manager_;
   Dispatcher *dispatcher_;
-  std::list<RpcConnectionCallback*> callback_list_;
+  typedef std::list<RpcConnectionCallback*> RpcCallbackList;
+  RpcCallbackList free_callback_list_;
+  RpcCallbackList handledone_callback_list_;
   RpcConnectionCallback* current_callback_;
 };
 
 RpcConnection::Impl::Impl()
   : event_(-1, this),
-    callback_(this),
     state_(READ_META),
     recv_messsage_buffer_(""),
     send_message_(""),
@@ -126,11 +133,17 @@ RpcConnection::Impl::Impl()
 RpcConnection::Impl::~Impl() {
   Close();
   std::list<RpcConnectionCallback*>::iterator iter;
-  for (iter = callback_list_.begin();
-       iter != callback_list_.end(); ) {
+  for (iter = free_callback_list_.begin();
+       iter != free_callback_list_.end(); ) {
     RpcConnectionCallback *callback = *iter;
-    delete callback;
     ++iter;
+    delete callback;
+  }
+  for (iter = handledone_callback_list_.begin();
+       iter != handledone_callback_list_.end(); ) {
+    RpcConnectionCallback *callback = *iter;
+    ++iter;
+    delete callback;
   }
 }
 
@@ -157,11 +170,11 @@ void RpcConnection::Impl::set_dispacher(Dispatcher *dispatcher) {
 }
 
 RpcConnectionCallback *RpcConnection::Impl::get_callback() {
-  if (callback_list_.empty()) {
+  if (free_callback_list_.empty()) {
     return new RpcConnectionCallback(this);
   } else {
-    RpcConnectionCallback *callback = callback_list_.front();
-    callback_list_.pop_front();
+    RpcConnectionCallback *callback = free_callback_list_.front();
+    free_callback_list_.pop_front();
     return callback;
   }
 }
@@ -180,34 +193,76 @@ void RpcConnection::Impl::Close() {
   }
 }
 
-int RpcConnection::Impl::HandleWrite() {
-  return 0;
-  int send_length = 0;
+int RpcConnection::Impl::SendServiceResponse(RpcConnectionCallback *callback) {
+  int length = 0;
   bool ret = false;
   while (true) {
-    ret = NetUtility::Send(event_.fd_,
-                           send_message_.c_str() + sent_count_,
-                           expect_count_, &send_length);
+    ret = NetUtility::Send(
+        event_.fd_,
+        callback->message_buffer.c_str() + callback->sent_count,
+        callback->message_buffer.length() - callback->sent_count,
+        &length);
     if (!ret) {
+      VLOG_ERROR() << "send message to "
+        << inet_ntop(AF_INET, &client_address_.sin_addr,
+                     recv_buffer_, sizeof(recv_buffer_))
+        << ":" << ntohs(client_address_.sin_port) << " error";
       Close();
-      return -1;
-    } else if (send_length < expect_count_) {
-      sent_count_ += send_length;
-      expect_count_ -= send_length;
-      return 0;
-    } else if (send_length == expect_count_) {
-      // waiting for the next request
-      //event_.event_flags_ = EVENT_READ;
-      //dispatcher_->ModifyEvent(&event_);
-      return 0;
+      return kSendMessageError;
     }
+    callback->sent_count += length;
+    if (callback->sent_count < callback->message_buffer.length()) {
+      return kSendMessageNotCompleted;
+    }
+    VLOG_INFO() << "send service response "
+      << callback->meta.request_id() << " done, count: "
+      << callback->sent_count;
+    callback->Clear();
+    free_callback_list_.push_back(callback);
+    return kSuccess;
   }
+  LOG_FATAL() << "should never reach here!";
   return 0;
 }
 
+int RpcConnection::Impl::HandleWrite() {
+  VLOG_INFO() << "HandleWrite";
+  RpcCallbackList::iterator iter, tmp_iter;
+  int result = kSuccess;
+  for (iter = handledone_callback_list_.begin();
+       iter != handledone_callback_list_.end(); ) {
+    RpcConnectionCallback *callback = *iter;
+    VLOG_INFO() << "begin send response request id "
+      << callback->meta.request_id();
+    result = SendServiceResponse(callback);
+    if (result == kSuccess) {
+      tmp_iter = iter;
+      ++iter;
+      handledone_callback_list_.erase(tmp_iter);
+      free_callback_list_.push_back(callback);
+      VLOG_INFO() << "send response request id "
+        << callback->meta.request_id() << " done";
+      continue;
+    }
+    if (result == kSendMessageError) {
+      VLOG_INFO() << "send response request id "
+        << callback->meta.request_id() << " error";
+      Close();
+      return result;
+    }
+    // when reach here, send not completed, return and
+    // waiting the next send time
+    return result;
+  }
+}
 
 void RpcConnectionCallback::Run() {
-  impl_->HandleServiceDone();
+  if (handle_state == HANDLE_SERVICE) {
+    handle_state = HANDLE_SERVICE_DONE;
+    impl_->HandleService(this);
+    return;
+  }
+  impl_->HandleServiceDone(this);
 }
 
 int RpcConnection::Impl::HandleRead() {
@@ -223,14 +278,24 @@ int RpcConnection::Impl::HandleRead() {
                      recv_buffer_, sizeof(recv_buffer_))
         << ":" << ntohs(client_address_.sin_port) << " error";
       Close();
-      return -1;
+      return kRecvMessageError;
     }
     recv_messsage_buffer_.append(recv_buffer_, recv_length);
     result = StateMachine();
-    if (result != kSuccess && result != kRecvMessageNotCompleted) {
+    if (result == kSuccess) {
+      continue;
+    }
+    if (result == kRecvMessageNotCompleted) {
       return result;
     }
+    VLOG_ERROR() << "handle message from "
+      << inet_ntop(AF_INET, &client_address_.sin_addr,
+                   recv_buffer_, sizeof(recv_buffer_))
+      << ":" << ntohs(client_address_.sin_port) << " error: " << result;
+    Close();
+    return result;
   }
+  VLOG_FATAL() << "should not reach here";
   return kSuccess;
 }
 
@@ -239,7 +304,7 @@ int RpcConnection::Impl::HandleReadMetaState() {
     return kRecvMessageNotCompleted;
   }
   Meta meta;
-  meta.Encode(recv_messsage_buffer_.c_str());
+  meta.EncodeWithBuffer(recv_messsage_buffer_.c_str());
   if (!rpc_method_manager_->IsServiceRegistered(meta.method_id())) {
     VLOG_ERROR() << "method id " << meta.method_id()
       << " not registered";
@@ -250,7 +315,9 @@ int RpcConnection::Impl::HandleReadMetaState() {
   ASSERT(current_callback_ != NULL);
   current_callback_->Clear();
   current_callback_->meta = meta;
-  VLOG_INFO() << "method id " << meta.method_id();
+  VLOG_INFO() << "method id " << meta.method_id()
+    << ", message length: " << meta.message_length()
+    << ", request id: " << meta.request_id();
   state_ = READ_MESSAGE;
   recv_messsage_buffer_ = recv_messsage_buffer_.substr(META_LEN);
   return kSuccess;
@@ -260,16 +327,18 @@ int RpcConnection::Impl::HandleReadMessageState() {
   ASSERT(current_callback_ != NULL);
   uint32 message_length = current_callback_->meta.message_length();
   uint32 need_message_length = message_length -
-    current_callback_->recv_message.length();
+    current_callback_->message_buffer.length();
   if (recv_messsage_buffer_.length() >= need_message_length) {
-    current_callback_->recv_message.append(recv_messsage_buffer_,
+    current_callback_->message_buffer.append(recv_messsage_buffer_,
                                            0, need_message_length);
     state_ = READ_META;
     recv_messsage_buffer_ = recv_messsage_buffer_.substr(need_message_length);
-    VLOG_INFO() << "recv message: " << current_callback_->recv_message;
+    current_callback_->handle_state = RpcConnectionCallback::HANDLE_SERVICE;
+    VLOG_INFO() << "push task request id " << current_callback_->meta.request_id();
+    dispatcher_->PushTask(current_callback_);
     return kSuccess;
   }
-  current_callback_->recv_message.append(recv_messsage_buffer_);
+  current_callback_->message_buffer.append(recv_messsage_buffer_);
   recv_messsage_buffer_ = "";
   return kRecvMessageNotCompleted;
 }
@@ -295,11 +364,32 @@ int RpcConnection::Impl::StateMachine() {
   return 0;
 }
 
-void RpcConnection::Impl::HandleServiceDone() {
-  //event_.event_flags_ = EVENT_WRITE;
-  expect_count_ = send_message_.length();
-  sent_count_ = 0;
-  //dispatcher_->ModifyEvent(&event_);
+void RpcConnection::Impl::HandleServiceDone(RpcConnectionCallback *callback) {
+  VLOG_INFO() << "HandleServiceDone for response request id "
+    << callback->meta.request_id();
+  callback->handle_state = RpcConnectionCallback::HANDLE_SERVICE_DONE;
+  int32 result = SendServiceResponse(callback);
+  if (result == kSuccess) {
+    return;
+  }
+  if (result == kSendMessageError) {
+    VLOG_INFO() << "send response request id "
+      << callback->meta.request_id() << " error";
+    Close();
+    return;
+  }
+  // when reach here, send not completed, return and
+  // waiting the next send time
+  handledone_callback_list_.push_back(callback);
+}
+
+void RpcConnection::Impl::HandleService(RpcConnectionCallback *callback) {
+  VLOG_INFO() << "HandleService for response request id "
+    << callback->meta.request_id();
+  rpc_method_manager_->HandleService(callback->message_buffer,
+                                     &(callback->message_buffer),
+                                     &(callback->meta),
+                                     callback);
 }
 
 RpcConnection::RpcConnection() {

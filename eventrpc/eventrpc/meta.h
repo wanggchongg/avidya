@@ -8,8 +8,8 @@
 using std::string;
 
 namespace eventrpc {
-// one for method id, the other for message length
-#define META_LEN (sizeof(uint32_t) + sizeof(uint32_t))
+// one for method id, second for message length, third for request id
+#define META_LEN (sizeof(uint32) + sizeof(uint32) + sizeof(uint32))
 
 // meta infomation for proto message
 class Meta {
@@ -18,7 +18,7 @@ class Meta {
 
   ~Meta();
 
-  void Encode(const char *buffer);
+  void EncodeWithBuffer(const char *buffer);
 
   void EncodeWithMessage(const string &method_fullname,
                          const gpb::Message *message,
@@ -34,10 +34,13 @@ class Meta {
 
   uint32 method_id() const;
 
+  uint64 request_id() const;
+
  private:
   char buffer_[META_LEN];
   uint32 method_id_;
   uint32 message_length_;
+  uint32 request_id_;
 };
 };
 #endif  //  __EVENTRPC_META_H__

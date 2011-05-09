@@ -11,26 +11,30 @@
 #include "meta.h"
 #include "rpc_channel.h"
 #include "net_utility.h"
+#include "callback.h"
 #include "dispatcher.h"
 #include "log.h"
 namespace {
 static const int kBufferLength = 100;
 }
 namespace eventrpc {
-struct ServiceInfo {
+struct RpcChannelCallback : public Callback {
+  RpcChannel::Impl *impl_;
   gpb::Closure *done;
   uint32 method_id;
   string send_message;
   ssize_t sent_count;
   gpb::Message *response;
   Meta recv_meta;
-  ServiceInfo()
-    : done(NULL),
+  RpcChannelCallback(RpcChannel::Impl *impl)
+    : impl_(impl),
+      done(NULL),
       method_id(0),
       send_message(""),
       sent_count(0),
       response(NULL) {
   }
+  void Run();
 };
 
 struct RpcChannelEvent : public Event {
@@ -69,18 +73,24 @@ struct RpcChannel::Impl {
 
   int HandleWrite();
 
-  int SendServiceRequest(ServiceInfo *service_info);
+  int SendServiceRequest(RpcChannelCallback *callback);
 
   int DecodeBuffer(ssize_t recv_count);
+
+  RpcChannelCallback *get_callback();
+
+  void FreeCurrentReadCallback();
 
   RpcChannelEvent event_;
   const char *host_;
   int port_;
   Dispatcher *dispatcher_;
   char buffer_[kBufferLength];
-  std::map<uint32, ServiceInfo*> service_info_map_;
-  std::list<uint32> send_method_id_list_;
-  ServiceInfo *current_service_info_;
+  typedef std::list<RpcChannelCallback*> RpcChannelCallbackList;
+  RpcChannelCallbackList send_callback_list_;
+  typedef std::map<uint32, RpcChannelCallback*> RpcChannelCallbackMap;
+  RpcChannelCallbackMap callback_map_;
+  RpcChannelCallback *current_read_callback_;
   std::string recv_message_;
 };
 
@@ -89,7 +99,7 @@ RpcChannel::Impl::Impl(const char *host, int port, Dispatcher *dispatcher)
     port_(port),
     dispatcher_(dispatcher),
     event_(-1, this),
-    current_service_info_(NULL) {
+    current_read_callback_(NULL) {
 }
 
 RpcChannel::Impl::~Impl() {
@@ -119,111 +129,121 @@ void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,
                                   gpb::Message* response,
                                   gpb::Closure* done) {
   Meta meta;
-  meta.set_method_id(method->full_name());
-  VLOG_INFO() << "call method send request "
-    << method->full_name()
-    << ", method id: " << meta.method_id();
-  ServiceInfo *service_info = NULL;
-  std::map<uint32, ServiceInfo*>::iterator iter;
-  iter = service_info_map_.find(meta.method_id());
-  if (iter != service_info_map_.end()) {
-    service_info = iter->second;
-  } else {
-    service_info = new ServiceInfo();
-    service_info_map_[meta.method_id()] = service_info;
-  }
-  service_info->sent_count = 0;
-  service_info->method_id = meta.method_id();
-  service_info->response = response;
-  service_info->done = done;
+  RpcChannelCallback *callback = new RpcChannelCallback(this);
+  callback->sent_count = 0;
+  callback->method_id = meta.method_id();
+  callback->response = response;
+  callback->done = done;
   meta.EncodeWithMessage(method->full_name(),
                          request,
-                         &(service_info->send_message));
-  send_method_id_list_.push_back(meta.method_id());
+                         &(callback->send_message));
+  VLOG_INFO() << "call method send request "
+    << method->full_name()
+    << ", method id: " << meta.method_id()
+    << ", message length: " << meta.message_length()
+    << ", request id: " << meta.request_id();
+  callback_map_[meta.request_id()] = callback;
+  dispatcher_->PushTask(callback);
 }
 
 int RpcChannel::Impl::DecodeBuffer(int length) {
   ASSERT(strlen(buffer_) != 0);
-  ServiceInfo *service_info = NULL;
+  RpcChannelCallback *callback = NULL;
   Meta meta;
   recv_message_.append(buffer_, length);
-  if (current_service_info_ == NULL) {
+  if (current_read_callback_ == NULL) {
     if (recv_message_.length() < META_LEN) {
       return kRecvMessageNotCompleted;
     }
-    meta.Encode(recv_message_.c_str());
-    std::map<uint32, ServiceInfo*>::iterator iter;
-    iter = service_info_map_.find(meta.method_id());
-    if (iter == service_info_map_.end()) {
-      return kCannotFindMethodId;
+    meta.EncodeWithBuffer(recv_message_.c_str());
+    RpcChannelCallbackMap::iterator iter;
+    iter = callback_map_.find(meta.request_id());
+    if (iter == callback_map_.end()) {
+      return kCannotFindRequestId;
     }
-    service_info = iter->second;
-    service_info->recv_meta = meta;
+    callback = iter->second;
+    callback->recv_meta = meta;
+    current_read_callback_ = callback;
   }
-  if (service_info->recv_meta.message_length() !=
+  if (current_read_callback_->recv_meta.message_length() !=
       (recv_message_.length() - META_LEN)) {
     return kRecvMessageNotCompleted;
   }
-  if (!service_info->response->ParseFromString(
+  if (!current_read_callback_->response->ParseFromString(
       recv_message_.substr(META_LEN))) {
+    FreeCurrentReadCallback();
     return kDecodeMessageError;
   }
-  if (service_info->done != NULL) {
-    service_info->done->Run();
+  if (current_read_callback_->done != NULL) {
+    callback->done->Run();
   }
+  FreeCurrentReadCallback();
+  recv_message_ = "";
   return kSuccess;
 }
 
+void RpcChannel::Impl::FreeCurrentReadCallback() {
+  callback_map_.erase(current_read_callback_->recv_meta.request_id());
+  delete current_read_callback_;
+  current_read_callback_ = NULL;
+}
+
 int RpcChannel::Impl::HandleRead() {
+  VLOG_INFO() << "HandleRead";
   int32 length = 0;
-  int32 ret = 0;
+  int32 result = 0;
   while (true) {
     length = 0;
     if (!NetUtility::Recv(event_.fd_, buffer_,
                           kBufferLength, &length)) {
+      VLOG_ERROR() << "recv message from [" << host_ << " : " << port_ << "] error";
       Close();
       return -1;
     }
-    ret = DecodeBuffer(length);
-    if (ret == kSuccess) {
+    result = DecodeBuffer(length);
+    VLOG_INFO() << "result: " << result;
+    if (result == kSuccess) {
       return kSuccess;
     }
-    if (ret == kRecvMessageNotCompleted && length == kBufferLength) {
+    if (result == kRecvMessageNotCompleted && length == kBufferLength) {
       // should recv again
       continue;
     }
+    if (result == kRecvMessageNotCompleted) {
+      return result;
+    }
+    VLOG_ERROR() << "handle message from [" << host_ << " : " << port_ << "] error: " << result;
     Close();
-    return ret;
+    return result;
   }
 
-  return ret;
+  VLOG_FATAL() << "should not reach here";
+  return kSuccess;
 }
 
-// return -1 means send error and the socket has been closed,
-// return 0 means send data but not completed yet,
-// return 1 means send service request done
-int RpcChannel::Impl::SendServiceRequest(ServiceInfo *service_info) {
+int RpcChannel::Impl::SendServiceRequest(RpcChannelCallback *callback) {
   int length = 0;
   bool ret = false;
   while (true) {
     ret = NetUtility::Send(
         event_.fd_,
-        service_info->send_message.c_str() + service_info->sent_count,
-        service_info->send_message.length() - service_info->sent_count,
+        callback->send_message.c_str() + callback->sent_count,
+        callback->send_message.length() - callback->sent_count,
         &length);
     if (!ret) {
+      VLOG_ERROR() << "send message to [" << host_ << " : " << port_ << "] error";
       Close();
-      return -1;
-    } else if (length < service_info->send_message.length()) {
-      service_info->sent_count += length;
-      return 0;
-    } else if (length == service_info->send_message.length()) {
-      VLOG_INFO() << "send service request done, count: "
-        << service_info->send_message.length();
-      service_info->sent_count = 0;
-      service_info->send_message = "";
-      return 1;
+      return kSendMessageError;
     }
+    callback->sent_count += length;
+    if (callback->sent_count < callback->send_message.length()) {
+      return kSendMessageNotCompleted;
+    }
+    VLOG_INFO() << "send service request done, count: "
+      << callback->send_message.length();
+    callback->sent_count = 0;
+    callback->send_message = "";
+    return kSuccess;
   }
 
   LOG_FATAL() << "should never reach here!";
@@ -231,28 +251,40 @@ int RpcChannel::Impl::SendServiceRequest(ServiceInfo *service_info) {
 }
 
 int RpcChannel::Impl::HandleWrite() {
-  std::list<uint32>::iterator iter, tmp_iter;
-  std::map<uint32, ServiceInfo*>::iterator service_map_iter;
-  int ret = 0;
-  for (iter = send_method_id_list_.begin();
-       iter != send_method_id_list_.end(); ) {
-    service_map_iter = service_info_map_.find(*iter);
-    ASSERT(service_map_iter != service_info_map_.end());
-    ret = SendServiceRequest(service_map_iter->second);
-    if (ret == 1) {
+  RpcChannelCallbackList::iterator iter, tmp_iter;
+  int result = 0;
+  for (iter = send_callback_list_.begin();
+       iter != send_callback_list_.end(); ) {
+    VLOG_INFO() << "HandleWrite";
+    result = SendServiceRequest(*iter);
+    if (result == kSuccess) {
       tmp_iter = iter;
       ++iter;
-      send_method_id_list_.erase(tmp_iter);
+      send_callback_list_.erase(tmp_iter);
       continue;
     }
-    if (ret == 0) {
-      return 0;
-    }
-    if (ret == -1) {
+    if (result == kSendMessageError) {
       VLOG_ERROR() << "send service request error";
-      return -1;
+      Close();
+      return result;
     }
+    // when reach here, send not completed, return and
+    // waiting the next send time
+    return result;
   }
+}
+
+void RpcChannelCallback::Run() {
+  int result = impl_->SendServiceRequest(this);
+  if (result == kSuccess) {
+    return;
+  }
+  if (result == kSendMessageError) {
+    VLOG_ERROR() << "send service request error";
+    impl_->Close();
+    return;
+  }
+  impl_->send_callback_list_.push_back(this);
 }
 
 int RpcChannelEvent::HandleRead() {

@@ -11,7 +11,7 @@ using namespace std;
 
 void echo_done(echo::EchoResponse* resp,
                Monitor *monitor) {
-  printf("response: %s\n", resp->response().c_str());
+  VLOG_INFO() << "response: " << resp->response();
   monitor->Notify();
 }
 
@@ -27,12 +27,21 @@ int main(int argc, char *argv[]) {
   echo::EchoService::Stub stub(&channel);
   echo::EchoRequest request;
   echo::EchoResponse response;
-  request.set_message("hello 2");
-  stub.Echo(NULL, &request, &response, NULL);
-  sleep(1);
+
+  {
+  Monitor monitor;
+  request.set_message("hello2");
+  stub.Echo(NULL, &request, &response,
+            gpb::NewCallback(::echo_done, &response, &monitor));
+  monitor.Wait();
+  }
+  {
+  Monitor monitor;
   request.set_message("hello");
-  stub.Echo(NULL, &request, &response, NULL);
-  sleep(1);
+  stub.Echo(NULL, &request, &response,
+            gpb::NewCallback(::echo_done, &response, &monitor));
+  monitor.Wait();
+  }
   channel.Close();
   dispatcher.Stop();
 
