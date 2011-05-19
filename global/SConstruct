@@ -20,7 +20,7 @@ srcroot = env['srcroot']
 env.Append(CPPPATH=[env['objroot'], env['srcroot']])
 Export('env')
 
-deps_libs = ['pthread', 'protobuf', 'eventrpc']
+deps_libs = ['pthread', 'protobuf', 'eventrpc', 'gtest']
 def CheckDependencies():
   global env
   conf = Configure(env)
@@ -57,7 +57,7 @@ proto_builder = Builder(generator = ProtoGenerator,
   emitter=ProtoEmitter)
 env['BUILDERS']['ProtocolBuffer'] = proto_builder
 
-subdir = ['protocol', 'global']
+subdir = ['protocol', 'global', 'test']
 
 for x in subdir:
   target_dir = '%s/%s' % (env['objroot'], x)

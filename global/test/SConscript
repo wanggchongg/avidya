@@ -1,0 +1,21 @@
+Import('env')
+
+test_env = env.Clone()
+test_env['objroot'] += '/test'
+test_env['srcroot'] += '/global'
+test_env['extension'] = 'cpp'
+test_env.Append(CPPPATH=[test_env['srcroot'],
+  env['objroot'] + '/test'])
+test_env.Append(LIBPATH=[env['objroot']+'/global',])
+test_env.Prepend(LIBS=
+  [
+    'eventrpc',
+    'global',
+  ])
+
+test_src_files = [
+  'utility',
+  'transaction_log',
+]
+for file in test_src_files:
+  test_env.Program(file + "_test", [file + "_test.cpp"])

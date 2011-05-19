@@ -1,0 +1,21 @@
+package global;
+
+message TreeNode {
+  repeated TreeNode children = 1;
+};
+
+message FileHeader {
+  required string magic = 1;
+  required uint32 version = 2;
+  required uint64 dbid = 3;
+};
+
+message TransactionHeader {
+  required uint64 client_id = 1;
+  required uint32 cxid = 2;
+  required uint64 gxid = 3;
+  required uint64 time = 4;
+  required uint32 type = 5;
+  required uint32 checksum = 6;
+  required uint32 record_length = 7;
+};

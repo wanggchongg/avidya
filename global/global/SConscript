@@ -8,10 +8,12 @@ global_env['objroot'] += '/global'
 Export('global_env')
 
 src_files = [
-  'quorum_peer_main.cpp',
-  'quorum_peer_server.cpp',
-  'quorum_peer_manager.cpp',
-  'fast_leader_election.cpp',
+  #'quorum_peer_main.cpp',
+  #'quorum_peer_server.cpp',
+  #'quorum_peer_manager.cpp',
+  #'fast_leader_election.cpp',
+  'transaction_log.cpp',
+  'utility.cpp',
 ]
 
 protobuf_files = [
@@ -19,4 +21,6 @@ protobuf_files = [
   '../protocol/leader_election.pb.cc',
 ]
 
-global_env.Program('quorumpeermain', src_files + protobuf_files)
+global_env.ProtocolBuffer('transaction.proto')
+global_env.ProtocolBuffer('record.proto')
+global_env.StaticLibrary('global', src_files)
