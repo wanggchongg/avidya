@@ -16,6 +16,7 @@ src_files = [
   'utility.cpp',
   'net_utility.cpp',
   'file_utility.cpp',
+  'string_utility.cpp',
   'rpc_connection.cpp',
   'rpc_channel.cpp',
   'rpc_method_manager.cpp',

@@ -12,4 +12,9 @@ test_env.Prepend(LIBS=
     'eventrpc',
   ])
 
-test_env.Program('log_test', ['log_test.cpp', ])
+test_src_files = [
+  'log',
+  'string_utility',
+]
+for file in test_src_files:
+  test_env.Program(file + "_test", [file + "_test.cpp"])
