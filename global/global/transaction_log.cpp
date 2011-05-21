@@ -2,13 +2,18 @@
  * Copyright (C) Lichuang
  */
 #include <stdio.h>
+#include <eventrpc/string_utility.h>
+#include <eventrpc/file_utility.h>
+#include <eventrpc/log.h>
 #include "global/transaction_log.h"
+#include "global/transaction_log_iterator.h"
 #include "global/utility.h"
 namespace {
 static const char kLogFileHeaderMagic[] = "GTLOG";
 static const uint32 kLogVersion = 1;
 static const uint64 kDbId = 1;
 };
+using namespace eventrpc;
 namespace global {
 struct TransactionLog::Impl {
  public:
@@ -18,17 +23,17 @@ struct TransactionLog::Impl {
   void Roll();
 
   bool Append(const global::TransactionHeader &header,
-              const ::google::protobuf::Message &message);
+              const ::google::protobuf::Message *message);
 
   TransactionLogIterator* Read(uint64 gxid);
 
   void SerializeToString(const global::TransactionHeader &header,
-                         const ::google::protobuf::Message &message,
+                         const ::google::protobuf::Message *message,
                          string *output);
 
   uint64 GetLastLoggedGxid() const;
 
-  uint64 GetDbId() const;
+  uint64 DbId() const;
 
   void Commit();
 
@@ -62,16 +67,20 @@ void TransactionLog::Impl::Roll() {
 
 bool TransactionLog::Impl::Append(
     const global::TransactionHeader &header,
-    const ::google::protobuf::Message &message) {
-  string output;
-  SerializeToString(header, message, &output);
+    const ::google::protobuf::Message *message) {
   if (file_ == NULL) {
-    string filename = log_dir_ + "/log";
+    string filename = log_dir_ + "/log.";
+    filename += StringUtility::ConvertUint64ToString(header.gxid());
     file_ = fopen(filename.c_str(), "w");
-    fwrite(file_header_string_.c_str(), 1,
+    fwrite(file_header_string_.c_str(), sizeof(char),
            file_header_string_.length(), file_);
   }
-  fwrite(output.c_str(), 1, output.length(), file_);
+  string output;
+  header.SerializeToString(&output);
+  fwrite(output.c_str(), sizeof(char), output.length(), file_);
+  output = "";
+  message->SerializeToString(&output);
+  fwrite(output.c_str(), sizeof(char), output.length(), file_);
   return true;
 }
 
@@ -79,11 +88,20 @@ TransactionLogIterator* TransactionLog::Impl::Read(uint64 gxid) {
   return NULL;
 }
 
+void TransactionLog::Impl::SerializeToString(
+    const global::TransactionHeader &header,
+    const ::google::protobuf::Message *message,
+    string *output) {
+  ASSERT(output != NULL);
+  header.SerializeToString(output);
+  message->SerializeToString(output);
+}
+
 uint64 TransactionLog::Impl::GetLastLoggedGxid() const {
   return 0;
 }
 
-uint64 TransactionLog::Impl::GetDbId() const {
+uint64 TransactionLog::Impl::DbId() const {
   return kDbId;
 }
 
@@ -95,30 +113,6 @@ void TransactionLog::Impl::Commit() {
 
 void TransactionLog::Impl::Close() {
   Roll();
-}
-
-TransactionLogIterator::TransactionLogIterator(
-    const string &log_dir, uint64 gxid)
-  : log_dir_(log_dir),
-    gxid_(gxid) {
-  Init();
-}
-
-TransactionLogIterator::~TransactionLogIterator() {
-}
-
-bool TransactionLogIterator::Init() {
-  list<string> files;
-  SortFiles(log_dir_, "log", false, &files);
-  list<string>::iterator iter;
-  for (iter = files.begin(); iter != files.end(); ++iter) {
-  }
-}
-
-bool TransactionLogIterator::Next() {
-}
-
-void TransactionLogIterator::Close() {
 }
 
 TransactionLog::TransactionLog(const string &log_dir)
@@ -134,7 +128,7 @@ void TransactionLog::Roll() {
 }
 
 bool TransactionLog::Append(const global::TransactionHeader &header,
-                            const ::google::protobuf::Message &message) {
+                            const ::google::protobuf::Message *message) {
   return impl_->Append(header, message);
 }
 
@@ -146,8 +140,8 @@ uint64 TransactionLog::GetLastLoggedGxid() const {
   return impl_->GetLastLoggedGxid();
 }
 
-uint64 TransactionLog::GetDbId() const {
-  return impl_->GetDbId();
+uint64 TransactionLog::DbId() const {
+  return impl_->DbId();
 }
 
 void TransactionLog::Commit() {

@@ -13,7 +13,10 @@ src_files = [
   #'quorum_peer_manager.cpp',
   #'fast_leader_election.cpp',
   'transaction_log.cpp',
+  'transaction_log_iterator.cpp',
   'utility.cpp',
+  'record.pb.cc',
+  'transaction.pb.cc',
 ]
 
 protobuf_files = [

@@ -16,6 +16,7 @@ test_env.Prepend(LIBS=
 test_src_files = [
   'utility',
   'transaction_log',
+  'transaction_log_iterator',
 ]
 for file in test_src_files:
   test_env.Program(file + "_test", [file + "_test.cpp"])
