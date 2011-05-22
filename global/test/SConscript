@@ -15,6 +15,7 @@ test_env.Prepend(LIBS=
 
 test_src_files = [
   'utility',
+  'serialize_utility',
   'transaction_log',
   'transaction_log_iterator',
 ]

@@ -8,6 +8,7 @@
 #include "global/transaction_log.h"
 #include "global/transaction_log_iterator.h"
 #include "global/utility.h"
+#include "global/serialize_utility.h"
 namespace {
 static const char kLogFileHeaderMagic[] = "GTLOG";
 static const uint32 kLogVersion = 1;
@@ -33,7 +34,7 @@ struct TransactionLog::Impl {
 
   uint64 GetLastLoggedGxid() const;
 
-  uint64 DbId() const;
+  uint64 dbid() const;
 
   void Commit();
 
@@ -42,17 +43,17 @@ struct TransactionLog::Impl {
  private:
   string log_dir_;
   FILE *file_;
-  global::FileHeader file_header_;
+  TransactionLogFileHeader file_header_;
   string file_header_string_;
 };
 
 TransactionLog::Impl::Impl(const string &log_dir)
   : log_dir_(log_dir),
     file_(NULL) {
-  file_header_.set_magic(kLogFileHeaderMagic);
-  file_header_.set_version(kLogVersion);
-  file_header_.set_dbid(kDbId);
-  file_header_.SerializeToString(&file_header_string_);
+  file_header_.magic = atol(kLogFileHeaderMagic);
+  file_header_.version = kLogVersion;
+  file_header_.dbid = kDbId;
+  SerializeFileHeaderToString(file_header_, &file_header_string_);
 }
 
 TransactionLog::Impl::~Impl() {
@@ -70,13 +71,13 @@ bool TransactionLog::Impl::Append(
     const ::google::protobuf::Message *message) {
   if (file_ == NULL) {
     string filename = log_dir_ + "/log.";
-    filename += StringUtility::ConvertUint64ToString(header.gxid());
-    file_ = fopen(filename.c_str(), "w");
+    filename += StringUtility::ConvertUint64ToString(header.gxid);
+    file_ = fopen(filename.c_str(), "a");
     fwrite(file_header_string_.c_str(), sizeof(char),
            file_header_string_.length(), file_);
   }
   string output;
-  header.SerializeToString(&output);
+  SerializeTransactionHeaderToString(header, &output);
   fwrite(output.c_str(), sizeof(char), output.length(), file_);
   output = "";
   message->SerializeToString(&output);
@@ -93,15 +94,17 @@ void TransactionLog::Impl::SerializeToString(
     const ::google::protobuf::Message *message,
     string *output) {
   ASSERT(output != NULL);
+  /*
   header.SerializeToString(output);
   message->SerializeToString(output);
+  */
 }
 
 uint64 TransactionLog::Impl::GetLastLoggedGxid() const {
   return 0;
 }
 
-uint64 TransactionLog::Impl::DbId() const {
+uint64 TransactionLog::Impl::dbid() const {
   return kDbId;
 }
 
@@ -140,8 +143,8 @@ uint64 TransactionLog::GetLastLoggedGxid() const {
   return impl_->GetLastLoggedGxid();
 }
 
-uint64 TransactionLog::DbId() const {
-  return impl_->DbId();
+uint64 TransactionLog::dbid() const {
+  return impl_->dbid();
 }
 
 void TransactionLog::Commit() {

@@ -4,7 +4,7 @@
 #ifndef __GLOBAL_TRANSACTION_LOG_ITERATOR_H__
 #define __GLOBAL_TRANSACTION_LOG_ITERATOR_H__
 #include <eventrpc/base.h>
-#include "global/transaction.pb.h"
+#include "global/transaction.h"
 using namespace std;
 namespace global {
 class TransactionLogIterator {
@@ -13,7 +13,7 @@ class TransactionLogIterator {
   ~TransactionLogIterator();
   bool Next();
   void Close();
-  global::TransactionHeader* header();
+  TransactionHeader* header();
  private:
   struct Impl;
   Impl *impl_;

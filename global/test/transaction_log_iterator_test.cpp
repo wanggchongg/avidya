@@ -30,30 +30,16 @@ void TransactionLogIteratorTest::CreateTestLogFile() {
   TransactionLog log(tmp_dir_);
   {
     global::TransactionHeader header;
-    header.set_client_id(1);
-    header.set_cxid(1);
-    header.set_gxid(1);
-    header.set_time(1);
-    header.set_type(1);
-    header.set_checksum(1);
+    header.client_id = 1;
+    header.cxid = 1;
+    header.gxid = 1;
+    header.time = 1;
+    header.type = 1;
+    header.checksum = 1;
     global::Delete record;
     record.set_path("test");
-    header.set_record_length(record.ByteSize());
+    header.record_length = record.ByteSize();
     log.Append(header, &record);
-    log.Commit();
-  }
-  {
-    global::TransactionHeader header;
-    header.set_client_id(2);
-    header.set_cxid(2);
-    header.set_gxid(2);
-    header.set_time(2);
-    header.set_type(2);
-    header.set_checksum(2);
-    global::Create record2;
-    record2.set_path("create");
-    header.set_record_length(record2.ByteSize());
-    log.Append(header, &record2);
     log.Commit();
   }
 }
@@ -67,7 +53,7 @@ TEST_F(TransactionLogIteratorTest, AppendTest) {
   global::TransactionHeader *header;
   TransactionLogIterator iter(tmp_dir_, 1);
   header = iter.header();
-  ASSERT_EQ(1u, header->gxid());
+  ASSERT_EQ(1u, header->gxid);
 }
 };
 

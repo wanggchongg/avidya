@@ -6,13 +6,10 @@
 #include <list>
 #include <string>
 #include <eventrpc/base.h>
-#include "global/transaction.pb.h"
+#include "global/transaction.h"
 #include "global/record.pb.h"
 using namespace std;
 namespace global {
-enum RecordType {
-  CREATE = 1,
-};
 class TransactionLogIterator;
 class TransactionLog {
  public:
@@ -28,7 +25,7 @@ class TransactionLog {
 
   uint64 GetLastLoggedGxid() const;
 
-  uint64 DbId() const;
+  uint64 dbid() const;
 
   void Commit();
 

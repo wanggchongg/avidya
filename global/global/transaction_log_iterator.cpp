@@ -7,15 +7,13 @@
 #include <eventrpc/string_utility.h>
 #include <eventrpc/file_utility.h>
 #include <eventrpc/log.h>
+#include "global/transaction.h"
+#include "global/transaction_log.h"
 #include "global/transaction_log_iterator.h"
 #include "global/utility.h"
+#include "global/serialize_utility.h"
 #include "global/record.pb.h"
 using namespace eventrpc;
-namespace {
-// hard code seems ugly...
-static const uint32 kFileHeaderSize = 11;
-static const uint32 kHeaderSize = 12;
-};
 namespace global {
 struct TransactionLogIterator::Impl {
  public:
@@ -25,13 +23,13 @@ struct TransactionLogIterator::Impl {
   void GetNextFileContent();
   bool Next();
   void Close();
-  global::TransactionHeader* header();
+  TransactionHeader* header();
 
   list<string> sorted_files_;
   string log_dir_;
   uint64 gxid_;
   string buffer_;
-  global::TransactionHeader header_;
+  TransactionHeader header_;
   ::google::protobuf::Message *record;
 };
 
@@ -64,7 +62,7 @@ void TransactionLogIterator::Impl::Init() {
   if (!Next()) {
     return;
   }
-  while (header_.gxid() < gxid_) {
+  while (header_.gxid < gxid_) {
     if (!Next()) {
       return;
     }
@@ -75,24 +73,24 @@ void  TransactionLogIterator::Impl::GetNextFileContent() {
   string file = log_dir_ + sorted_files_.back();
   sorted_files_.pop_back();
   ASSERT_TRUE(FileUtility::ReadFileContents(file, &buffer_));
-  global::FileHeader file_header;
-  ASSERT_TRUE(file_header.ParseFromString(buffer_));
+  TransactionLogFileHeader file_header;
+  ASSERT_TRUE(ParseFileHeaderFromString(buffer_, &file_header));
   // skip the file header
-  buffer_ = buffer_.substr(kFileHeaderSize);
+  buffer_ = buffer_.substr(FILE_HEADER_SIZE);
 }
 
 bool TransactionLogIterator::Impl::Next() {
-  if (!header_.ParseFromString(buffer_)) {
+  if (!ParseTransactionHeaderFromString(buffer_, &header_)) {
     return false;
   }
-  buffer_ = buffer_.substr(kHeaderSize + header_.record_length());
+  buffer_ = buffer_.substr(TRANSACTION_HEADER_SIZE + header_.record_length);
   return true;
 }
 
 void TransactionLogIterator::Impl::Close() {
 }
 
-global::TransactionHeader* TransactionLogIterator::Impl::header() {
+TransactionHeader* TransactionLogIterator::Impl::header() {
   return &header_;
 }
 

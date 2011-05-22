@@ -1,6 +1,7 @@
 /*
  * Copyright (C) Lichuang
  */
+#include <iostream>
 #include <gtest/gtest.h>
 #include <eventrpc/file_utility.h>
 #include "global/transaction_log_iterator.h"
@@ -28,28 +29,16 @@ class TransactionLogTest : public testing::Test {
 void TransactionLogTest::CreateTestLogFile() {
   TransactionLog log(tmp_dir_);
   global::TransactionHeader header;
-  header.set_client_id(1);
-  header.set_cxid(1);
-  header.set_gxid(1);
-  header.set_time(1);
-  header.set_type(1);
-  header.set_checksum(1);
+  header.client_id = 1;
+  header.cxid = 1;
+  header.gxid = 1;
+  header.time = 1;
+  header.type = 1;
+  header.checksum = 1;
   global::Delete record;
-  record.set_path("test");
-  header.set_record_length(record.ByteSize());
+  //record.set_path("test");
+  header.record_length = record.ByteSize();
   log.Append(header, &record);
-
-  header.set_client_id(2);
-  header.set_cxid(2);
-  header.set_gxid(22);
-  header.set_time(2);
-  header.set_type(2);
-  header.set_checksum(2);
-  global::Create record2;
-  record2.set_path("create");
-  header.set_record_length(record2.ByteSize());
-  log.Append(header, &record2);
-  log.Commit();
 }
 
 void TransactionLogTest::DeleteTestLogFile() {
@@ -58,15 +47,28 @@ void TransactionLogTest::DeleteTestLogFile() {
 }
 
 TEST_F(TransactionLogTest, AppendTest) {
+  /*
   string file_name = tmp_dir_ + "log.1";
   string content;
   ASSERT_TRUE(FileUtility::ReadFileContents(file_name, &content));
   global::FileHeader file_header;
-  ASSERT_TRUE(file_header.ParseFromString(content));
+  ASSERT_TRUE(file_header.ParseFromString(content.substr(0, kFileHeaderSize)));
+  ASSERT_EQ(1u, file_header.dbid());
+  ASSERT_EQ("GTLOG", file_header.magic());
+  ASSERT_EQ(1u, file_header.version());
   global::TransactionHeader header;
-  content = content.substr(11);
-  ASSERT_TRUE(header.ParseFromString(content));
+  uint32 pos = file_header.ByteSize();
+  std::cout << pos << std::endl;
+  //content = content.substr(12);
+  ASSERT_TRUE(header.ParseFromString(content.substr(pos, 14)));
   ASSERT_EQ(1u, header.gxid());
+  pos += header.ByteSize() + header.record_length();
+  ASSERT_TRUE(header.ParseFromString(content.substr(pos, 14)));
+  ASSERT_EQ(22u, header.gxid());
+  pos += header.ByteSize() + header.record_length();
+  ASSERT_TRUE(header.ParseFromString(content.substr(pos, 15)));
+  ASSERT_EQ(222u, header.gxid());
+  */
 }
 };
 
