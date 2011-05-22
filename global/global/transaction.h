@@ -14,6 +14,10 @@ struct TransactionLogFileHeader {
   uint32 magic;
   uint32 version;
   uint32 dbid;
+
+  TransactionLogFileHeader()
+    : magic(0), version(0), dbid(0) {
+  }
 };
 
 struct TransactionHeader {
@@ -24,6 +28,10 @@ struct TransactionHeader {
   uint32 type;
   uint32 checksum;
   uint32 record_length;
+  TransactionHeader()
+    : client_id(0), cxid(0), gxid(0), time(0),
+      type(0), checksum(0), record_length(0) {
+  }
 };
 #define FILE_HEADER_SIZE sizeof(TransactionLogFileHeader)
 #define TRANSACTION_HEADER_SIZE sizeof(TransactionHeader)

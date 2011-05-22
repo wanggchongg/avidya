@@ -28,10 +28,6 @@ struct TransactionLog::Impl {
 
   TransactionLogIterator* Read(uint64 gxid);
 
-  void SerializeToString(const global::TransactionHeader &header,
-                         const ::google::protobuf::Message *message,
-                         string *output);
-
   uint64 GetLastLoggedGxid() const;
 
   uint64 dbid() const;
@@ -87,17 +83,6 @@ bool TransactionLog::Impl::Append(
 
 TransactionLogIterator* TransactionLog::Impl::Read(uint64 gxid) {
   return NULL;
-}
-
-void TransactionLog::Impl::SerializeToString(
-    const global::TransactionHeader &header,
-    const ::google::protobuf::Message *message,
-    string *output) {
-  ASSERT(output != NULL);
-  /*
-  header.SerializeToString(output);
-  message->SerializeToString(output);
-  */
 }
 
 uint64 TransactionLog::Impl::GetLastLoggedGxid() const {

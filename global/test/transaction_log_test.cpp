@@ -6,6 +6,7 @@
 #include <eventrpc/file_utility.h>
 #include "global/transaction_log_iterator.h"
 #include "global/transaction_log.h"
+#include "global/serialize_utility.h"
 
 using namespace eventrpc;
 namespace global {
@@ -36,7 +37,17 @@ void TransactionLogTest::CreateTestLogFile() {
   header.type = 1;
   header.checksum = 1;
   global::Delete record;
-  //record.set_path("test");
+  record.set_path("test");
+  header.record_length = record.ByteSize();
+  log.Append(header, &record);
+
+  header.client_id = 1;
+  header.cxid = 1;
+  header.gxid = 22;
+  header.time = 1;
+  header.type = 1;
+  header.checksum = 1;
+  record.set_path("test2");
   header.record_length = record.ByteSize();
   log.Append(header, &record);
 }
@@ -47,28 +58,23 @@ void TransactionLogTest::DeleteTestLogFile() {
 }
 
 TEST_F(TransactionLogTest, AppendTest) {
-  /*
   string file_name = tmp_dir_ + "log.1";
   string content;
   ASSERT_TRUE(FileUtility::ReadFileContents(file_name, &content));
-  global::FileHeader file_header;
-  ASSERT_TRUE(file_header.ParseFromString(content.substr(0, kFileHeaderSize)));
-  ASSERT_EQ(1u, file_header.dbid());
-  ASSERT_EQ("GTLOG", file_header.magic());
-  ASSERT_EQ(1u, file_header.version());
-  global::TransactionHeader header;
-  uint32 pos = file_header.ByteSize();
-  std::cout << pos << std::endl;
-  //content = content.substr(12);
-  ASSERT_TRUE(header.ParseFromString(content.substr(pos, 14)));
-  ASSERT_EQ(1u, header.gxid());
-  pos += header.ByteSize() + header.record_length();
-  ASSERT_TRUE(header.ParseFromString(content.substr(pos, 14)));
-  ASSERT_EQ(22u, header.gxid());
-  pos += header.ByteSize() + header.record_length();
-  ASSERT_TRUE(header.ParseFromString(content.substr(pos, 15)));
-  ASSERT_EQ(222u, header.gxid());
-  */
+  TransactionLogFileHeader file_header;
+  ASSERT_TRUE(ParseFileHeaderFromString(content, &file_header));
+  ASSERT_EQ(1u, file_header.dbid);
+  ASSERT_EQ(atol("GTLOG"), file_header.magic);
+  ASSERT_EQ(1u, file_header.version);
+
+  content = content.substr(FILE_HEADER_SIZE);
+  TransactionHeader header;
+  ASSERT_TRUE(ParseTransactionHeaderFromString(content, &header));
+  ASSERT_EQ(1u, header.gxid);
+  content = content.substr(TRANSACTION_HEADER_SIZE + header.record_length);
+  ASSERT_TRUE(ParseTransactionHeaderFromString(content, &header));
+  ASSERT_EQ(22u, header.gxid);
+  return;
 }
 };
 
