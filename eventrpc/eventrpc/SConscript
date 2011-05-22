@@ -32,6 +32,7 @@ eventrpc_header_files = [
   'base.h',
   'thread.h',
   'file_utility.h',
+  'string_utility.h',
   'noncopyable.h',
   'rpc_server.h',
   'rpc_channel.h',

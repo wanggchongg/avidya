@@ -25,31 +25,37 @@ TEST_F(StringUtilityTest, ConvertToStringTest) {
     float f = 1.01;
     string result = StringUtility::ConvertFloatToString(f);
     ASSERT_EQ("1.01", result);
+    ASSERT_FLOAT_EQ(f, StringUtility::ConvertStringToFloat(result));
   }
   {
     bool f = true;
-    string result = StringUtility::ConvertFloatToString(f);
+    string result = StringUtility::ConvertBoolToString(f);
     ASSERT_EQ("1", result);
+    ASSERT_EQ(f, StringUtility::ConvertStringToBool(result));
   }
   {
     uint64 f = 1000;
-    string result = StringUtility::ConvertFloatToString(f);
+    string result = StringUtility::ConvertUint64ToString(f);
     ASSERT_EQ("1000", result);
+    ASSERT_EQ(f, StringUtility::ConvertStringToUint64(result));
   }
   {
     int64 f = -1000;
-    string result = StringUtility::ConvertFloatToString(f);
+    string result = StringUtility::ConvertInt64ToString(f);
     ASSERT_EQ("-1000", result);
+    ASSERT_EQ(f, StringUtility::ConvertStringToInt64(result));
   }
   {
     uint32 f = 1000;
-    string result = StringUtility::ConvertFloatToString(f);
+    string result = StringUtility::ConvertUint32ToString(f);
     ASSERT_EQ("1000", result);
+    ASSERT_EQ(f, StringUtility::ConvertStringToUint32(result));
   }
   {
     int32 f = -1000;
-    string result = StringUtility::ConvertFloatToString(f);
+    string result = StringUtility::ConvertInt32ToString(f);
     ASSERT_EQ("-1000", result);
+    ASSERT_EQ(f, StringUtility::ConvertStringToInt32(result));
   }
 }
 };
