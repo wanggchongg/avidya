@@ -22,12 +22,6 @@ class StringUtilityTest : public testing::Test {
 
 TEST_F(StringUtilityTest, ConvertToStringTest) {
   {
-    float f = 1.01;
-    string result = StringUtility::ConvertFloatToString(f);
-    ASSERT_EQ("1.01", result);
-    ASSERT_FLOAT_EQ(f, StringUtility::ConvertStringToFloat(result));
-  }
-  {
     bool f = true;
     string result = StringUtility::ConvertBoolToString(f);
     ASSERT_EQ("1", result);
@@ -56,6 +50,35 @@ TEST_F(StringUtilityTest, ConvertToStringTest) {
     string result = StringUtility::ConvertInt32ToString(f);
     ASSERT_EQ("-1000", result);
     ASSERT_EQ(f, StringUtility::ConvertStringToInt32(result));
+  }
+}
+
+TEST_F(StringUtilityTest, SerializeToStringTest) {
+  {
+    bool f = true;
+    string result = StringUtility::SerializeBoolToString(f);
+    result += "abn";
+    ASSERT_EQ(f, StringUtility::DeserializeStringToBool(result));
+  }
+  {
+    uint64 f = 1000;
+    string result = StringUtility::SerializeUint64ToString(f);
+    ASSERT_EQ(f, StringUtility::DeserializeStringToUint64(result));
+  }
+  {
+    int64 f = 1000;
+    string result = StringUtility::SerializeInt64ToString(f);
+    ASSERT_EQ(f, StringUtility::DeserializeStringToInt64(result));
+  }
+  {
+    uint32 f = 1000;
+    string result = StringUtility::SerializeUint32ToString(f);
+    ASSERT_EQ(f, StringUtility::DeserializeStringToUint32(result));
+  }
+  {
+    int32 f = 1000;
+    string result = StringUtility::SerializeInt32ToString(f);
+    ASSERT_EQ(f, StringUtility::DeserializeStringToInt32(result));
   }
 }
 };
