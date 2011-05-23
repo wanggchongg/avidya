@@ -27,25 +27,74 @@ class TransactionLogIteratorTest : public testing::Test {
 };
 
 void TransactionLogIteratorTest::CreateTestLogFile() {
-  TransactionLog log(tmp_dir_);
   {
-    global::TransactionHeader header;
-    header.client_id = 1;
-    header.cxid = 1;
-    header.gxid = 1;
-    header.time = 1;
-    header.type = 1;
-    header.checksum = 1;
-    global::Delete record;
-    record.set_path("test");
-    header.record_length = record.ByteSize();
-    log.Append(header, &record);
-    log.Commit();
+    TransactionLog log(tmp_dir_);
+    {
+      global::TransactionHeader header;
+      header.client_id = 1;
+      header.cxid = 1;
+      header.gxid = 1;
+      header.time = 1;
+      header.type = 1;
+      header.checksum = 1;
+      global::Delete record;
+      record.set_path("test");
+      header.record_length = record.ByteSize();
+      log.Append(header, &record);
+      log.Commit();
+    }
+    {
+      global::TransactionHeader header;
+      header.client_id = 1;
+      header.cxid = 1;
+      header.gxid = 2;
+      header.time = 1;
+      header.type = 1;
+      header.checksum = 1;
+      global::Delete record;
+      record.set_path("test2");
+      header.record_length = record.ByteSize();
+      log.Append(header, &record);
+      log.Commit();
+    }
+  }
+  {
+    TransactionLog log(tmp_dir_);
+    {
+      global::TransactionHeader header;
+      header.client_id = 1;
+      header.cxid = 1;
+      header.gxid = 3;
+      header.time = 1;
+      header.type = 1;
+      header.checksum = 1;
+      global::Delete record;
+      record.set_path("test");
+      header.record_length = record.ByteSize();
+      log.Append(header, &record);
+      log.Commit();
+    }
+    {
+      global::TransactionHeader header;
+      header.client_id = 1;
+      header.cxid = 1;
+      header.gxid = 4;
+      header.time = 1;
+      header.type = 1;
+      header.checksum = 1;
+      global::Delete record;
+      record.set_path("test2");
+      header.record_length = record.ByteSize();
+      log.Append(header, &record);
+      log.Commit();
+    }
   }
 }
 
 void TransactionLogIteratorTest::DeleteTestLogFile() {
   string file = tmp_dir_ + "/log.1";
+  remove(file.c_str());
+  file = tmp_dir_ + "/log.3";
   remove(file.c_str());
 }
 
@@ -54,6 +103,12 @@ TEST_F(TransactionLogIteratorTest, AppendTest) {
   TransactionLogIterator iter(tmp_dir_, 1);
   header = iter.header();
   ASSERT_EQ(1u, header->gxid);
+  iter.Next();
+  header = iter.header();
+  ASSERT_EQ(2u, header->gxid);
+  iter.Next();
+  header = iter.header();
+  ASSERT_EQ(3u, header->gxid);
 }
 };
 

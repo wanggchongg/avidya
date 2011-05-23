@@ -20,7 +20,7 @@ struct TransactionLogIterator::Impl {
   Impl(const string &log_dir, uint64 gxid);
   ~Impl();
   void Init();
-  void GetNextFileContent();
+  bool GetNextFileContent();
   bool Next();
   void Close();
   TransactionHeader* header();
@@ -30,7 +30,6 @@ struct TransactionLogIterator::Impl {
   uint64 gxid_;
   string buffer_;
   TransactionHeader header_;
-  ::google::protobuf::Message *record;
 };
 
 TransactionLogIterator::Impl::Impl(
@@ -58,7 +57,9 @@ void TransactionLogIterator::Impl::Init() {
     sorted_files_.push_back(*iter);
     break;
   }
-  GetNextFileContent();
+  if (!GetNextFileContent()) {
+    return;
+  }
   if (!Next()) {
     return;
   }
@@ -69,7 +70,10 @@ void TransactionLogIterator::Impl::Init() {
   }
 }
 
-void  TransactionLogIterator::Impl::GetNextFileContent() {
+bool  TransactionLogIterator::Impl::GetNextFileContent() {
+  if (sorted_files_.empty()) {
+    return false;
+  }
   string file = log_dir_ + sorted_files_.back();
   sorted_files_.pop_back();
   ASSERT_TRUE(FileUtility::ReadFileContents(file, &buffer_));
@@ -77,9 +81,16 @@ void  TransactionLogIterator::Impl::GetNextFileContent() {
   ASSERT_TRUE(ParseFileHeaderFromString(buffer_, &file_header));
   // skip the file header
   buffer_ = buffer_.substr(FILE_HEADER_SIZE);
+  return true;
 }
 
 bool TransactionLogIterator::Impl::Next() {
+  if (buffer_.length() < TRANSACTION_HEADER_SIZE) {
+    if (!GetNextFileContent()) {
+      return false;
+    }
+    return Next();
+  }
   if (!ParseTransactionHeaderFromString(buffer_, &header_)) {
     return false;
   }
@@ -88,6 +99,7 @@ bool TransactionLogIterator::Impl::Next() {
 }
 
 void TransactionLogIterator::Impl::Close() {
+  sorted_files_.clear();
 }
 
 TransactionHeader* TransactionLogIterator::Impl::header() {

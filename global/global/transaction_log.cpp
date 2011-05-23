@@ -57,6 +57,9 @@ TransactionLog::Impl::~Impl() {
 }
 
 void TransactionLog::Impl::Roll() {
+  if (!file_) {
+    return;
+  }
   fflush(file_);
   fclose(file_);
   file_ = NULL;
@@ -82,11 +85,25 @@ bool TransactionLog::Impl::Append(
 }
 
 TransactionLogIterator* TransactionLog::Impl::Read(uint64 gxid) {
-  return NULL;
+  return new TransactionLogIterator(log_dir_, gxid);
 }
 
 uint64 TransactionLog::Impl::GetLastLoggedGxid() const {
-  return 0;
+  list<string> files;
+  if (!SortFiles(log_dir_, "log", false, &files)) {
+    return 0;
+  }
+  string last_file = *(files.begin());
+  uint64 gxid = GetGxidOfFileName(last_file, "log");
+  TransactionLogIterator iter(log_dir_, gxid);
+  while (true) {
+    if (!iter.Next()) {
+      break;
+    }
+    TransactionHeader *header = iter.header();
+    gxid = header->gxid;
+  }
+  return gxid;
 }
 
 uint64 TransactionLog::Impl::dbid() const {

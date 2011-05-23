@@ -29,31 +29,73 @@ class TransactionLogTest : public testing::Test {
 
 void TransactionLogTest::CreateTestLogFile() {
   TransactionLog log(tmp_dir_);
-  global::TransactionHeader header;
-  header.client_id = 1;
-  header.cxid = 1;
-  header.gxid = 1;
-  header.time = 1;
-  header.type = 1;
-  header.checksum = 1;
-  global::Delete record;
-  record.set_path("test");
-  header.record_length = record.ByteSize();
-  log.Append(header, &record);
-
-  header.client_id = 1;
-  header.cxid = 1;
-  header.gxid = 22;
-  header.time = 1;
-  header.type = 1;
-  header.checksum = 1;
-  record.set_path("test2");
-  header.record_length = record.ByteSize();
-  log.Append(header, &record);
+  {
+    {
+      global::TransactionHeader header;
+      header.client_id = 1;
+      header.cxid = 1;
+      header.gxid = 1;
+      header.time = 1;
+      header.type = 1;
+      header.checksum = 1;
+      global::Delete record;
+      record.set_path("test");
+      header.record_length = record.ByteSize();
+      log.Append(header, &record);
+      log.Commit();
+    }
+    {
+      global::TransactionHeader header;
+      header.client_id = 1;
+      header.cxid = 1;
+      header.gxid = 2;
+      header.time = 1;
+      header.type = 1;
+      header.checksum = 1;
+      global::Delete record;
+      record.set_path("test2");
+      header.record_length = record.ByteSize();
+      log.Append(header, &record);
+      log.Commit();
+    }
+  }
+  {
+    TransactionLog log(tmp_dir_);
+    {
+      global::TransactionHeader header;
+      header.client_id = 1;
+      header.cxid = 1;
+      header.gxid = 3;
+      header.time = 1;
+      header.type = 1;
+      header.checksum = 1;
+      global::Delete record;
+      record.set_path("test");
+      header.record_length = record.ByteSize();
+      log.Append(header, &record);
+      log.Commit();
+    }
+    {
+      global::TransactionHeader header;
+      header.client_id = 1;
+      header.cxid = 1;
+      header.gxid = 4;
+      header.time = 1;
+      header.type = 1;
+      header.checksum = 1;
+      global::Delete record;
+      record.set_path("test2");
+      header.record_length = record.ByteSize();
+      log.Append(header, &record);
+      log.Commit();
+    }
+  }
 }
 
 void TransactionLogTest::DeleteTestLogFile() {
   string file = tmp_dir_ + "/log.1";
+  remove(file.c_str());
+  file = tmp_dir_ + "/log.3";
   remove(file.c_str());
 }
 
@@ -73,7 +115,10 @@ TEST_F(TransactionLogTest, AppendTest) {
   ASSERT_EQ(1u, header.gxid);
   content = content.substr(TRANSACTION_HEADER_SIZE + header.record_length);
   ASSERT_TRUE(ParseTransactionHeaderFromString(content, &header));
-  ASSERT_EQ(22u, header.gxid);
+  ASSERT_EQ(2u, header.gxid);
+
+  TransactionLog log(tmp_dir_);
+  ASSERT_EQ(4u, log.GetLastLoggedGxid());
   return;
 }
 };
