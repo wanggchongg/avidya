@@ -25,6 +25,10 @@ class TransactionLog {
 
   uint64 GetLastLoggedGxid() const;
 
+  bool GetLogFiles(list<string> *files, uint64 gxid) const;
+
+  bool Truncate(uint64 gxid);
+
   uint64 dbid() const;
 
   void Commit();

@@ -33,6 +33,7 @@ struct TransactionHeader {
       type(0), checksum(0), record_length(0) {
   }
 };
+
 #define FILE_HEADER_SIZE sizeof(TransactionLogFileHeader)
 #define TRANSACTION_HEADER_SIZE sizeof(TransactionHeader)
 };

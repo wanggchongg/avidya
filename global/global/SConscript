@@ -12,11 +12,14 @@ src_files = [
   #'quorum_peer_server.cpp',
   #'quorum_peer_manager.cpp',
   #'fast_leader_election.cpp',
+  'data_tree.cpp',
   'transaction_log.cpp',
   'transaction_log_iterator.cpp',
   'utility.cpp',
   'serialize_utility.cpp',
+  'data_node_header.cpp',
   'record.pb.cc',
+  'transaction.pb.cc',
 ]
 
 protobuf_files = [
@@ -24,6 +27,6 @@ protobuf_files = [
   '../protocol/leader_election.pb.cc',
 ]
 
-#global_env.ProtocolBuffer('transaction.proto')
+global_env.ProtocolBuffer('transaction.proto')
 global_env.ProtocolBuffer('record.proto')
 global_env.StaticLibrary('global', src_files)
