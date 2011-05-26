@@ -29,4 +29,28 @@ bool FileUtility::ReadFileContents(const string &file,
   }
   return true;
 }
+
+bool FileUtility::WriteFileContents(const string &file,
+                                    const string &content) {
+  mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+  int fd = open(file.c_str(), O_WRONLY | O_CREAT, mode);
+  if (fd < 0) {
+    LOG_ERROR() << "open file " << file << " for write error: "
+      << strerror(errno);
+    return false;
+  }
+  ssize_t pos = 0, length;
+  const char *ptr = content.c_str();
+  while (true) {
+    length = write(fd, ptr, content.length() - pos);
+    if (pos + length == content.length()) {
+      return true;
+    }
+    if (length == -1) {
+      return false;
+    }
+    pos += length;
+    ptr += length;
+  }
+}
 };
