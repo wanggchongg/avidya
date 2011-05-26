@@ -8,7 +8,6 @@
 #include "global/transaction_log.h"
 #include "global/transaction_log_iterator.h"
 #include "global/utility.h"
-#include "global/serialize_utility.h"
 namespace {
 static const char kLogFileHeaderMagic[] = "GTLOG";
 static const uint32 kLogVersion = 1;
@@ -49,7 +48,7 @@ TransactionLog::Impl::Impl(const string &log_dir)
   file_header_.magic = atol(kLogFileHeaderMagic);
   file_header_.version = kLogVersion;
   file_header_.dbid = kDbId;
-  SerializeFileHeaderToString(file_header_, &file_header_string_);
+  file_header_.Serialize(&file_header_string_);
 }
 
 TransactionLog::Impl::~Impl() {
@@ -76,7 +75,7 @@ bool TransactionLog::Impl::Append(
            file_header_string_.length(), file_);
   }
   string output;
-  SerializeTransactionHeaderToString(header, &output);
+  header.Serialize(&output);
   fwrite(output.c_str(), sizeof(char), output.length(), file_);
   output = "";
   message->SerializeToString(&output);

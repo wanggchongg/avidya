@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Lichuang
  */
-#ifndef __GLOBAL_TRANSACTION_H__
-#define __GLOBAL_TRANSACTION_H__
+#ifndef __GLOBAL_TRANSACTION_HEADER_H__
+#define __GLOBAL_TRANSACTION_HEADER_H__
 #include <string>
 #include <eventrpc/base.h>
 using namespace std;
@@ -18,6 +18,8 @@ struct TransactionLogFileHeader {
   TransactionLogFileHeader()
     : magic(0), version(0), dbid(0) {
   }
+  bool Serialize(string *output) const;
+  bool Deserialize(const string &input);
 };
 
 struct TransactionHeader {
@@ -32,9 +34,11 @@ struct TransactionHeader {
     : client_id(0), cxid(0), gxid(0), time(0),
       type(0), checksum(0), record_length(0) {
   }
+  bool Serialize(string *output) const;
+  bool Deserialize(const string &input);
 };
 
 #define FILE_HEADER_SIZE sizeof(TransactionLogFileHeader)
 #define TRANSACTION_HEADER_SIZE sizeof(TransactionHeader)
 };
-#endif  // __GLOBAL_TRANSACTION_H__
+#endif  // __GLOBAL_TRANSACTION_HEADER_H__

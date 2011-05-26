@@ -7,11 +7,9 @@
 #include <eventrpc/string_utility.h>
 #include <eventrpc/file_utility.h>
 #include <eventrpc/log.h>
-#include "global/transaction.h"
 #include "global/transaction_log.h"
 #include "global/transaction_log_iterator.h"
 #include "global/utility.h"
-#include "global/serialize_utility.h"
 #include "global/record.pb.h"
 using namespace eventrpc;
 namespace global {
@@ -78,7 +76,7 @@ bool  TransactionLogIterator::Impl::GetNextFileContent() {
   sorted_files_.pop_back();
   ASSERT_TRUE(FileUtility::ReadFileContents(file, &buffer_));
   TransactionLogFileHeader file_header;
-  ASSERT_TRUE(ParseFileHeaderFromString(buffer_, &file_header));
+  ASSERT_TRUE(file_header.Deserialize(buffer_));
   // skip the file header
   buffer_ = buffer_.substr(FILE_HEADER_SIZE);
   return true;
@@ -91,7 +89,7 @@ bool TransactionLogIterator::Impl::Next() {
     }
     return Next();
   }
-  if (!ParseTransactionHeaderFromString(buffer_, &header_)) {
+  if (!header_.Deserialize(buffer_)) {
     return false;
   }
   buffer_ = buffer_.substr(TRANSACTION_HEADER_SIZE + header_.record_length);

@@ -6,7 +6,7 @@
 #include <eventrpc/file_utility.h>
 #include "global/transaction_log_iterator.h"
 #include "global/transaction_log.h"
-#include "global/serialize_utility.h"
+#include "global/transaction_log_header.h"
 
 using namespace eventrpc;
 namespace global {
@@ -104,17 +104,17 @@ TEST_F(TransactionLogTest, AppendTest) {
   string content;
   ASSERT_TRUE(FileUtility::ReadFileContents(file_name, &content));
   TransactionLogFileHeader file_header;
-  ASSERT_TRUE(ParseFileHeaderFromString(content, &file_header));
+  ASSERT_TRUE(file_header.Deserialize(content));
   ASSERT_EQ(1u, file_header.dbid);
   ASSERT_EQ(atol("GTLOG"), file_header.magic);
   ASSERT_EQ(1u, file_header.version);
 
   content = content.substr(FILE_HEADER_SIZE);
   TransactionHeader header;
-  ASSERT_TRUE(ParseTransactionHeaderFromString(content, &header));
+  ASSERT_TRUE(header.Deserialize(content));
   ASSERT_EQ(1u, header.gxid);
   content = content.substr(TRANSACTION_HEADER_SIZE + header.record_length);
-  ASSERT_TRUE(ParseTransactionHeaderFromString(content, &header));
+  ASSERT_TRUE(header.Deserialize(content));
   ASSERT_EQ(2u, header.gxid);
 
   TransactionLog log(tmp_dir_);

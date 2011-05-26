@@ -4,7 +4,7 @@
 #ifndef __GLOBAL_TRANSACTION_LOG_ITERATOR_H__
 #define __GLOBAL_TRANSACTION_LOG_ITERATOR_H__
 #include <eventrpc/base.h>
-#include "global/transaction.h"
+#include "global/transaction_log_header.h"
 using namespace std;
 namespace global {
 class TransactionLogIterator {

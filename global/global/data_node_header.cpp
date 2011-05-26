@@ -6,7 +6,7 @@
 #include "global/data_node_header.h"
 using namespace eventrpc;
 namespace global {
-bool DataNodeHeader::Serialize(string *output) {
+bool DataNodeHeader::Serialize(string *output) const {
   ASSERT(output != NULL);
   output->append(StringUtility::SerializeUint32ToString(node_size));
   return true;

@@ -4,10 +4,10 @@
 #include <string>
 #include <gtest/gtest.h>
 #include <eventrpc/file_utility.h>
-#include "global/serialize_utility.h"
+#include "global/transaction_log_header.h"
 using namespace std;
 namespace global {
-class SerializeUtilityTest : public testing::Test {
+class TransactionHeaderTest : public testing::Test {
  public:
   void SetUp() {
   }
@@ -16,20 +16,20 @@ class SerializeUtilityTest : public testing::Test {
   }
 };
 
-TEST_F(SerializeUtilityTest, FileHeaderTest) {
+TEST_F(TransactionHeaderTest, FileHeaderTest) {
   TransactionLogFileHeader file_header, parse_result;
   file_header.magic = 100;
   file_header.version = 101;
   file_header.dbid = 102;
   string result;
-  ASSERT_TRUE(SerializeFileHeaderToString(file_header, &result));
-  ASSERT_TRUE(ParseFileHeaderFromString(result, &parse_result));
+  ASSERT_TRUE(file_header.Serialize(&result));
+  ASSERT_TRUE(parse_result.Deserialize(result));
   ASSERT_EQ(file_header.magic, parse_result.magic);
   ASSERT_EQ(file_header.version, parse_result.version);
   ASSERT_EQ(file_header.dbid, parse_result.dbid);
 }
 
-TEST_F(SerializeUtilityTest, TransactionHeaderTest) {
+TEST_F(TransactionHeaderTest, TransactionHeaderTest) {
   TransactionHeader header, parse_result;
   header.client_id = 10;
   header.cxid = 101;
@@ -40,8 +40,8 @@ TEST_F(SerializeUtilityTest, TransactionHeaderTest) {
   header.record_length = 100;
 
   string result;
-  ASSERT_TRUE(SerializeTransactionHeaderToString(header, &result));
-  ASSERT_TRUE(ParseTransactionHeaderFromString(result, &parse_result));
+  ASSERT_TRUE(header.Serialize(&result));
+  ASSERT_TRUE(parse_result.Deserialize(result));
   ASSERT_EQ(header.client_id, parse_result.client_id);
   ASSERT_EQ(header.cxid, parse_result.cxid);
   ASSERT_EQ(header.gxid, parse_result.gxid);

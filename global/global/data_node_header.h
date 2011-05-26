@@ -12,7 +12,7 @@ struct DataNodeHeader {
   DataNodeHeader()
     : node_size(0) {
   }
-  bool Serialize(string *output);
+  bool Serialize(string *output) const;
   bool Deserialize(const string &input);
 };
 #define DATA_NODE_HEADER_SIZE sizeof(DataNodeHeader)

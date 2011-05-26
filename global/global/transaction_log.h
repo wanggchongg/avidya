@@ -6,7 +6,7 @@
 #include <list>
 #include <string>
 #include <eventrpc/base.h>
-#include "global/transaction.h"
+#include "global/transaction_log_header.h"
 #include "global/record.pb.h"
 using namespace std;
 namespace global {
