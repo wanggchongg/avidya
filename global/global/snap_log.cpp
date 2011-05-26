@@ -24,7 +24,8 @@ struct SnapLog::Impl {
   bool Deserialize(DataTree *data_tree,
                    map<uint64, uint64> *session_timeouts) const;
   bool Serialize(const DataTree &data_tree,
-                 const map<uint64, uint64> &session_timeouts);
+                 const map<uint64, uint64> &session_timeouts,
+                 string *output);
   bool FindNValidSnapshots(uint32 count, list<string> *files) const;
 
   string log_dir_;
@@ -60,8 +61,26 @@ bool SnapLog::Impl::Deserialize(
   return true;
 }
 
-bool SnapLog::Impl::Serialize(const DataTree &data_tree,
-                              const map<uint64, uint64> &session_timeouts) {
+bool SnapLog::Impl::Serialize(
+    const DataTree &data_tree,
+    const map<uint64, uint64> &session_timeouts,
+    string *output) {
+  global::SnapLogFileHeader header;
+  header.magic = atol(kSnapLogFileHeaderMagic);
+  header.version = kLogVersion;
+  header.dbid = kDbId;
+  global::SessionList session_list;
+  ASSERT_TRUE(SerializeSessionList(session_timeouts, &session_list));
+  header.session_size = session_list.ByteSize();
+  string header_content;
+  ASSERT_TRUE(header.Serialize(&header_content));
+  string session_list_content;
+  ASSERT_TRUE(session_list.SerializeToString(&session_list_content));
+  string data_tree_content;
+  ASSERT_TRUE(data_tree.Serialize(&data_tree_content));
+  *output = header_content;
+  output->append(session_list_content);
+  output->append(data_tree_content);
   return true;
 }
 
@@ -87,8 +106,10 @@ bool SnapLog::Deserialize(
   return impl_->Deserialize(data_tree, session_timeouts);
 }
 
-bool SnapLog::Serialize(const DataTree &data_tree,
-                        const map<uint64, uint64> &session_timeouts) {
-  return impl_->Serialize(data_tree, session_timeouts);
+bool SnapLog::Serialize(
+    const DataTree &data_tree,
+    const map<uint64, uint64> &session_timeouts,
+    string *output) {
+  return impl_->Serialize(data_tree, session_timeouts, output);
 }
 };

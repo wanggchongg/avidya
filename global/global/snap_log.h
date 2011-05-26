@@ -16,7 +16,8 @@ class SnapLog {
   bool Deserialize(DataTree *data_tree,
                    map<uint64, uint64> *session_timeouts) const;
   bool Serialize(const DataTree &data_tree,
-                 const map<uint64, uint64> &session_timeouts);
+                 const map<uint64, uint64> &session_timeouts,
+                 string *output);
  private:
   struct Impl;
   Impl *impl_;

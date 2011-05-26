@@ -12,7 +12,7 @@ struct DataTree::Impl {
   ~Impl();
 
   bool Deserialize(const string &input);
-  bool Serialize(string *output);
+  bool Serialize(string *output) const;
 
   bool AddNode(const global::NodeData &node);
   TreeNode* GetParentNode(const string &path);
@@ -77,8 +77,8 @@ bool DataTree::Impl::Deserialize(const string &input) {
   return true;
 }
 
-bool DataTree::Impl::Serialize(string *output) {
-  NodeMap::iterator iter;
+bool DataTree::Impl::Serialize(string *output) const {
+  NodeMap::const_iterator iter;
   for (iter = nodes_.begin(); iter != nodes_.end(); ++iter) {
     TreeNode *node = iter->second;
     DataNodeHeader header;
@@ -220,7 +220,7 @@ bool DataTree::Deserialize(const string &input) {
   return impl_->Deserialize(input);
 }
 
-bool DataTree::Serialize(string *output) {
+bool DataTree::Serialize(string *output) const {
   return impl_->Serialize(output);
 }
 

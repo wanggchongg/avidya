@@ -25,7 +25,7 @@ class DataTree {
   ~DataTree();
 
   bool Deserialize(const string &input);
-  bool Serialize(string *output);
+  bool Serialize(string *output) const;
 
   bool AddNode(const global::NodeData &node);
   TreeNode* GetNode(const string &path);
@@ -33,6 +33,7 @@ class DataTree {
   TreeNode* SetData(const string &path, const string &data,
                     uint32 version, uint32 gxid, uint64 time);
   bool GetChildren(const string &path, list<string> *children) const;
+
  private:
   struct Impl;
   Impl *impl_;
