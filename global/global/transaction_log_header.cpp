@@ -31,6 +31,35 @@ bool TransactionLogFileHeader::Deserialize(const string &input) {
   return true;
 }
 
+bool SnapLogFileHeader::Serialize(string *output) const {
+  ASSERT(output != NULL);
+  // uint32 magic
+  output->append(StringUtility::SerializeUint32ToString(magic));
+  // uint32 version
+  output->append(StringUtility::SerializeUint32ToString(version));
+  // uint32 dbid
+  output->append(StringUtility::SerializeUint32ToString(dbid));
+  // uint32 session_size
+  output->append(StringUtility::SerializeUint32ToString(session_size));
+  return true;
+}
+
+bool SnapLogFileHeader::Deserialize(const string &input) {
+  uint32 pos = 0;
+  uint32 size = sizeof(uint32);
+  magic = StringUtility::DeserializeStringToUint32(
+      input.substr(pos, size));
+  pos += size;
+  version = StringUtility::DeserializeStringToUint32(
+      input.substr(pos, size));
+  pos += size;
+  dbid = StringUtility::DeserializeStringToUint32(
+      input.substr(pos));
+  pos += size;
+  session_size = StringUtility::DeserializeStringToUint32(
+      input.substr(pos));
+  return true;
+}
 bool TransactionHeader::Serialize(string *output) const {
   ASSERT(output != NULL);
   // uint64 client id

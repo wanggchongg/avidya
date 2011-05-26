@@ -50,6 +50,21 @@ TEST_F(TransactionHeaderTest, TransactionHeaderTest) {
   ASSERT_EQ(header.checksum, parse_result.checksum);
   ASSERT_EQ(header.record_length, parse_result.record_length);
 }
+
+TEST_F(TransactionHeaderTest, TestSnapLogFileHeader) {
+  SnapLogFileHeader header, parse_result;
+  header.magic = 101;
+  header.version = 102;
+  header.dbid = 103;
+  header.session_size = 104;
+  string content;
+  ASSERT_TRUE(header.Serialize(&content));
+  ASSERT_TRUE(parse_result.Deserialize(content));
+  ASSERT_EQ(header.magic, parse_result.magic);
+  ASSERT_EQ(header.version, parse_result.version);
+  ASSERT_EQ(header.dbid, parse_result.dbid);
+  ASSERT_EQ(header.session_size, parse_result.session_size);
+}
 };
 
 int main(int argc, char *argv[]) {

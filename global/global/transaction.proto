@@ -1,5 +1,14 @@
 package global;
 
+message Session {
+  required uint64 id = 1;
+  required uint64 timeout = 2;
+};
+
+message SessionList {
+  repeated Session sessions = 1;
+};
+
 message NodeStat {
   required uint64 cgxid = 1;
   required uint64 mgxid = 2;

@@ -22,6 +22,19 @@ struct TransactionLogFileHeader {
   bool Deserialize(const string &input);
 };
 
+struct SnapLogFileHeader {
+  uint32 magic;
+  uint32 version;
+  uint32 dbid;
+  uint32 session_size;
+
+  SnapLogFileHeader()
+    : magic(0), version(0), dbid(0), session_size(0) {
+  }
+  bool Serialize(string *output) const;
+  bool Deserialize(const string &input);
+};
+
 struct TransactionHeader {
   uint64 client_id;
   uint32 cxid;
@@ -40,5 +53,6 @@ struct TransactionHeader {
 
 #define FILE_HEADER_SIZE sizeof(TransactionLogFileHeader)
 #define TRANSACTION_HEADER_SIZE sizeof(TransactionHeader)
+#define SNAP_LOG_HEADER_SIZE sizeof(SnapLogFileHeader)
 };
 #endif  // __GLOBAL_TRANSACTION_HEADER_H__
