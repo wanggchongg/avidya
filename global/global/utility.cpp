@@ -20,7 +20,7 @@ bool SortFiles(const string &directory,
       << " error:" << strerror(errno);
     return false;
   }
-  uint64 save_gxid = 0, gxid = 0;
+  uint64 gxid = 0;
   map<uint64, string, greater<uint64> > descending_map;
   map<uint64, string, less<uint64> > ascending_map;
   while ((dirp = readdir(dir)) != NULL) {

@@ -6,10 +6,10 @@ message ServerInfo
   required uint32 leader_port = 2;
   required uint32 election_port = 3;
   required uint64 server_id = 4;
-}
+};
 
 message ServerConfig
 {
-  required uint64 server_id = 1;
+  required uint64 my_server_id = 1;
   repeated ServerInfo server_info = 2;
-}
+};

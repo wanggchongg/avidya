@@ -16,7 +16,7 @@ class QuorumPeerManager {
   explicit QuorumPeerManager();
   ~QuorumPeerManager();
 
-  uint64 server_id() const;
+  uint64 my_server_id() const;
 
   bool ParseConfigFile(const string &config_file);
 

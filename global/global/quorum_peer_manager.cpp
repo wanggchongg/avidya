@@ -13,7 +13,7 @@ struct QuorumPeerManager::Impl {
   Impl();
   ~Impl();
 
-  uint64 server_id() const;
+  uint64 my_server_id() const;
 
   bool ParseConfigFile(const string &config_file);
 
@@ -52,20 +52,21 @@ QuorumPeer* QuorumPeerManager::Impl::FindQuorumPeerById(uint64 server_id) {
   return iter->second;
 }
 
-uint64 QuorumPeerManager::Impl::server_id() const {
-  return server_config_.server_id();
+uint64 QuorumPeerManager::Impl::my_server_id() const {
+  return server_config_.my_server_id();
 }
 
 bool QuorumPeerManager::Impl::ParseConfigFile(const string &config_file) {
   string content;
   if (!eventrpc::FileUtility::ReadFileContents(config_file,
                                                &content)) {
-    LOG_ERROR() << "cannot config file " << config_file;
+    LOG_ERROR() << "cannot read config file " << config_file;
     return false;
   }
-  if (google::protobuf::TextFormat::ParseFromString(
+  if (!google::protobuf::TextFormat::ParseFromString(
       content, &server_config_)) {
-    LOG_ERROR() << "parse from file " << config_file << " error";
+    LOG_ERROR() << "parse file " << config_file
+      << " error: \n" << content;
     return false;
   }
   uint64 server_id = 0;
@@ -80,6 +81,7 @@ bool QuorumPeerManager::Impl::ParseConfigFile(const string &config_file) {
     ASSERT(peer);
     quorum_peer_map_[server_id] = peer;
   }
+  return true;
 }
 
 QuorumPeerManager::QuorumPeerManager()
@@ -98,11 +100,11 @@ void QuorumPeerManager::set_dispatcher(eventrpc::Dispatcher *dispatcher) {
   impl_->set_dispatcher(dispatcher);
 }
 
-uint64 QuorumPeerManager::server_id() const {
-  return impl_->server_id();
+uint64 QuorumPeerManager::my_server_id() const {
+  return impl_->my_server_id();
 }
 
 bool QuorumPeerManager::ParseConfigFile(const string &config_file) {
-  impl_->ParseConfigFile(config_file);
+  return impl_->ParseConfigFile(config_file);
 }
 };

@@ -3,7 +3,6 @@
  */
 #ifndef __GLOBAL_QUORUM_PEER_SERVER_H__
 #define __GLOBAL_QUORUM_PEER_SERVER_H__
-#include <eventrpc/thread.h>
 namespace global {
 class QuorumPeerManager;
 class QuorumPeerServer {
