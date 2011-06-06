@@ -9,7 +9,6 @@
 using std::string;
 
 namespace eventrpc {
-
 class RpcServer {
  public:
   RpcServer();
@@ -29,8 +28,12 @@ class RpcServer {
     return &rpc_method_manager_;
   }
 
+  void set_dispatcher(Dispatcher *dispatcher) {
+    dispatcher_ = dispatcher;
+  }
+
   Dispatcher* dispatcher() {
-    return &dispatcher_;
+    return dispatcher_;
   }
 
  private:
@@ -64,7 +67,7 @@ class RpcServer {
   RpcServerEvent *event_;
   RpcMethodManager rpc_method_manager_;
   RpcConnectionManager rpc_connection_manager_;
-  Dispatcher dispatcher_;
+  Dispatcher *dispatcher_;
 };
 };
 #endif  //  __EVENTRPC_RPC_SERVER_H__

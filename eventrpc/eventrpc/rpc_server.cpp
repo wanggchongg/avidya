@@ -16,17 +16,16 @@ RpcServer::RpcServer()
 }
 
 RpcServer::~RpcServer() {
-  dispatcher_.DeleteEvent(event_);
+  dispatcher_->DeleteEvent(event_);
   delete event_;
 }
 
 void RpcServer::Start() {
-  dispatcher_.Start();
   listen_fd_ = NetUtility::Listen(host_.c_str(), port_);
   ASSERT_TRUE(listen_fd_ > 0);
   event_ = new RpcServer::RpcServerEvent(listen_fd_,
                                          EVENT_READ, this);
-  dispatcher_.AddEvent(event_);
+  dispatcher_->AddEvent(event_);
   ASSERT_NE(static_cast<RpcServerEvent*>(NULL), event_);
   sigset_t new_mask;
   sigfillset(&new_mask);
@@ -44,7 +43,7 @@ void RpcServer::Start() {
 }
 
 void RpcServer::Stop() {
-  dispatcher_.Stop();
+  dispatcher_->Stop();
 }
 
 int RpcServer::HandleAccept() {
@@ -64,8 +63,8 @@ int RpcServer::HandleAccept() {
     connection->set_client_address(address);
     connection->set_rpc_method_manager(&rpc_method_manager_);
     connection->set_rpc_connection_manager(&rpc_connection_manager_);
-    connection->set_dispacher(&dispatcher_);
-    dispatcher_.AddEvent(connection->event());
+    connection->set_dispacher(dispatcher_);
+    dispatcher_->AddEvent(connection->event());
   }
 }
 
