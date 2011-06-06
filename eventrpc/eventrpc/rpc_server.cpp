@@ -52,6 +52,7 @@ int RpcServer::HandleAccept() {
     connection->set_dispacher(dispatcher_);
     dispatcher_->AddEvent(connection->event());
   }
+  return 0;
 }
 
 }; // namespace eventrpc

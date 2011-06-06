@@ -23,7 +23,7 @@ struct RpcChannelCallback : public Callback {
   gpb::Closure *done;
   uint32 method_id;
   string send_message;
-  ssize_t sent_count;
+  uint32 sent_count;
   gpb::Message *response;
   Meta recv_meta;
   RpcChannelCallback(RpcChannel::Impl *impl)
@@ -88,10 +88,10 @@ struct RpcChannel::Impl {
 
   void FreeCurrentReadCallback();
 
-  RpcChannelEvent event_;
   const char *host_;
   int port_;
   Dispatcher *dispatcher_;
+  RpcChannelEvent event_;
   char buffer_[kBufferLength];
   typedef std::list<RpcChannelCallback*> RpcChannelCallbackList;
   RpcChannelCallbackList send_callback_list_;
@@ -215,7 +215,7 @@ void RpcChannel::Impl::FreeCurrentReadCallback() {
 int RpcChannel::Impl::HandleRead() {
   VLOG_INFO() << "HandleRead";
   int32 length = 0;
-  int32 result = 0;
+  uint32 result = 0;
   while (true) {
     length = 0;
     if (!NetUtility::Recv(event_.fd_, buffer_,
@@ -283,7 +283,7 @@ int RpcChannel::Impl::SendServiceRequest(RpcChannelCallback *callback) {
 
 int RpcChannel::Impl::HandleWrite() {
   RpcChannelCallbackList::iterator iter, tmp_iter;
-  int result = 0;
+  uint32 result = 0;
   for (iter = send_callback_list_.begin();
        iter != send_callback_list_.end(); ) {
     VLOG_INFO() << "HandleWrite";
@@ -303,10 +303,11 @@ int RpcChannel::Impl::HandleWrite() {
     // waiting the next send time
     return result;
   }
+  return result;
 }
 
 void RpcChannelCallback::Run() {
-  int result = impl_->SendServiceRequest(this);
+  uint32 result = impl_->SendServiceRequest(this);
   if (result == kSuccess) {
     return;
   }

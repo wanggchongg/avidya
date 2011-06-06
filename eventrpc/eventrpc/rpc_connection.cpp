@@ -65,7 +65,7 @@ struct RpcConnectionCallback : public Callback {
   RpcConnection::Impl *impl_;
   Meta meta;
   string message_buffer;
-  ssize_t sent_count;
+  uint32 sent_count;
   HandleState handle_state;
 };
 
@@ -233,7 +233,7 @@ int RpcConnection::Impl::SendServiceResponse(RpcConnectionCallback *callback) {
 int RpcConnection::Impl::HandleWrite() {
   VLOG_INFO() << "HandleWrite";
   RpcCallbackList::iterator iter, tmp_iter;
-  int result = kSuccess;
+  uint32 result = kSuccess;
   for (iter = handledone_callback_list_.begin();
        iter != handledone_callback_list_.end(); ) {
     RpcConnectionCallback *callback = *iter;
@@ -258,6 +258,7 @@ int RpcConnection::Impl::HandleWrite() {
     // waiting the next send time
     return result;
   }
+  return result;
 }
 
 void RpcConnectionCallback::Run() {
@@ -272,7 +273,7 @@ void RpcConnectionCallback::Run() {
 int RpcConnection::Impl::HandleRead() {
   int recv_length = 0;;
   bool ret = false;
-  int result = 0;
+  uint32 result = 0;
   while (true) {
     ret = NetUtility::Recv(event_.fd_, recv_buffer_,
                            kBufferLength, &recv_length);
@@ -348,7 +349,7 @@ int RpcConnection::Impl::HandleReadMessageState() {
 }
 
 int RpcConnection::Impl::StateMachine() {
-  int32 ret;
+  uint32 ret;
   while (true) {
     if (state_ == READ_META) {
       ret = HandleReadMetaState();
@@ -372,7 +373,7 @@ void RpcConnection::Impl::HandleServiceDone(RpcConnectionCallback *callback) {
   VLOG_INFO() << "HandleServiceDone for response request id "
     << callback->meta.request_id();
   callback->handle_state = RpcConnectionCallback::HANDLE_SERVICE_DONE;
-  int32 result = SendServiceResponse(callback);
+  uint32 result = SendServiceResponse(callback);
   if (result == kSuccess) {
     return;
   }

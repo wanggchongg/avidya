@@ -26,5 +26,6 @@ void Thread::Start() {
 void* Thread::ThreadMain(void* arg) {
   Thread *thread = static_cast<Thread*>(arg);
   thread->runnable_->Run();
+  return NULL;
 }
 };

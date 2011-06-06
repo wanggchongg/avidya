@@ -73,6 +73,8 @@ class Dispatcher {
   typedef vector<EventEntry*> EventVector;
   EventVector retired_events_;
   EventVector operated_events_[2];
+  DispatcherRunnable runnable_;
+  Thread thread_;
   EventVector *current_operate_events_;
   EventVector *waiting_operate_events_;
   SpinMutex spin_mutex_;
@@ -84,8 +86,6 @@ class Dispatcher {
   CallbackList *waiting_handle_tasks_;
 
   epoll_event epoll_event_buf_[EPOLL_MAX_EVENTS];
-  DispatcherRunnable runnable_;
-  Thread thread_;
 };
 };
 

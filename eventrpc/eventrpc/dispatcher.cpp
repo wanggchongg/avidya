@@ -141,7 +141,7 @@ int Dispatcher::HandleTasks() {
     SpinMutexLock lock(&task_spin_mutex_);
     CallbackList *tmp_task_list = current_handle_tasks_;
     current_handle_tasks_ = waiting_handle_tasks_;
-    waiting_handle_tasks_ = current_handle_tasks_;
+    waiting_handle_tasks_ = tmp_task_list;
   }
 
   for (CallbackList::iterator iter = current_handle_tasks_->begin();

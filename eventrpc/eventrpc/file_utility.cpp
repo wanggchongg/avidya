@@ -43,7 +43,7 @@ bool FileUtility::WriteFileContents(const string &file,
   const char *ptr = content.c_str();
   while (true) {
     length = write(fd, ptr, content.length() - pos);
-    if (pos + length == content.length()) {
+    if (static_cast<uint32>(pos + length) == content.length()) {
       return true;
     }
     if (length == -1) {

@@ -12,7 +12,7 @@ if int(release) == 1:
 else:
   env['objroot'] = env.Dir('build/debug').abspath
   env['DEBUG'] = True
-  env.Append(CCFLAGS=' -g ')
+  env.Append(CCFLAGS=' -g -Wall -Werror')
 
 env['srcroot'] = env.Dir('.').abspath
 objroot = env['objroot']

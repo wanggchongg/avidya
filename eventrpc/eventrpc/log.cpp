@@ -25,7 +25,7 @@ namespace eventrpc {
 
 Mutex kMutex;
 LogLevel kLogLevel = DEBUG1;
-static const int kLogPathLength = 200;
+static const uint32 kLogPathLength = 200;
 static char kLogPath[kLogPathLength] = "/tmp/";
 static char kProgramName[kLogPathLength] = "";
 static uint32_t kMaxLogSize = 1 << 20;
@@ -75,7 +75,7 @@ void SetMaxLogFileSize(uint32_t size) {
 
 void SetProgramName(const char *name) {
   MutexLock lock(&kMutex);
-  int length = strlen(name);
+  uint32 length = strlen(name);
   char *save_name = new char[length + 1];
   if (save_name == NULL) {
     printf("SetProgramName error");
@@ -154,7 +154,7 @@ void FileLogger::CreateLogFile(LogLevel loglevel,
   }
   file_ = fopen(log_filename_.c_str(), "w");
   if (file_ == NULL) {
-    printf("cannot open file %s for write, error",
+    printf("cannot open file %s for write, error: %s\n",
            log_filename_.c_str(), strerror(errno));
     abort();
   }
