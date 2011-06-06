@@ -4,11 +4,13 @@
  */
 #ifndef __EVENTRPC_NET_UTILITY_H__
 #define __EVENTRPC_NET_UTILITY_H__
+#include <string>
+using std::string;
 struct sockaddr_in;
 namespace eventrpc {
 class NetUtility {
  public:
-  static int Connect(const char *host, int port);
+  static int Connect(const string &host, int port);
 
   static int Listen(const char *ip, int port);
 

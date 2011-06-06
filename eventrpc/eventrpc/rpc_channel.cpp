@@ -62,7 +62,7 @@ struct RpcChannelEvent : public Event {
 
 struct RpcChannel::Impl {
  public:
-  Impl(const char *host, int port, Dispatcher *dispatcher);
+  Impl(const string &host, int port, Dispatcher *dispatcher);
 
   ~Impl();
 
@@ -88,7 +88,7 @@ struct RpcChannel::Impl {
 
   void FreeCurrentReadCallback();
 
-  const char *host_;
+  string host_;
   int port_;
   Dispatcher *dispatcher_;
   RpcChannelEvent event_;
@@ -102,7 +102,7 @@ struct RpcChannel::Impl {
   std::string recv_message_;
 };
 
-RpcChannel::Impl::Impl(const char *host, int port, Dispatcher *dispatcher)
+RpcChannel::Impl::Impl(const string &host, int port, Dispatcher *dispatcher)
   : host_(host),
     port_(port),
     dispatcher_(dispatcher),
@@ -326,7 +326,7 @@ int RpcChannelEvent::HandleWrite() {
   return impl_->HandleWrite();
 }
 
-RpcChannel::RpcChannel(const char *host, int port, Dispatcher *dispatcher) {
+RpcChannel::RpcChannel(const string &host, int port, Dispatcher *dispatcher) {
    impl_ = new Impl(host, port, dispatcher);
 }
 

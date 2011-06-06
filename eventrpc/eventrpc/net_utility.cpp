@@ -16,7 +16,7 @@
 
 namespace eventrpc {
 
-int NetUtility::Connect(const char *host, int port) {
+int NetUtility::Connect(const string &host, int port) {
   int fd = ::socket(AF_INET, SOCK_STREAM, 0);
 
   if (fd < 0) {
@@ -28,7 +28,7 @@ int NetUtility::Connect(const char *host, int port) {
   bzero(&servaddr, sizeof(servaddr));
   servaddr.sin_family = AF_INET;
   servaddr.sin_port = htons(port);
-  inet_pton(AF_INET, host, &servaddr.sin_addr);
+  inet_pton(AF_INET, host.c_str(), &servaddr.sin_addr);
 
   if (::connect(fd, (struct sockaddr *)&servaddr,
                 sizeof(servaddr)) < 0) {

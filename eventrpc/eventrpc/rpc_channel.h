@@ -3,12 +3,14 @@
  */
 #ifndef __EVENTRPC_RPC_CHANNEL_H__
 #define __EVENTRPC_RPC_CHANNEL_H__
+#include <string>
 #include <google/protobuf/service.h>
+using std::string;
 namespace eventrpc {
 class Dispatcher;
 class RpcChannel : public gpb::RpcChannel {
  public:
-  RpcChannel(const char *host, int port, Dispatcher *dispatcher);
+  RpcChannel(const string &host, int port, Dispatcher *dispatcher);
 
   virtual ~RpcChannel();
 
