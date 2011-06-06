@@ -1,7 +1,6 @@
 package global;
 
 message Dummy {
-  required string dummy = 1;
 }
 
 message Notification {

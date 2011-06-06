@@ -8,10 +8,9 @@ global_env['objroot'] += '/global'
 Export('global_env')
 
 src_files = [
-  #'quorum_peer_main.cpp',
-  #'quorum_peer_server.cpp',
-  #'quorum_peer_manager.cpp',
-  #'fast_leader_election.cpp',
+  'quorum_peer_server.cpp',
+  'quorum_peer_manager.cpp',
+  'fast_leader_election.cpp',
   'data_tree.cpp',
   'transaction_log.cpp',
   'snap_log.cpp',
@@ -31,4 +30,11 @@ protobuf_files = [
 
 global_env.ProtocolBuffer('transaction.proto')
 global_env.ProtocolBuffer('record.proto')
-global_env.StaticLibrary('global', src_files)
+global_env.StaticLibrary('global', src_files + protobuf_files)
+global_env.Prepend(LIBS=
+  [
+    'eventrpc',
+    'global',
+  ])
+global_env.Append(LIBPATH=[env['objroot']+'/global',])
+global_env.Program("global_main", ["global_main.cpp"])

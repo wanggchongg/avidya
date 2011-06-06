@@ -7,34 +7,7 @@
 #include <eventrpc/file_utility.h>
 #include <eventrpc/rpc_server.h>
 #include "quorum_peer_manager.h"
-#include "protocol/leader_election.pb.h"
 namespace global {
-struct ListenerThreadRunnable : public eventrpc::Runnable {
-  ListenerThreadRunnable(QuorumPeerManager::Impl *impl)
-    : impl_(impl) {
-  }
-  void Run();
-  QuorumPeerManager::Impl *impl_;
-};
-
-class LeaderElectionServiceImpl : public global::LeaderElection {
- public:
-  LeaderElectionServiceImpl(QuorumPeerManager::Impl *impl)
-    : impl_(impl) {
-  }
-
-  virtual ~LeaderElectionServiceImpl() {
-  };
-
-  virtual void LeaderProposal(
-      ::google::protobuf::RpcController* controller,
-      const ::global::Notification* request,
-      ::global::Dummy* response,
-      ::google::protobuf::Closure* done);
- private:
-  QuorumPeerManager::Impl *impl_;
-};
-
 struct QuorumPeerManager::Impl {
  public:
   Impl();
@@ -46,18 +19,17 @@ struct QuorumPeerManager::Impl {
 
   QuorumPeer* FindQuorumPeerById(uint64 server_id);
 
-  void ListenerMainLoop();
+  void set_dispatcher(eventrpc::Dispatcher *dispatcher) {
+    dispatcher_ = dispatcher;
+  }
+
  private:
-  friend struct ListenerThreadRunnable;
   map<uint64, QuorumPeer*> quorum_peer_map_;
   global::ServerConfig server_config_;
-  ListenerThreadRunnable listener_thread_runnable_;
-  eventrpc::Thread listener_thread_;
+  eventrpc::Dispatcher *dispatcher_;
 };
 
-QuorumPeerManager::Impl::Impl()
-  : listener_thread_runnable_(this),
-    listener_thread_(&listener_thread_runnable_) {
+QuorumPeerManager::Impl::Impl() {
 }
 
 QuorumPeerManager::Impl::~Impl() {
@@ -110,27 +82,6 @@ bool QuorumPeerManager::Impl::ParseConfigFile(const string &config_file) {
   }
 }
 
-void QuorumPeerManager::Impl::ListenerMainLoop() {
-  eventrpc::RpcServer rpc_server;
-  eventrpc::gpb::Service *service = new LeaderElectionServiceImpl(this);
-  QuorumPeer *peer = quorum_peer_map_[server_config_.server_id()];
-  rpc_server.rpc_method_manager()->RegisterService(service);
-  rpc_server.set_host_and_port(peer->server_host_,
-                               peer->election_port_);
-  rpc_server.Start();
-}
-
-void ListenerThreadRunnable::Run() {
-  impl_->ListenerMainLoop();
-}
-
-void LeaderElectionServiceImpl::LeaderProposal(
-    ::google::protobuf::RpcController* controller,
-    const ::global::Notification* request,
-    ::global::Dummy* response,
-    ::google::protobuf::Closure* done) {
-}
-
 QuorumPeerManager::QuorumPeerManager()
   : impl_(new Impl) {
 }
@@ -139,9 +90,12 @@ QuorumPeerManager::~QuorumPeerManager() {
   delete impl_;
 }
 
-
 QuorumPeer* QuorumPeerManager::FindQuorumPeerById(uint64 server_id) {
   return impl_->FindQuorumPeerById(server_id);
+}
+
+void QuorumPeerManager::set_dispatcher(eventrpc::Dispatcher *dispatcher) {
+  impl_->set_dispatcher(dispatcher);
 }
 
 uint64 QuorumPeerManager::server_id() const {

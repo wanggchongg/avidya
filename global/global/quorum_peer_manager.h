@@ -4,6 +4,7 @@
 #ifndef __GLOBAL_QUORUM_PEER_MANAGER_H__
 #define __GLOBAL_QUORUM_PEER_MANAGER_H__
 #include <eventrpc/base.h>
+#include <eventrpc/dispatcher.h>
 #include <map>
 #include "protocol/server_config.pb.h"
 #include "quorum_peer.h"
@@ -20,6 +21,8 @@ class QuorumPeerManager {
   bool ParseConfigFile(const string &config_file);
 
   QuorumPeer* FindQuorumPeerById(uint64 server_id);
+
+  void set_dispatcher(eventrpc::Dispatcher *dispatcher);
 
   struct Impl;
  private:
