@@ -5,10 +5,10 @@
 #define __GLOBAL_QUORUM_PEER_MANAGER_H__
 #include <eventrpc/base.h>
 #include <eventrpc/dispatcher.h>
-#include <map>
+#include <list>
 #include "protocol/server_config.pb.h"
 #include "quorum_peer.h"
-using std::map;
+using std::list;
 namespace global {
 class QuorumPeer;
 class QuorumPeerManager {
@@ -22,7 +22,11 @@ class QuorumPeerManager {
 
   QuorumPeer* FindQuorumPeerById(uint64 server_id);
 
+  void GetOtherQuorumPeers(list<QuorumPeer*> *quorum_peers);
+
   void set_dispatcher(eventrpc::Dispatcher *dispatcher);
+
+  bool SendMessage(uint32 server_id, ::google::protobuf::Message *message);
 
   struct Impl;
  private:

@@ -1,12 +1,14 @@
 /*
  * Copyright (C) Lichuang
  */
+#include <map>
 #include <google/protobuf/text_format.h>
 #include <eventrpc/log.h>
 #include <eventrpc/thread.h>
 #include <eventrpc/file_utility.h>
 #include <eventrpc/rpc_server.h>
 #include "quorum_peer_manager.h"
+using std::map;
 namespace global {
 struct QuorumPeerManager::Impl {
  public:
@@ -18,6 +20,8 @@ struct QuorumPeerManager::Impl {
   bool ParseConfigFile(const string &config_file);
 
   QuorumPeer* FindQuorumPeerById(uint64 server_id);
+
+  void GetOtherQuorumPeers(list<QuorumPeer*> *quorum_peers);
 
   void set_dispatcher(eventrpc::Dispatcher *dispatcher) {
     dispatcher_ = dispatcher;
@@ -50,6 +54,18 @@ QuorumPeer* QuorumPeerManager::Impl::FindQuorumPeerById(uint64 server_id) {
     return NULL;
   }
   return iter->second;
+}
+
+void QuorumPeerManager::Impl::GetOtherQuorumPeers(
+    list<QuorumPeer*> *quorum_peers) {
+  map<uint64, QuorumPeer*>::iterator iter;
+  for (iter = quorum_peer_map_.begin();
+       iter != quorum_peer_map_.end(); ++iter) {
+    if (iter->first == server_config_.my_server_id()) {
+      continue;
+    }
+    quorum_peers->push_back(iter->second);
+  }
 }
 
 uint64 QuorumPeerManager::Impl::my_server_id() const {
@@ -94,6 +110,10 @@ QuorumPeerManager::~QuorumPeerManager() {
 
 QuorumPeer* QuorumPeerManager::FindQuorumPeerById(uint64 server_id) {
   return impl_->FindQuorumPeerById(server_id);
+}
+
+void QuorumPeerManager::GetOtherQuorumPeers(list<QuorumPeer*> *quorum_peers) {
+  impl_->GetOtherQuorumPeers(quorum_peers);
 }
 
 void QuorumPeerManager::set_dispatcher(eventrpc::Dispatcher *dispatcher) {

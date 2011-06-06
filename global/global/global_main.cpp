@@ -4,7 +4,9 @@
 #include <signal.h>
 #include <stdio.h>
 #include <eventrpc/log.h>
+#include <eventrpc/dispatcher.h>
 #include "quorum_peer_manager.h"
+#include "data_tree.h"
 #include "quorum_peer_server.h"
 using namespace global;
 void Usage(char *argv[]) {
@@ -23,8 +25,16 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
+  eventrpc::Dispatcher dispatcher;
+  dispatcher.Start();
+
+  peer_manager.set_dispatcher(&dispatcher);
+  DataTree data_tree;
+
   QuorumPeerServer server;
   server.set_quorumpeer_manager(&peer_manager);
+  server.set_data_tree(&data_tree);
+  server.set_dispatcher(&dispatcher);
   server.Start();
 
   sigset_t new_mask;
