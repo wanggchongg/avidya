@@ -6,6 +6,8 @@ test_env['srcroot'] += '/eventrpc'
 test_env['extension'] = 'cpp'
 test_env.Append(CPPPATH=[test_env['srcroot'],
   env['objroot'] + '/test'])
+test_env.Append(CPPPATH=[test_env['srcroot'],
+  env['objroot'] + '/sample'])
 test_env.Append(LIBPATH=[env['objroot']+'/eventrpc',])
 test_env.Prepend(LIBS=
   [
@@ -16,5 +18,7 @@ test_src_files = [
   'log',
   'string_utility',
 ]
+test_env.Program('message_utility_test', ['message_utility_test.cpp',
+'../sample/echo.pb.cc'])
 for file in test_src_files:
   test_env.Program(file + "_test", [file + "_test.cpp"])

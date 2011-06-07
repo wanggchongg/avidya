@@ -23,5 +23,5 @@ namespace eventrpc {
 namespace gpb = ::google::protobuf;
 };
 
-
+using namespace std;
 #endif  // __EVENTRPC_BASE_H__

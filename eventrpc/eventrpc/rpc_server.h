@@ -1,3 +1,6 @@
+/*
+ * Copyright(C) lichuang
+ */
 #ifndef __EVENTRPC_RPC_SERVER_H__
 #define __EVENTRPC_RPC_SERVER_H__
 

@@ -19,6 +19,8 @@ src_files = [
   'string_utility.cpp',
   'rpc_connection.cpp',
   'rpc_channel.cpp',
+  'message_channel.cpp',
+  'message_utility.cpp',
   'rpc_method_manager.cpp',
   'rpc_connection_manager.cpp',
   'thread.cpp',
