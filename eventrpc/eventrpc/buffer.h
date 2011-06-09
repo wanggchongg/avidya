@@ -36,7 +36,7 @@ class Buffer {
   }
 
   size_t size() {
-    return buffer_.size();
+    return (write_index_ - read_index_);
   }
 
   void ReadSkip(int size);

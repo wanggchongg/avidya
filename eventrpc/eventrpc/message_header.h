@@ -7,14 +7,20 @@
 #include "eventrpc/base.h"
 using std::string;
 namespace eventrpc {
+class Buffer;
+enum ReadMessageState {
+  READ_HEADER,
+  READ_MESSAGE,
+};
 struct MessageHeader {
   uint32 opcode;
-  uint32 message_length;
+  uint32 length;
 }__attribute__((packed));
 
 struct MessageHandler {
   virtual ~MessageHandler() {}
-  virtual bool HandlePacket(uint32 opcode, string *packet) = 0;
+  virtual bool HandlePacket(const MessageHeader &header,
+                            Buffer* buffer) = 0;
  private:
   MessageHandler() {}
 };

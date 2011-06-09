@@ -20,8 +20,9 @@ src_files = [
   'thread.cpp',
   'dispatcher.cpp',
   'buffer.cpp',
-  #'message_connection.cpp',
-  #'message_connection_manager.cpp',
+  'message_channel.cpp',
+  'message_connection.cpp',
+  'message_connection_manager.cpp',
   'message_utility.cpp',
 ]
 

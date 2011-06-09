@@ -29,8 +29,8 @@ TEST_F(MessageUtilityTest, TestDecodeEncode) {
   response.set_response("test");
   ASSERT_TRUE(EncodeMessage(&response, &content));
   ASSERT_TRUE(DecodeMessageHeader(&content, &header));
-  ASSERT_EQ(header.message_length, response.ByteSize());
-  ASSERT_TRUE(result.ParseFromString(content.ToString(header.message_length)));
+  ASSERT_EQ(header.length, response.ByteSize());
+  ASSERT_TRUE(result.ParseFromString(content.ToString(header.length)));
 }
 };
 

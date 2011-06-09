@@ -4,7 +4,7 @@
 #ifndef __EVENTRPC_MESSAGE_CHANNEL_H__
 #define __EVENTRPC_MESSAGE_CHANNEL_H__
 #include <string>
-#include <google/protobuf/service.h>
+#include <google/protobuf/message.h>
 using std::string;
 namespace eventrpc {
 class Dispatcher;

@@ -1,44 +1,17 @@
 /*
  * Copyright(C) lichuang
  */
-#include <map>
-#include <list>
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/message.h>
-#include "message_header.h"
-#include "message_utility.h"
-#include "error_code.h"
-#include "base.h"
-#include "event.h"
-#include "message_channel.h"
-#include "net_utility.h"
-#include "callback.h"
-#include "dispatcher.h"
-#include "log.h"
-namespace {
-static const int kBufferLength = 100;
-enum ReadState {
-  READ_HEADER,
-  READ_CONTENT,
-};
-}
+#include "eventrpc/message_header.h"
+#include "eventrpc/message_utility.h"
+#include "eventrpc/error_code.h"
+#include "eventrpc/base.h"
+#include "eventrpc/buffer.h"
+#include "eventrpc/event.h"
+#include "eventrpc/message_channel.h"
+#include "eventrpc/net_utility.h"
+#include "eventrpc/dispatcher.h"
+#include "eventrpc/log.h"
 namespace eventrpc {
-struct MsgChannelCallback : public Callback {
-  MessageChannel::Impl *impl_;
-  string send_message;
-  uint32 sent_count;
-  MsgChannelCallback(MessageChannel::Impl *impl)
-    : impl_(impl),
-      send_message(""),
-      sent_count(0) {
-  }
-  void Run();
-  void Clear() {
-    send_message = "";
-    sent_count = 0;
-  }
-};
-
 struct MessageChannelEvent : public Event {
   MessageChannelEvent(int fd, MessageChannel::Impl *impl)
     : Event(fd, EVENT_WRITE | EVENT_READ),
@@ -71,39 +44,28 @@ struct MessageChannel::Impl {
 
   void set_dispatcher(Dispatcher *dispatcher);
 
-  int StateMachine(char *buffer, int length);
-
   int HandleRead();
 
   int HandleWrite();
 
-  int SendPacket(MsgChannelCallback *callback);
-
-  MsgChannelCallback *get_callback();
-
-  void FreeCurrentReadCallback();
-
+  void ErrorMessage(const string &message);
+ private:
   string host_;
   int port_;
+  Buffer input_buffer_;
+  Buffer output_buffer_;
   Dispatcher *dispatcher_;
   MessageChannelEvent event_;
-  char buffer_[kBufferLength];
-  typedef std::list<MsgChannelCallback*> MsgChannelCallbackList;
-  MsgChannelCallbackList send_callback_list_;
-  MsgChannelCallbackList free_callback_list_;
-  typedef std::map<uint32, MsgChannelCallback*> MsgChannelCallbackMap;
-  MsgChannelCallback *current_read_callback_;
-  std::string recv_message_;
   MessageHandler *handler_;
   MessageHeader message_header_;
-  ReadState state_;
+  ReadMessageState state_;
 };
 
 MessageChannel::Impl::Impl(const string &host, int port)
   : host_(host),
     port_(port),
+    dispatcher_(NULL),
     event_(-1, this),
-    current_read_callback_(NULL),
     handler_(NULL),
     state_(READ_HEADER) {
 }
@@ -112,10 +74,15 @@ MessageChannel::Impl::~Impl() {
   Close();
 }
 
+void MessageChannel::Impl::ErrorMessage(const string &message) {
+  VLOG_ERROR() << message << " [" << host_ << " : " << port_ << "] error";
+  Close();
+}
+
 bool MessageChannel::Impl::Connect() {
   event_.fd_ = NetUtility::Connect(host_, port_);
   if (event_.fd_ < 0) {
-    VLOG_ERROR() << "connect to [" << host_ << " : " << port_ << "] fail";
+    ErrorMessage("connect to ");
     return false;
   }
   dispatcher_->AddEvent(&event_);
@@ -129,23 +96,12 @@ void MessageChannel::Impl::Close() {
   }
 }
 
-MsgChannelCallback *MessageChannel::Impl::get_callback() {
-  if (free_callback_list_.empty()) {
-    return new MsgChannelCallback(this);
-  } else {
-    MsgChannelCallback *callback = free_callback_list_.front();
-    free_callback_list_.pop_front();
-    callback->Clear();
-    return callback;
-  }
-}
-
 void MessageChannel::Impl::SendMessage(const gpb::Message* message) {
-  MsgChannelCallback *callback = get_callback();
-  ASSERT(callback != NULL);
-  callback->sent_count = 0;
-  EncodeMessage(message, &(callback->send_message));
-  dispatcher_->PushTask(callback);
+  EncodeMessage(message, &output_buffer_);
+  uint32 result = WriteMessage(&output_buffer_, event_.fd_);
+  if (result == kSendMessageError) {
+    ErrorMessage("send message to ");
+  }
 }
 
 void MessageChannel::Impl::set_message_handler(MessageHandler *handler) {
@@ -156,139 +112,36 @@ void MessageChannel::Impl::set_dispatcher(Dispatcher *dispatcher) {
   dispatcher_ = dispatcher;
 }
 
-void MessageChannel::Impl::FreeCurrentReadCallback() {
-  free_callback_list_.push_back(current_read_callback_);
-  current_read_callback_ = NULL;
-}
-
-int MessageChannel::Impl::StateMachine(char *buffer, int length) {
-  recv_message_.append(buffer_, length);
-  while (true) {
-    switch (state_) {
-      case READ_HEADER:
-        if (recv_message_.length() < sizeof(MessageHeader)) {
-          return kRecvMessageNotCompleted;
-        }
-        DecodeMessageHeader(
-            recv_message_.substr(0, sizeof(MessageHeader)),
-            &message_header_);
-        state_ = READ_CONTENT;
-        recv_message_ = recv_message_.substr(sizeof(MessageHeader));
-        break;
-      case READ_CONTENT:
-        if (recv_message_.length() < message_header_.message_length) {
-          return kRecvMessageNotCompleted;
-        }
-        if (!handler_->HandlePacket(message_header_.opcode,
-                                    &recv_message_)) {
-          return kHandlePacketError;
-        }
-        state_ = READ_HEADER;
-        return kSuccess;
-        break;
-    }
-  }
-  return kSuccess;
-}
-
 int MessageChannel::Impl::HandleRead() {
-  int32 length = 0;
-  uint32 result = 0;
-  while (true) {
-    length = 0;
-    if (!NetUtility::Recv(event_.fd_, buffer_,
-                          kBufferLength, &length)) {
-      VLOG_ERROR() << "recv message from [" << host_ << " : " << port_ << "] error";
-      Close();
-      return -1;
-    }
-    result = StateMachine(buffer_, length);
-    VLOG_INFO() << "result: " << result;
-    if (result == kSuccess) {
-      return kSuccess;
-    }
-    if (result == kRecvMessageNotCompleted && length == kBufferLength) {
-      // should recv again
-      continue;
-    }
-    if (result == kRecvMessageNotCompleted) {
-      return result;
-    }
-    VLOG_ERROR() << "handle message from [" << host_ << " : " << port_ << "] error: " << result;
-    Close();
-    return result;
+  if (input_buffer_.Read(event_.fd_) == -1) {
+    ErrorMessage("recv message from ");
+    return kRecvMessageError;
   }
-
-  VLOG_FATAL() << "should not reach here";
-  return kSuccess;
-}
-
-int MessageChannel::Impl::SendPacket(MsgChannelCallback *callback) {
-  int length = 0;
-  bool ret = false;
-  while (true) {
-    ret = NetUtility::Send(
-        event_.fd_,
-        callback->send_message.c_str() + callback->sent_count,
-        callback->send_message.length() - callback->sent_count,
-        &length);
-    if (!ret) {
-      VLOG_ERROR() << "send message to [" << host_ << " : " << port_ << "] error";
-      Close();
-      free_callback_list_.push_back(callback);
-      return kSendMessageError;
-    }
-    callback->sent_count += length;
-    if (callback->sent_count < callback->send_message.length()) {
-      return kSendMessageNotCompleted;
-    }
-    VLOG_INFO() << "send service request done, count: "
-      << callback->send_message.length();
-    callback->sent_count = 0;
-    callback->send_message = "";
-    free_callback_list_.push_back(callback);
+  uint32 result = ReadMessageStateMachine(&input_buffer_,
+                                          &message_header_,
+                                          &state_);
+  if (result == kSuccess) {
+    input_buffer_.Clear();
     return kSuccess;
   }
-
-  LOG_FATAL() << "should never reach here!";
-  return 0;
-}
-
-int MessageChannel::Impl::HandleWrite() {
-  MsgChannelCallbackList::iterator iter, tmp_iter;
-  uint32 result = 0;
-  for (iter = send_callback_list_.begin();
-       iter != send_callback_list_.end(); ) {
-    VLOG_INFO() << "HandleWrite";
-    result = SendPacket(*iter);
-    if (result == kSuccess) {
-      tmp_iter = iter;
-      ++iter;
-      send_callback_list_.erase(tmp_iter);
-      continue;
-    }
-    if (result == kSendMessageError) {
-      VLOG_ERROR() << "send service request error";
-      Close();
-      return result;
-    }
-    // when reach here, send not completed, return and
-    // waiting the next send time
+  if (result == kRecvMessageNotCompleted) {
     return result;
   }
+  result = handler_->HandlePacket(message_header_, &input_buffer_);
+  if (result == kSuccess) {
+    input_buffer_.Clear();
+    return kSuccess;
+  }
+  ErrorMessage("handle message from ");
   return result;
 }
 
-void MsgChannelCallback::Run() {
-  uint32 result = impl_->SendPacket(this);
-  if (result == kSuccess) {
-    return;
-  }
+int MessageChannel::Impl::HandleWrite() {
+  uint32 result = WriteMessage(&output_buffer_, event_.fd_);
   if (result == kSendMessageError) {
-    VLOG_ERROR() << "send service request error";
-    return;
+    ErrorMessage("send message to ");
   }
-  impl_->send_callback_list_.push_back(this);
+  return result;
 }
 
 int MessageChannelEvent::HandleRead() {

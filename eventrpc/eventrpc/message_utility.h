@@ -9,7 +9,14 @@ namespace eventrpc {
 class Buffer;
 bool EncodeMessage(const google::protobuf::Message *message,
                    Buffer *output);
+
 bool DecodeMessageHeader(Buffer *input,
                          MessageHeader *message_header);
+
+uint32 ReadMessageStateMachine(Buffer *input,
+                               MessageHeader *header,
+                               ReadMessageState *state);
+
+uint32 WriteMessage(Buffer *output, int fd);
 };
 #endif  // __EVENTRPC_MESSAGE_UTILITY_H_
