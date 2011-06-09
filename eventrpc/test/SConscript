@@ -17,8 +17,10 @@ test_env.Prepend(LIBS=
 test_src_files = [
   'log',
   'string_utility',
+  'buffer',
 ]
-test_env.Program('message_utility_test', ['message_utility_test.cpp',
-'../sample/echo.pb.cc'])
+
+test_env.Program('message_utility_test',
+  ['message_utility_test.cpp', '../sample/echo.pb.cc'])
 for file in test_src_files:
   test_env.Program(file + "_test", [file + "_test.cpp"])

@@ -6,9 +6,10 @@
 #include <google/protobuf/message.h>
 #include <eventrpc/message_header.h>
 namespace eventrpc {
-bool EncodeMessage(const google::protobuf::Message& message,
-                   string *output);
-bool DecodeMessageHeader(const string &input,
+class Buffer;
+bool EncodeMessage(const google::protobuf::Message *message,
+                   Buffer *output);
+bool DecodeMessageHeader(Buffer *input,
                          MessageHeader *message_header);
 };
 #endif  // __EVENTRPC_MESSAGE_UTILITY_H_

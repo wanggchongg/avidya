@@ -1,3 +1,6 @@
+/*
+ * Copyright(C) lichuang
+ */
 #ifndef __EVENTRPC_RPC_CONNECTION_MANAGER_H__
 #define __EVENTRPC_RPC_CONNECTION_MANAGER_H__
 

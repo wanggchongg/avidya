@@ -17,16 +17,12 @@ src_files = [
   'net_utility.cpp',
   'file_utility.cpp',
   'string_utility.cpp',
-  'rpc_connection.cpp',
-  'rpc_channel.cpp',
-  'message_channel.cpp',
-  'message_utility.cpp',
-  'rpc_method_manager.cpp',
-  'rpc_connection_manager.cpp',
   'thread.cpp',
-  'rpc_server.cpp',
   'dispatcher.cpp',
-  'meta.cpp',
+  'buffer.cpp',
+  #'message_connection.cpp',
+  #'message_connection_manager.cpp',
+  'message_utility.cpp',
 ]
 
 eventrpc_header_files = [
@@ -36,14 +32,10 @@ eventrpc_header_files = [
   'file_utility.h',
   'string_utility.h',
   'noncopyable.h',
-  'rpc_server.h',
-  'rpc_channel.h',
   'dispatcher.h',
   'monitor.h',
   'event.h',
   'mutex.h',
-  'rpc_method_manager.h',
-  'rpc_connection_manager.h',
 ]
 eventrpc = src_env.StaticLibrary('eventrpc', src_files)
 env.Install("/usr/local/lib", eventrpc)

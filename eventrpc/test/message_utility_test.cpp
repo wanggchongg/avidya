@@ -9,6 +9,7 @@
 #include <string>
 #include "echo.pb.h"
 #include "eventrpc/message_utility.h"
+#include "eventrpc/buffer.h"
 
 using namespace std;
 namespace eventrpc {
@@ -23,13 +24,13 @@ class MessageUtilityTest : public testing::Test {
 
 TEST_F(MessageUtilityTest, TestDecodeEncode) {
   ::echo::EchoResponse response, result;
-  string content;
+  Buffer content;
   MessageHeader header;
   response.set_response("test");
-  ASSERT_TRUE(EncodeMessage(response, &content));
-  ASSERT_TRUE(DecodeMessageHeader(content, &header));
+  ASSERT_TRUE(EncodeMessage(&response, &content));
+  ASSERT_TRUE(DecodeMessageHeader(&content, &header));
   ASSERT_EQ(header.message_length, response.ByteSize());
-  ASSERT_TRUE(result.ParseFromString(content.substr(sizeof(uint32) * 2)));
+  ASSERT_TRUE(result.ParseFromString(content.ToString(header.message_length)));
 }
 };
 

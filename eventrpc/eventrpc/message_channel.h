@@ -8,17 +8,22 @@
 using std::string;
 namespace eventrpc {
 class Dispatcher;
-class RpcMsgChannel {
+class MessageHandler;
+class MessageChannel {
  public:
-  RpcMsgChannel(const string &host, int port, Dispatcher *dispatcher);
+  MessageChannel(const string &host, int port);
 
-  ~RpcMsgChannel();
+  ~MessageChannel();
 
   bool Connect();
 
   void Close();
 
   void SendMessage(const ::google::protobuf::Message *message);
+
+  void set_message_handler(MessageHandler *handler);
+
+  void set_dispatcher(Dispatcher *dispatcher);
 
   struct Impl;
  private:

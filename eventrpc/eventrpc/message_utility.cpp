@@ -4,36 +4,34 @@
 #include <arpa/inet.h>  // htonl, ntohl
 #include "utility.h"
 #include "string_utility.h"
+#include "buffer.h"
 #include "message_utility.h"
 namespace eventrpc {
-bool EncodeMessage(const google::protobuf::Message& message,
-                   string *output) {
+bool EncodeMessage(const google::protobuf::Message *message,
+                   Buffer *output) {
   if (output == NULL) {
     return false;
   }
-  uint32 opcode = hash_string(message.GetTypeName());
+  output->Clear();
+  uint32 opcode = hash_string(message->GetTypeName());
   opcode = ::htonl(opcode);
-  output->append(reinterpret_cast<char*>(&opcode), sizeof(opcode));
-  uint32 message_length = ::htonl(message.ByteSize());
-  output->append(reinterpret_cast<char*>(&message_length),
-                 sizeof(message_length));
+  output->SerializeFromUint32(opcode);
+  uint32 message_length = ::htonl(message->ByteSize());
+  output->SerializeFromUint32(message_length);
   string buffer;
-  message.SerializeToString(&buffer);
-  output->append(buffer);
+  message->SerializeToString(&buffer);
+  output->AppendString(buffer);
   return true;
 }
 
-bool DecodeMessageHeader(const string &input,
+bool DecodeMessageHeader(Buffer *input,
                          MessageHeader *message_header) {
   if (message_header == NULL) {
     return false;
   }
-  uint32 pos = 0;
-  uint32 opcode = StringUtility::DeserializeStringToUint32(input.substr(pos, sizeof(opcode)));
+  uint32 opcode = input->DeserializeToUint32();
   message_header->opcode = ::ntohl(opcode);
-  pos += sizeof(opcode);
-  uint32 message_length = StringUtility::DeserializeStringToUint32(
-      input.substr(pos, sizeof(message_length)));
+  uint32 message_length = input->DeserializeToUint32();
   message_header->message_length = ::ntohl(message_length);
   return true;
 }
