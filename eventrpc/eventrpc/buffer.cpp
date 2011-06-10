@@ -53,12 +53,15 @@ int Buffer::Write(int fd) {
   int send_length = 0, length = 0;
   while (true) {
     if (!NetUtility::Send(fd, read_content(),
-                          buffer_.size() - write_index_,
+                          write_index_ - read_index_,
                           &length)) {
       return -1;
     }
     read_index_ += length;
-    send_length  += length;
+    send_length += length;
+    if (read_index_ == write_index_) {
+      break;
+    }
   }
   return send_length;
 }

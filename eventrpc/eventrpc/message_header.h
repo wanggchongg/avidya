@@ -17,12 +17,5 @@ struct MessageHeader {
   uint32 length;
 }__attribute__((packed));
 
-struct MessageHandler {
-  virtual ~MessageHandler() {}
-  virtual bool HandlePacket(const MessageHeader &header,
-                            Buffer* buffer) = 0;
- private:
-  MessageHandler() {}
-};
 };
 #endif  // __EVENTRPC_MESSAGE_HEADER_H_

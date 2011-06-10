@@ -152,6 +152,9 @@ bool NetUtility::Recv(int fd, void *buf, size_t count, int *length) {
     if (ret > 0) {
       count -= ret;
       *length += ret;
+      if (count == 0) {
+        return true;
+      }
       continue;
     }
     // if or not try again depends on the error code

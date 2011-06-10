@@ -3,6 +3,7 @@
  */
 #include <arpa/inet.h>  // htonl, ntohl
 #include "eventrpc/utility.h"
+#include "eventrpc/log.h"
 #include "eventrpc/string_utility.h"
 #include "eventrpc/buffer.h"
 #include "eventrpc/message_utility.h"
@@ -52,8 +53,10 @@ uint32 ReadMessageStateMachine(Buffer *input,
       if (input->size() < header->length) {
         return kRecvMessageNotCompleted;
       }
+      return kSuccess;
     }
   }
+  LOG_FATAL() << "should not reach here";
   return kSuccess;
 }
 

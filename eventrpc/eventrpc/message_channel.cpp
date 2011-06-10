@@ -1,15 +1,10 @@
 /*
  * Copyright(C) lichuang
  */
-#include "eventrpc/message_header.h"
-#include "eventrpc/message_utility.h"
 #include "eventrpc/error_code.h"
-#include "eventrpc/base.h"
-#include "eventrpc/buffer.h"
 #include "eventrpc/event.h"
 #include "eventrpc/message_channel.h"
 #include "eventrpc/net_utility.h"
-#include "eventrpc/dispatcher.h"
 #include "eventrpc/log.h"
 namespace eventrpc {
 struct MessageChannelEvent : public Event {
@@ -75,7 +70,7 @@ MessageChannel::Impl::~Impl() {
 }
 
 void MessageChannel::Impl::ErrorMessage(const string &message) {
-  VLOG_ERROR() << message << " [" << host_ << " : " << port_ << "] error";
+  VLOG_ERROR() << message << "[" << host_ << ":" << port_ << "] error";
   Close();
 }
 
@@ -91,13 +86,14 @@ bool MessageChannel::Impl::Connect() {
 
 void MessageChannel::Impl::Close() {
   if (event_.fd_ > 0) {
-    VLOG_INFO() << "close connection to [" << host_ << " : " << port_ << "]";
+    VLOG_INFO() << "close connection to [" << host_ << ":" << port_ << "]";
     dispatcher_->DeleteEvent(&event_);
   }
 }
 
 void MessageChannel::Impl::SendMessage(const gpb::Message* message) {
   EncodeMessage(message, &output_buffer_);
+  return;
   uint32 result = WriteMessage(&output_buffer_, event_.fd_);
   if (result == kSendMessageError) {
     ErrorMessage("send message to ");
@@ -120,15 +116,10 @@ int MessageChannel::Impl::HandleRead() {
   uint32 result = ReadMessageStateMachine(&input_buffer_,
                                           &message_header_,
                                           &state_);
-  if (result == kSuccess) {
-    input_buffer_.Clear();
-    return kSuccess;
-  }
   if (result == kRecvMessageNotCompleted) {
     return result;
   }
-  result = handler_->HandlePacket(message_header_, &input_buffer_);
-  if (result == kSuccess) {
+  if (handler_->HandlePacket(message_header_, &input_buffer_)) {
     input_buffer_.Clear();
     return kSuccess;
   }
@@ -137,6 +128,9 @@ int MessageChannel::Impl::HandleRead() {
 }
 
 int MessageChannel::Impl::HandleWrite() {
+  if (output_buffer_.is_read_complete()) {
+    return kSuccess;
+  }
   uint32 result = WriteMessage(&output_buffer_, event_.fd_);
   if (result == kSendMessageError) {
     ErrorMessage("send message to ");

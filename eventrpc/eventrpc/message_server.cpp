@@ -2,16 +2,12 @@
  * Copyright(C) lichuang
  */
 #include <arpa/inet.h>
-#include "eventrpc/dispatcher.h"
-#include "eventrpc/message_connection.h"
-#include "eventrpc/message_connection_manager.h"
-#include "eventrpc/utility.h"
-#include "eventrpc/message_server.h"
 #include "eventrpc/event.h"
 #include "eventrpc/log.h"
 #include "eventrpc/net_utility.h"
-#include "eventrpc/message_header.h"
-#include "eventrpc/message_utility.h"
+#include "eventrpc/utility.h"
+#include "eventrpc/message_connection_manager.h"
+#include "eventrpc/message_server.h"
 namespace eventrpc {
 class MessageServerEvent;
 struct MessageServer::Impl {
@@ -33,8 +29,8 @@ struct MessageServer::Impl {
     dispatcher_ = dispatcher;
   }
 
-  void set_message_handler(MessageHandler *handler) {
-    handler_ = handler;
+  void set_message_handler_factory(ServerMessageHandlerFactory *factory) {
+    manager_.set_message_handler_factory(factory);
   }
 
   int HandleAccept();
@@ -47,9 +43,9 @@ struct MessageServer::Impl {
   int listen_fd_;
   MessageServerEvent *event_;
   Dispatcher *dispatcher_;
-  MessageHandler *handler_;
   MessageConnectionManager manager_;
 };
+
 struct MessageServerEvent : public Event {
  public:
   MessageServerEvent(int fd, uint32 event_flags, MessageServer::Impl *server)
@@ -72,14 +68,12 @@ struct MessageServerEvent : public Event {
   MessageServer::Impl *server_;
 };
 
-
 MessageServer::Impl::Impl()
   : host_(""),
     port_(0),
     listen_fd_(0),
     event_(NULL),
-    dispatcher_(NULL),
-    handler_(NULL) {
+    dispatcher_(NULL) {
 }
 
 MessageServer::Impl::~Impl() {
@@ -123,10 +117,37 @@ int MessageServer::Impl::HandleAccept() {
     connection->set_fd(fd);
     connection->set_client_address(address);
     connection->set_dispacher(dispatcher_);
-    connection->set_message_handler(handler_);
     dispatcher_->AddEvent(connection->event());
   }
   return 0;
 }
-}; // namespace eventrpc
 
+MessageServer::MessageServer() {
+  impl_ = new Impl();
+}
+
+MessageServer::~MessageServer() {
+  delete impl_;
+}
+
+void MessageServer::Start() {
+  impl_->Start();
+}
+
+void MessageServer::Stop() {
+  impl_->Stop();
+}
+
+void MessageServer::set_host_and_port(const string &host, uint32 port) {
+  impl_->set_host_and_port(host, port);
+}
+
+void MessageServer::set_dispatcher(Dispatcher *dispatcher) {
+  impl_->set_dispatcher(dispatcher);
+}
+
+void MessageServer::set_message_handler_factory(
+    ServerMessageHandlerFactory *factory) {
+  impl_->set_message_handler_factory(factory);
+}
+}; // namespace eventrpc

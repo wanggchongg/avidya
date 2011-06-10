@@ -5,10 +5,14 @@
 #define __EVENTRPC_MESSAGE_CHANNEL_H__
 #include <string>
 #include <google/protobuf/message.h>
-using std::string;
+#include "eventrpc/base.h"
+#include "eventrpc/buffer.h"
+#include "eventrpc/message_header.h"
+#include "eventrpc/message_handler.h"
+#include "eventrpc/message_utility.h"
+#include "eventrpc/message_channel.h"
+#include "eventrpc/dispatcher.h"
 namespace eventrpc {
-class Dispatcher;
-class MessageHandler;
 class MessageChannel {
  public:
   MessageChannel(const string &host, int port);

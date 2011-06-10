@@ -4,17 +4,14 @@
 #include <map>
 #include <list>
 #include <string>
-#include "error_code.h"
-#include "log.h"
-#include "event.h"
-#include "callback.h"
-#include "dispatcher.h"
-#include "net_utility.h"
-#include "message_connection.h"
-#include "message_connection_manager.h"
-#include "message_utility.h"
-#include "message_header.h"
-#include "buffer.h"
+#include "eventrpc/error_code.h"
+#include "eventrpc/log.h"
+#include "eventrpc/event.h"
+#include "eventrpc/callback.h"
+#include "eventrpc/dispatcher.h"
+#include "eventrpc/net_utility.h"
+#include "eventrpc/message_connection.h"
+#include "eventrpc/buffer.h"
 using namespace std;
 namespace eventrpc {
 struct MessageConnectionEvent : public Event {
@@ -100,15 +97,10 @@ int MessageConnection::Impl::HandleRead() {
   uint32 result = ReadMessageStateMachine(&input_buffer_,
                                           &message_header_,
                                           &state_);
-  if (result == kSuccess) {
-    input_buffer_.Clear();
-    return kSuccess;
-  }
   if (result == kRecvMessageNotCompleted) {
     return result;
   }
-  result = handler_->HandlePacket(message_header_, &input_buffer_);
-  if (result == kSuccess) {
+  if (handler_->HandlePacket(message_header_, &input_buffer_)) {
     input_buffer_.Clear();
     return kSuccess;
   }
@@ -117,6 +109,9 @@ int MessageConnection::Impl::HandleRead() {
 }
 
 int MessageConnection::Impl::HandleWrite() {
+  if (output_buffer_.is_read_complete()) {
+    return kSuccess;
+  }
   uint32 result = WriteMessage(&output_buffer_, event_.fd_);
   if (result == kSendMessageError) {
     ErrorMessage("send message to ");
@@ -146,6 +141,7 @@ void set_message_connection_manager(MessageConnectionManager *manager) {
 void MessageConnection::Impl::SendMessage(
     const ::google::protobuf::Message *message) {
   EncodeMessage(message, &output_buffer_);
+  return;
   uint32 result = WriteMessage(&output_buffer_, event_.fd_);
   if (result == kSendMessageError) {
     ErrorMessage("send message to ");
