@@ -21,7 +21,7 @@ struct MessageResponse {
 
 struct RpcChannel::Impl : public MessageHandler {
  public:
-  Impl(MessageChannel *message_channel);
+  Impl(RpcChannel *rpc_channel);
 
   ~Impl();
 
@@ -39,16 +39,16 @@ struct RpcChannel::Impl : public MessageHandler {
   void FreeMessageResponse(MessageResponse *response);
 
  public:
-  MessageChannel *message_channel_;
+  RpcChannel *rpc_channel_;
   typedef list<MessageResponse*> MessageResponseList;
   typedef map<uint64, MessageResponseList> MessageResponseMap;
   MessageResponseMap message_response_map_;
   MessageResponseList free_response_list_;
 };
 
-RpcChannel::Impl::Impl(MessageChannel *message_channel)
-  : message_channel_(message_channel) {
-  message_channel_->set_message_handler(this);
+RpcChannel::Impl::Impl(RpcChannel *rpc_channel)
+  : rpc_channel_(rpc_channel) {
+  rpc_channel_->set_message_handler(this);
 }
 
 RpcChannel::Impl::~Impl() {
@@ -64,7 +64,7 @@ void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,
   message_response->done     = done;
   uint32 opcode = hash_string(request->GetTypeName());
   message_response_map_[opcode].push_back(message_response);
-  message_channel_->SendMessage(request);
+  rpc_channel_->SendMessage(request);
 }
 
 bool RpcChannel::Impl::HandlePacket(const MessageHeader &header,
@@ -103,8 +103,9 @@ void RpcChannel::Impl::FreeMessageResponse(MessageResponse *response) {
   free_response_list_.push_back(response);
 }
 
-RpcChannel::RpcChannel(MessageChannel *message_channel) {
-   impl_ = new Impl(message_channel);
+RpcChannel::RpcChannel(const string &host, int port)
+  : MessageChannel(host, port) {
+   impl_ = new Impl(this);
 }
 
 RpcChannel::~RpcChannel() {

@@ -8,9 +8,10 @@
 #include "eventrpc/message_channel.h"
 namespace eventrpc {
 class Dispatcher;
-class RpcChannel : public gpb::RpcChannel {
+class RpcChannel : public gpb::RpcChannel,
+                   public MessageChannel {
  public:
-  RpcChannel(MessageChannel *message_channel);
+  RpcChannel(const string &host, int port);
 
   virtual ~RpcChannel();
 
