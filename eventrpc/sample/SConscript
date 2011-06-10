@@ -13,9 +13,9 @@ sample_env.Prepend(LIBS=
   ])
 
 env.ProtocolBuffer('echo.proto')
-
-sample_env.Program('echo_message_client', ['echo_message_client.cpp', 'echo.pb.cc'])
-sample_env.Program('echo_message_server', ['echo_message_server.cpp', 'echo.pb.cc'])
-#sample_env.Program('echo_client', ['echo_client.cpp', 'echo.pb.cc'])
-#sample_env.Program('echo_server', ['echo_server.cpp', 'echo.pb.cc'])
-
+sample_src_files = [
+  'echo_message_client',
+  'echo_message_server',
+]
+for file in sample_src_files:
+  sample_env.Program(file, [file + '.cpp', 'echo.pb.cc'])
