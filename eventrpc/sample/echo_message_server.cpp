@@ -22,8 +22,11 @@ class EchoServerMessageHandler : public ServerMessageHandler {
   bool HandlePacket(const MessageHeader &header,
                     Buffer* buffer) {
     string content = buffer->ToString(header.length);
+    VLOG_INFO() << "content length: " << header.length
+      << ", content: " << content;
     echo::EchoRequest request;
     if (!request.ParseFromString(content)) {
+      VLOG_ERROR() << "ParseFromString error: " << header.length;
       return false;
     }
     VLOG_INFO() << "request: " << request.message();

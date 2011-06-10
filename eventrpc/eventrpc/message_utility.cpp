@@ -45,6 +45,7 @@ uint32 ReadMessageStateMachine(Buffer *input,
       *state = READ_MESSAGE;
     }
     if (*state == READ_MESSAGE) {
+      *state = READ_HEADER;
       if (input->size() < header->length) {
         return kRecvMessageNotCompleted;
       }

@@ -135,17 +135,9 @@ void MessageConnection::Impl::set_message_handler(MessageHandler *handler) {
   handler_ = handler;
 }
 
-void set_message_connection_manager(MessageConnectionManager *manager) {
-}
-
 void MessageConnection::Impl::SendMessage(
     const ::google::protobuf::Message *message) {
   EncodeMessage(message, &output_buffer_);
-  return;
-  uint32 result = WriteMessage(&output_buffer_, event_.fd_);
-  if (result == kSendMessageError) {
-    ErrorMessage("send message to ");
-  }
 }
 
 Event* MessageConnection::Impl::event() {
@@ -156,6 +148,9 @@ void MessageConnection::Impl::Close() {
   if (event_.fd_ > 0) {
     dispatcher_->DeleteEvent(&event_);
     connection_manager_->PutConnection(connection_);
+    input_buffer_.Clear();
+    output_buffer_.Clear();
+    state_ = READ_HEADER;
   }
 }
 

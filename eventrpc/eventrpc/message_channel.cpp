@@ -93,11 +93,6 @@ void MessageChannel::Impl::Close() {
 
 void MessageChannel::Impl::SendMessage(const gpb::Message* message) {
   EncodeMessage(message, &output_buffer_);
-  return;
-  uint32 result = WriteMessage(&output_buffer_, event_.fd_);
-  if (result == kSendMessageError) {
-    ErrorMessage("send message to ");
-  }
 }
 
 void MessageChannel::Impl::set_message_handler(MessageHandler *handler) {

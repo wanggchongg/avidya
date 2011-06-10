@@ -19,7 +19,7 @@ class Buffer {
   int Write(int fd);
 
   void Clear() {
-    buffer_.clear();
+    //buffer_.clear();
     read_index_ = write_index_ = 0;
   }
 
