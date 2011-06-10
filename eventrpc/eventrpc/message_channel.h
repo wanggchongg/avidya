@@ -10,7 +10,6 @@
 #include "eventrpc/message_header.h"
 #include "eventrpc/message_handler.h"
 #include "eventrpc/message_utility.h"
-#include "eventrpc/message_channel.h"
 #include "eventrpc/dispatcher.h"
 namespace eventrpc {
 class MessageChannel {

@@ -5,18 +5,14 @@
 #define __EVENTRPC_RPC_CHANNEL_H__
 #include <string>
 #include <google/protobuf/service.h>
-using std::string;
+#include "eventrpc/message_channel.h"
 namespace eventrpc {
 class Dispatcher;
 class RpcChannel : public gpb::RpcChannel {
  public:
-  RpcChannel(const string &host, int port, Dispatcher *dispatcher);
+  RpcChannel(MessageChannel *message_channel);
 
   virtual ~RpcChannel();
-
-  bool Connect();
-
-  void Close();
 
   virtual void CallMethod(const gpb::MethodDescriptor* method,
                           gpb::RpcController* controller,

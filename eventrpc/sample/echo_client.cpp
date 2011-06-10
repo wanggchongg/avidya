@@ -1,11 +1,13 @@
 #include <iostream>
 #include <stdio.h>
-#include "dispatcher.h"
-#include "rpc_channel.h"
-#include "monitor.h"
-#include "log.h"
-#include "echo.pb.h"
-
+#include "eventrpc/monitor.h"
+#include "eventrpc/dispatcher.h"
+#include "eventrpc/rpc_channel.h"
+#include "eventrpc/message_channel.h"
+#include "eventrpc/message_header.h"
+#include "eventrpc/log.h"
+#include "eventrpc/buffer.h"
+#include "sample/echo.pb.h"
 using namespace eventrpc;
 using namespace std;
 
@@ -16,6 +18,29 @@ void echo_done(echo::EchoResponse* resp,
 }
 
 int main(int argc, char *argv[]) {
+  SetProgramName(argv[0]);
+  Dispatcher dispatcher;
+  Monitor monitor;
+  MessageChannel channel("127.0.0.1", 21118);
+  channel.set_dispatcher(&dispatcher);
+  RpcChannel rpc_channel(&channel);
+  dispatcher.Start();
+  if (!channel.Connect()) {
+    printf("connect to server failed, abort\n");
+    exit(-1);
+  }
+  echo::EchoRequest request;
+  request.set_message("hello");
+  echo::EchoService::Stub stub(&rpc_channel);
+  echo::EchoResponse response;
+  stub.Echo(NULL, &request, &response,
+            gpb::NewCallback(::echo_done, &response, &monitor));
+  monitor.Wait();
+  channel.Close();
+  dispatcher.Stop();
+  return 0;
+
+#if 0
   SetProgramName(argv[0]);
   Dispatcher dispatcher;
   RpcChannel channel("127.0.0.1", 21118, &dispatcher);
@@ -50,5 +75,6 @@ int main(int argc, char *argv[]) {
   dispatcher.Stop();
 
   return 0;
+#endif
 }
 

@@ -1,6 +1,7 @@
 /*
  * Copyright(C) lichuang
  */
+#include <arpa/inet.h>  // htonl, ntohl
 #include <errno.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -79,11 +80,13 @@ void Buffer::WriteSkip(int size) {
 }
 
 void Buffer::SerializeFromUint32(uint32 value) {
+  value = ::htonl(value);
   SerializeBufferFromValue<uint32>(value, this);
 }
 
 uint32 Buffer::DeserializeToUint32() {
-  return DeserializeBufferToValue<uint32>(this);
+  uint32 value = DeserializeBufferToValue<uint32>(this);
+  return ::ntohl(value);
 }
 
 void Buffer::AppendString(const string &content) {

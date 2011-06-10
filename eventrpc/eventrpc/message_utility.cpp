@@ -1,7 +1,6 @@
 /*
  * Copyright(C) lichuang
  */
-#include <arpa/inet.h>  // htonl, ntohl
 #include "eventrpc/utility.h"
 #include "eventrpc/log.h"
 #include "eventrpc/string_utility.h"
@@ -16,10 +15,8 @@ bool EncodeMessage(const google::protobuf::Message *message,
   }
   output->Clear();
   uint32 opcode = hash_string(message->GetTypeName());
-  opcode = ::htonl(opcode);
   output->SerializeFromUint32(opcode);
-  uint32 message_length = ::htonl(message->ByteSize());
-  output->SerializeFromUint32(message_length);
+  output->SerializeFromUint32(message->ByteSize());
   string buffer;
   message->SerializeToString(&buffer);
   output->AppendString(buffer);
@@ -31,10 +28,8 @@ bool DecodeMessageHeader(Buffer *input,
   if (message_header == NULL) {
     return false;
   }
-  uint32 opcode = input->DeserializeToUint32();
-  message_header->opcode = ::ntohl(opcode);
-  uint32 message_length = input->DeserializeToUint32();
-  message_header->length = ::ntohl(message_length);
+  message_header->opcode = input->DeserializeToUint32();
+  message_header->length = input->DeserializeToUint32();
   return true;
 }
 

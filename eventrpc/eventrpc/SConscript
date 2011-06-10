@@ -20,6 +20,7 @@ src_files = [
   'thread.cpp',
   'dispatcher.cpp',
   'buffer.cpp',
+  'rpc_channel.cpp',
   'message_channel.cpp',
   'message_connection.cpp',
   'message_server.cpp',
