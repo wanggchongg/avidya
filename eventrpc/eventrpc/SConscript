@@ -22,6 +22,7 @@ src_files = [
   'buffer.cpp',
   'message_channel.cpp',
   'message_connection.cpp',
+  'message_server.cpp',
   'message_connection_manager.cpp',
   'message_utility.cpp',
 ]

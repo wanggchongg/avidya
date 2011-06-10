@@ -140,6 +140,9 @@ void MessageConnection::Impl::set_message_handler(MessageHandler *handler) {
   handler_ = handler;
 }
 
+void set_message_connection_manager(MessageConnectionManager *manager) {
+}
+
 void MessageConnection::Impl::SendMessage(
     const ::google::protobuf::Message *message) {
   EncodeMessage(message, &output_buffer_);
