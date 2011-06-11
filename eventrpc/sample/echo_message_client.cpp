@@ -7,6 +7,7 @@
 #include "eventrpc/log.h"
 #include "eventrpc/buffer.h"
 #include "sample/echo.pb.h"
+#include "sample/echo_opcode.h"
 
 using namespace eventrpc;
 using namespace std;
@@ -22,14 +23,18 @@ class EchoClientMessageHandler : public MessageHandler {
 
   bool HandlePacket(const MessageHeader &header,
                     Buffer* buffer) {
+    if (header.opcode != SMSG_ECHO) {
+      VLOG_ERROR() << "opcode error: " << header.opcode;
+      return false;
+    }
     string content = buffer->ToString(header.length);
     echo::EchoResponse response;
     if (!response.ParseFromString(content)) {
       monitor_->Notify();
       return false;
     }
-    monitor_->Notify();
     VLOG_INFO() << "response: " << response.response();
+    monitor_->Notify();
     return true;
   }
   Monitor *monitor_;
@@ -50,7 +55,7 @@ int main(int argc, char *argv[]) {
   }
   echo::EchoRequest request;
   request.set_message("hello");
-  channel.SendMessage(&request);
+  channel.SendPacket(CMSG_ECHO, &request);
   monitor.Wait();
   channel.Close();
   dispatcher.Stop();

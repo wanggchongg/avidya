@@ -1,18 +1,64 @@
-
+/*
+ * Copyright(C) lichuang
+ */
+#include <arpa/inet.h>  // htonl, ntohl
+#include <map>
 #include <google/protobuf/service.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/stubs/common.h>
-#include "rpc_method_manager.h"
-#include "log.h"
-#include "utility.h"
-#include "meta.h"
-#include "callback.h"
-
+#include "eventrpc/rpc_method_manager.h"
+#include "eventrpc/log.h"
+#include "eventrpc/utility.h"
+#include "eventrpc/callback.h"
 namespace eventrpc {
-RpcMethodManager::RpcMethodManager() {
+struct RpcMethod {
+ public:
+  RpcMethod(gpb::Service *service,
+            const gpb::Message *request,
+            const gpb::Message *response,
+            const gpb::MethodDescriptor *method)
+    : service_(service),
+      request_(request),
+      response_(response),
+      method_(method) {
+  }
+
+  gpb::Service *service_;
+  const gpb::Message *request_;
+  const gpb::Message *response_;
+  const gpb::MethodDescriptor *method_;
+};
+
+typedef map<uint32, RpcMethod*> RpcMethodMap;
+
+struct RpcMethodManager::Impl {
+ public:
+  Impl();
+
+  ~Impl();
+
+  void RegisterService(gpb::Service *service);
+
+  bool HandlePacket(const MessageHeader &header,
+                    Buffer* buffer,
+                    MessageConnection *connection);
+ private:
+  RpcMethodMap rpc_method_map_;
+};
+
+RpcMethodManager::Impl::Impl() {
 }
 
-void RpcMethodManager::RegisterService(gpb::Service *service) {
+RpcMethodManager::Impl::~Impl() {
+  RpcMethodMap::iterator iter = rpc_method_map_.begin();
+  for (; iter != rpc_method_map_.end(); ) {
+    RpcMethod *rpc_method = iter->second;
+    ++iter;
+    delete rpc_method;
+  }
+}
+
+void RpcMethodManager::Impl::RegisterService(gpb::Service *service) {
   const gpb::ServiceDescriptor *descriptor = service->GetDescriptor();
   for (int i = 0; i < descriptor->method_count(); ++i) {
     const gpb::MethodDescriptor *method = descriptor->method(i);
@@ -22,74 +68,78 @@ void RpcMethodManager::RegisterService(gpb::Service *service) {
       &service->GetResponsePrototype(method);
     RpcMethod *rpc_method = new RpcMethod(service, request,
                                           response, method);
-    uint32 method_id = hash_string(method->full_name());
-    ASSERT_EQ(rpc_methods_.find(method_id),
-              rpc_methods_.end()) << "rpc method "
+    uint32 opcode = hash_string(method->full_name());
+    ASSERT_EQ(rpc_method_map_.find(opcode),
+              rpc_method_map_.end()) << "rpc method "
               << method->full_name() << " duplicated";
-    rpc_methods_[method_id] = rpc_method;
+    rpc_method_map_[opcode] = rpc_method;
   }
-}
-
-bool RpcMethodManager::IsServiceRegistered(uint32 method_id) {
-  return (rpc_methods_.find(method_id) != rpc_methods_.end());
 }
 
 struct HandleServiceEntry {
-  HandleServiceEntry(const gpb::MethodDescriptor *method,
-                     gpb::Message *request,
+  HandleServiceEntry(gpb::Message *request,
                      gpb::Message *response,
-                     string *message,
-                     Meta *meta,
-                     Callback *callback)
-    : method_(method),
-      request_(request),
+                     MessageConnection *connection)
+    : request_(request),
       response_(response),
-      message_(message),
-      meta_(meta),
-      callback_(callback) {
+      connection_(connection) {
   }
-  const gpb::MethodDescriptor *method_;
   gpb::Message *request_;
   gpb::Message *response_;
-  string *message_;
-  Meta *meta_;
-  Callback *callback_;
+  MessageConnection *connection_;
 };
 
 static void HandleServiceDone(HandleServiceEntry *entry) {
-  *(entry->message_) = "";
-  if (entry->response_->ByteSize() > 0) {
-    entry->meta_->EncodeWithMessage(entry->method_->full_name(),
-                                    entry->response_, entry->message_);
-  }
-  Callback *callback = entry->callback_;
+  entry->connection_->SendMessage(entry->response_);
   delete entry->request_;
   delete entry->response_;
   delete entry;
-  callback->Run();
 }
 
-int  RpcMethodManager::HandleService(const string& input_message,
-                                     string *output_message,
-                                     Meta *meta, Callback *callback) {
-  RpcMethod *rpc_method = rpc_methods_[meta->method_id()];
+bool RpcMethodManager::Impl::HandlePacket(
+    const MessageHeader &header,
+    Buffer* buffer,
+    MessageConnection *connection) {
+  uint32 opcode = ::ntohl(header.opcode);
+  RpcMethod *rpc_method = rpc_method_map_[opcode];
+  if (rpc_method == NULL) {
+    VLOG_ERROR() << "opcode " << header.opcode << " not registered";
+    return false;
+  }
   const gpb::MethodDescriptor *method = rpc_method->method_;
   gpb::Message *request = rpc_method->request_->New();
   gpb::Message *response = rpc_method->response_->New();
-  request->ParseFromString(input_message);
-  HandleServiceEntry *entry = new HandleServiceEntry(method,
-                                                     request,
+  string content = buffer->ToString(header.length);
+  if (request->ParseFromString(content) == false) {
+    VLOG_ERROR() << "ParseFromString " << header.opcode << " error";
+    return false;
+  }
+  HandleServiceEntry *entry = new HandleServiceEntry(request,
                                                      response,
-                                                     output_message,
-                                                     meta,
-                                                     callback);
-  gpb::Closure *done = gpb::NewCallback(
-      &HandleServiceDone, entry);
-  VLOG_INFO() << "before: request id: " << meta->request_id();
+                                                     connection);
+  gpb::Closure *done = gpb::NewCallback(&HandleServiceDone,
+                                        entry);
   rpc_method->service_->CallMethod(method,
                                    NULL,
                                    request, response, done);
-  VLOG_INFO() << "after: request id: " << meta->request_id();
-  return 0;
+  return true;
+}
+
+RpcMethodManager::RpcMethodManager() {
+  impl_ = new Impl();
+}
+
+RpcMethodManager::~RpcMethodManager() {
+  delete impl_;
+}
+
+void RpcMethodManager::RegisterService(gpb::Service *service) {
+  impl_->RegisterService(service);
+}
+
+bool RpcMethodManager::HandlePacket(const MessageHeader &header,
+                                    Buffer* buffer,
+                                    MessageConnection *connection) {
+  return impl_->HandlePacket(header, buffer, connection);
 }
 };

@@ -35,6 +35,8 @@ struct MessageChannel::Impl {
 
   void SendMessage(const ::google::protobuf::Message *message);
 
+  void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
+
   void set_message_handler(MessageHandler *handler);
 
   void set_dispatcher(Dispatcher *dispatcher);
@@ -93,6 +95,12 @@ void MessageChannel::Impl::Close() {
 
 void MessageChannel::Impl::SendMessage(const gpb::Message* message) {
   EncodeMessage(message, &output_buffer_);
+}
+
+void MessageChannel::Impl::SendPacket(
+    uint32 opcode,
+    const ::google::protobuf::Message *message) {
+  EncodePacket(opcode, message, &output_buffer_);
 }
 
 void MessageChannel::Impl::set_message_handler(MessageHandler *handler) {
@@ -159,6 +167,12 @@ void MessageChannel::Close() {
 
 void MessageChannel::SendMessage(const ::google::protobuf::Message *message) {
   impl_->SendMessage(message);
+}
+
+void MessageChannel::SendPacket(
+    uint32 opcode,
+    const ::google::protobuf::Message *message) {
+  impl_->SendPacket(opcode, message);
 }
 
 void MessageChannel::set_message_handler(MessageHandler *handler) {

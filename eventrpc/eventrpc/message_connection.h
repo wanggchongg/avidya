@@ -31,6 +31,8 @@ class MessageConnection {
 
   void SendMessage(const ::google::protobuf::Message *message);
 
+  void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
+
   void Close();
 
   struct Impl;

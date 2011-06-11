@@ -24,6 +24,8 @@ class MessageChannel {
 
   void SendMessage(const ::google::protobuf::Message *message);
 
+  void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
+
   void set_message_handler(MessageHandler *handler);
 
   void set_dispatcher(Dispatcher *dispatcher);

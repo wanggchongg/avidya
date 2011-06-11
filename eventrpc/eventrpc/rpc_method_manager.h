@@ -1,49 +1,28 @@
+/*
+ * Copyright(C) lichuang
+ */
 #ifndef __EVENTRPC_RPC_METHOD_MANAGER_H__
 #define __EVENTRPC_RPC_METHOD_MANAGER_H__
-
-#include <map>
-#include <string>
 #include <google/protobuf/service.h>
-#include "base.h"
-using std::map;
-using std::string;
+#include "eventrpc/base.h"
+#include "eventrpc/buffer.h"
+#include "eventrpc/message_header.h"
+#include "eventrpc/message_connection.h"
 namespace eventrpc {
-struct RpcMethod {
- public:
-  RpcMethod(gpb::Service *service,
-            const gpb::Message *request,
-            const gpb::Message *response,
-            const gpb::MethodDescriptor *method)
-    : service_(service),
-      request_(request),
-      response_(response),
-      method_(method) {
-  }
-
-  gpb::Service *service_;
-  const gpb::Message *request_;
-  const gpb::Message *response_;
-  const gpb::MethodDescriptor *method_;
-};
-
-typedef map<uint32, RpcMethod*> RpcMethodMap;
-
-class Meta;
-struct Callback;
 class RpcMethodManager {
  public:
   RpcMethodManager();
 
+  ~RpcMethodManager();
+
   void RegisterService(gpb::Service *service);
-  // TODO: add more check, not only method id!
-  bool IsServiceRegistered(uint32 method_id);
 
-  int  HandleService(const string& input_message,
-                     string *output_message,
-                     Meta *meta, Callback *callback);
-
+  bool HandlePacket(const MessageHeader &header,
+                    Buffer* buffer,
+                    MessageConnection *connection);
+  struct Impl;
  private:
-  RpcMethodMap rpc_methods_;
+  Impl *impl_;
 };
 };
 #endif  //  __EVENTRPC_RPC_METHOD_MANAGER_H__

@@ -10,6 +10,10 @@ class Buffer;
 bool EncodeMessage(const google::protobuf::Message *message,
                    Buffer *output);
 
+bool EncodePacket(uint32 opcode,
+                  const google::protobuf::Message *message,
+                  Buffer *output);
+
 bool DecodeMessageHeader(Buffer *input,
                          MessageHeader *message_header);
 

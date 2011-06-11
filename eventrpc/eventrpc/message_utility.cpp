@@ -23,6 +23,21 @@ bool EncodeMessage(const google::protobuf::Message *message,
   return true;
 }
 
+bool EncodePacket(uint32 opcode,
+                  const google::protobuf::Message *message,
+                  Buffer *output) {
+  if (output == NULL) {
+    return false;
+  }
+  output->Clear();
+  output->SerializeFromUint32(opcode);
+  output->SerializeFromUint32(message->ByteSize());
+  string buffer;
+  message->SerializeToString(&buffer);
+  output->AppendString(buffer);
+  return true;
+}
+
 bool DecodeMessageHeader(Buffer *input,
                          MessageHeader *message_header) {
   if (message_header == NULL) {
