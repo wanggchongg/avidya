@@ -8,21 +8,6 @@
 #include "eventrpc/message_utility.h"
 #include "eventrpc/error_code.h"
 namespace eventrpc {
-bool EncodeMessage(const google::protobuf::Message *message,
-                   Buffer *output) {
-  if (output == NULL) {
-    return false;
-  }
-  output->Clear();
-  uint32 opcode = hash_string(message->GetTypeName());
-  output->SerializeFromUint32(opcode);
-  output->SerializeFromUint32(message->ByteSize());
-  string buffer;
-  message->SerializeToString(&buffer);
-  output->AppendString(buffer);
-  return true;
-}
-
 bool EncodePacket(uint32 opcode,
                   const google::protobuf::Message *message,
                   Buffer *output) {

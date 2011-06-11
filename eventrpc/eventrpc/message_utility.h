@@ -7,9 +7,6 @@
 #include <eventrpc/message_header.h>
 namespace eventrpc {
 class Buffer;
-bool EncodeMessage(const google::protobuf::Message *message,
-                   Buffer *output);
-
 bool EncodePacket(uint32 opcode,
                   const google::protobuf::Message *message,
                   Buffer *output);

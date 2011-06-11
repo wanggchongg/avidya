@@ -33,8 +33,6 @@ struct MessageChannel::Impl {
 
   void Close();
 
-  void SendMessage(const ::google::protobuf::Message *message);
-
   void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
 
   void set_message_handler(MessageHandler *handler);
@@ -91,10 +89,6 @@ void MessageChannel::Impl::Close() {
     VLOG_INFO() << "close connection to [" << host_ << ":" << port_ << "]";
     dispatcher_->DeleteEvent(&event_);
   }
-}
-
-void MessageChannel::Impl::SendMessage(const gpb::Message* message) {
-  EncodeMessage(message, &output_buffer_);
 }
 
 void MessageChannel::Impl::SendPacket(
@@ -163,10 +157,6 @@ bool MessageChannel::Connect() {
 
 void MessageChannel::Close() {
   impl_->Close();
-}
-
-void MessageChannel::SendMessage(const ::google::protobuf::Message *message) {
-  impl_->SendMessage(message);
 }
 
 void MessageChannel::SendPacket(

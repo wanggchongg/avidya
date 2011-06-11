@@ -62,18 +62,20 @@ void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,
   MessageResponse *message_response = GetMessageResponse();
   message_response->response = response;
   message_response->done     = done;
-  uint32 opcode = hash_string(request->GetTypeName());
+  uint32 opcode = hash_string(method->full_name());
+  VLOG_INFO() << "register service: " << method->full_name()
+    << ", opcode: " << opcode;
   message_response_map_[opcode].push_back(message_response);
-  rpc_channel_->SendMessage(request);
+  //rpc_channel_->SendMessage(request);
+  rpc_channel_->SendPacket(opcode, request);
 }
 
 bool RpcChannel::Impl::HandlePacket(const MessageHeader &header,
                                     Buffer* buffer) {
   MessageResponseMap::iterator iter;
-  uint32 opcode = ::ntohl(header.opcode);
-  iter = message_response_map_.find(opcode);
+  iter = message_response_map_.find(header.opcode);
   if (iter == message_response_map_.end()) {
-    LOG_ERROR() << "cannot find handler for opcode: " << header.opcode;
+    VLOG_ERROR() << "cannot find handler for opcode: " << header.opcode;
     return false;
   }
   MessageResponse *response = iter->second.front();

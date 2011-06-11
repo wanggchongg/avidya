@@ -29,8 +29,6 @@ class MessageConnection {
 
   Event* event();
 
-  void SendMessage(const ::google::protobuf::Message *message);
-
   void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
 
   void Close();

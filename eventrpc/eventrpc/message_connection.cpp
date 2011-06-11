@@ -45,8 +45,6 @@ struct MessageConnection::Impl {
 
   Event* event();
 
-  void SendMessage(const ::google::protobuf::Message *message);
-
   void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
 
   void Close();
@@ -137,11 +135,6 @@ void MessageConnection::Impl::set_message_handler(MessageHandler *handler) {
   handler_ = handler;
 }
 
-void MessageConnection::Impl::SendMessage(
-    const ::google::protobuf::Message *message) {
-  EncodeMessage(message, &output_buffer_);
-}
-
 void MessageConnection::Impl::SendPacket(
     uint32 opcode, const ::google::protobuf::Message *message) {
   EncodePacket(opcode, message, &output_buffer_);
@@ -191,11 +184,6 @@ int MessageConnectionEvent::HandleRead() {
 
 int MessageConnectionEvent::HandleWrite() {
   return impl_->HandleWrite();
-}
-
-void MessageConnection::SendMessage(
-    const ::google::protobuf::Message *message) {
-  impl_->SendMessage(message);
 }
 
 void MessageConnection::SendPacket(

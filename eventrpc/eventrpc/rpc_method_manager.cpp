@@ -69,6 +69,8 @@ void RpcMethodManager::Impl::RegisterService(gpb::Service *service) {
     RpcMethod *rpc_method = new RpcMethod(service, request,
                                           response, method);
     uint32 opcode = hash_string(method->full_name());
+    VLOG_INFO() << "register service: " << method->full_name()
+      << ", opcode: " << opcode;
     ASSERT_EQ(rpc_method_map_.find(opcode),
               rpc_method_map_.end()) << "rpc method "
               << method->full_name() << " duplicated";
@@ -77,20 +79,24 @@ void RpcMethodManager::Impl::RegisterService(gpb::Service *service) {
 }
 
 struct HandleServiceEntry {
-  HandleServiceEntry(gpb::Message *request,
+  HandleServiceEntry(const gpb::MethodDescriptor *method,
+                     gpb::Message *request,
                      gpb::Message *response,
                      MessageConnection *connection)
-    : request_(request),
+    : method_(method),
+      request_(request),
       response_(response),
       connection_(connection) {
   }
+  const gpb::MethodDescriptor *method_;
   gpb::Message *request_;
   gpb::Message *response_;
   MessageConnection *connection_;
 };
 
 static void HandleServiceDone(HandleServiceEntry *entry) {
-  entry->connection_->SendMessage(entry->response_);
+  uint32 opcode = hash_string(entry->method_->full_name());
+  entry->connection_->SendPacket(opcode, entry->response_);
   delete entry->request_;
   delete entry->response_;
   delete entry;
@@ -100,7 +106,7 @@ bool RpcMethodManager::Impl::HandlePacket(
     const MessageHeader &header,
     Buffer* buffer,
     MessageConnection *connection) {
-  uint32 opcode = ::ntohl(header.opcode);
+  uint32 opcode = header.opcode;
   RpcMethod *rpc_method = rpc_method_map_[opcode];
   if (rpc_method == NULL) {
     VLOG_ERROR() << "opcode " << header.opcode << " not registered";
@@ -114,7 +120,8 @@ bool RpcMethodManager::Impl::HandlePacket(
     VLOG_ERROR() << "ParseFromString " << header.opcode << " error";
     return false;
   }
-  HandleServiceEntry *entry = new HandleServiceEntry(request,
+  HandleServiceEntry *entry = new HandleServiceEntry(method,
+                                                     request,
                                                      response,
                                                      connection);
   gpb::Closure *done = gpb::NewCallback(&HandleServiceDone,

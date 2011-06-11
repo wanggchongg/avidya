@@ -27,9 +27,10 @@ TEST_F(MessageUtilityTest, TestDecodeEncode) {
   Buffer content;
   MessageHeader header;
   response.set_response("test");
-  ASSERT_TRUE(EncodeMessage(&response, &content));
+  ASSERT_TRUE(EncodePacket(1, &response, &content));
   ASSERT_TRUE(DecodeMessageHeader(&content, &header));
   ASSERT_EQ(header.length, response.ByteSize());
+  ASSERT_EQ(1, header.opcode);
   ASSERT_TRUE(result.ParseFromString(content.ToString(header.length)));
 }
 };
