@@ -66,7 +66,6 @@ void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,
   VLOG_INFO() << "register service: " << method->full_name()
     << ", opcode: " << opcode;
   message_response_map_[opcode].push_back(message_response);
-  //rpc_channel_->SendMessage(request);
   rpc_channel_->SendPacket(opcode, request);
 }
 
@@ -100,8 +99,6 @@ MessageResponse* RpcChannel::Impl::GetMessageResponse() {
 }
 
 void RpcChannel::Impl::FreeMessageResponse(MessageResponse *response) {
-  delete response->response;
-  delete response->done;
   free_response_list_.push_back(response);
 }
 
