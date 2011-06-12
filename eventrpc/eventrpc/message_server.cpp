@@ -100,11 +100,15 @@ void MessageServer::Impl::Close() {
 
 bool MessageServer::Impl::HandleAccept() {
   int fd;
+  bool result;
   char buffer[30];
   while (true) {
     struct sockaddr_in address;
-    fd = NetUtility::Accept(listen_fd_, &address);
-    if (fd == -1) {
+    result = NetUtility::Accept(listen_fd_, &address, &fd);
+    if (result == false) {
+      return false;
+    }
+    if (fd == 0) {
       break;
     }
     VLOG_INFO() << "accept connection from "

@@ -14,7 +14,9 @@ class NetUtility {
 
   static int Listen(const char *ip, int port);
 
-  static int Accept(int listen_fd, struct sockaddr_in *addr);
+  static bool Accept(int listen_fd,
+                     struct sockaddr_in *addr,
+                     int *fd);
 
   static bool SetNonBlocking(int fd);
 

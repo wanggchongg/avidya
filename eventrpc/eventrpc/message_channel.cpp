@@ -1,6 +1,7 @@
 /*
  * Copyright(C) lichuang
  */
+#include <sys/socket.h>
 #include "eventrpc/error_code.h"
 #include "eventrpc/task.h"
 #include "eventrpc/event.h"
@@ -116,7 +117,7 @@ void MessageChannel::Impl::ConnectToServer() {
 void MessageChannel::Impl::Close() {
   if (fd_ > 0) {
     VLOG_INFO() << "close connection to [" << host_ << ":" << port_ << "]";
-    close(fd_);
+    shutdown(fd_, SHUT_WR);
     fd_ = -1;
   }
 }

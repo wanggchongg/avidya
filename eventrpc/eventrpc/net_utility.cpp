@@ -13,9 +13,7 @@
 #include <errno.h>
 #include "net_utility.h"
 #include "log.h"
-
 namespace eventrpc {
-
 int NetUtility::Connect(const string &host, int port) {
   int fd = ::socket(AF_INET, SOCK_STREAM, 0);
 
@@ -78,36 +76,42 @@ int NetUtility::Listen(const char *ip, int port) {
   return fd;
 }
 
-int NetUtility::Accept(int listen_fd, struct sockaddr_in *addr) {
-  int fd = 0, errno_copy = 0;
-  socklen_t len = sizeof(*addr);
+bool NetUtility::Accept(int listen_fd,
+                        struct sockaddr_in *addr,
+                        int *fd) {
+  int accept_fd = 0, errno_copy = 0;
+  socklen_t length = sizeof(*addr);
 
   do {
-    fd = ::accept(listen_fd, (struct sockaddr *)(addr), &len);
-    if (fd > 0) {
+    accept_fd = ::accept(listen_fd,
+                         (struct sockaddr *)(addr),
+                         &length);
+    if (accept_fd > 0) {
       break;
     }
     errno_copy = errno;
-    if (fd < 0) {
+    if (accept_fd < 0) {
       if (errno_copy == EINTR) {
         continue;
       } else if (errno_copy == EAGAIN) {
-        return -1;
+        *fd = 0;
+        return true;
       } else {
         VLOG_ERROR() << "Fail to accept, "
           << " error: "
           << strerror(errno_copy);
-        return -1;
+        return false;
       }
     }
   } while (true);
 
-  if (!NetUtility::SetNonBlocking(fd)) {
-    close(fd);
-    return -1;
+  if (!NetUtility::SetNonBlocking(accept_fd)) {
+    close(accept_fd);
+    return false;
   }
 
-  return fd;
+  *fd = accept_fd;
+  return true;
 }
 
 bool NetUtility::Send(int fd, const void *buf, size_t count,

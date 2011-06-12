@@ -155,7 +155,7 @@ EventHandler* MessageConnection::Impl::event_handler() {
 
 void MessageConnection::Impl::Close() {
   if (fd_ > 0) {
-    close(fd_);
+    shutdown(fd_, SHUT_WR);
     fd_ = -1;
     connection_manager_->PutConnection(connection_);
     input_buffer_.Clear();
