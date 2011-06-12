@@ -6,6 +6,7 @@
 #include "eventrpc/message_channel.h"
 #include "eventrpc/message_header.h"
 #include "eventrpc/log.h"
+#include "eventrpc/assert_log.h"
 #include "eventrpc/buffer.h"
 #include "sample/echo.pb.h"
 using namespace eventrpc;
@@ -20,16 +21,14 @@ void echo_done(echo::EchoResponse* resp,
 int main(int argc, char *argv[]) {
   SetProgramName(argv[0]);
   Dispatcher dispatcher;
+  echo::EchoRequest request;
+  request.set_message("hello");
+  VLOG_INFO() << "request: " << request.DebugString();
   Monitor monitor;
   RpcChannel rpc_channel("127.0.0.1", 21118);
   rpc_channel.set_dispatcher(&dispatcher);
   dispatcher.Start();
-  if (!rpc_channel.Connect()) {
-    printf("connect to server failed, abort\n");
-    exit(-1);
-  }
-  echo::EchoRequest request;
-  request.set_message("hello");
+  rpc_channel.Connect();
   echo::EchoService::Stub stub(&rpc_channel);
   echo::EchoResponse response;
   stub.Echo(NULL, &request, &response,

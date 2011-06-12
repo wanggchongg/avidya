@@ -4,6 +4,7 @@
 #ifndef __EVENTRPC_MESSAGE_CHANNEL_H__
 #define __EVENTRPC_MESSAGE_CHANNEL_H__
 #include <string>
+#include <google/protobuf/service.h>
 #include <google/protobuf/message.h>
 #include "eventrpc/base.h"
 #include "eventrpc/buffer.h"
@@ -24,9 +25,11 @@ class MessageChannel {
 
   void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
 
-  void set_message_handler(MessageHandler *handler);
+  void set_message_handler(ChannelMessageHandler *handler);
 
   void set_dispatcher(Dispatcher *dispatcher);
+
+  Dispatcher * dispatcher();
 
   struct Impl;
  private:

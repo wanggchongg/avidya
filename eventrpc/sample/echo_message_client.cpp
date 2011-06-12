@@ -12,13 +12,23 @@
 using namespace eventrpc;
 using namespace std;
 
-class EchoClientMessageHandler : public MessageHandler {
+class EchoClientMessageHandler : public ChannelMessageHandler {
  public:
-  EchoClientMessageHandler(Monitor *monitor)
-    : monitor_(monitor) {
+  EchoClientMessageHandler(MessageChannel *channel,
+                           Monitor *monitor)
+    : ChannelMessageHandler(channel),
+      monitor_(monitor) {
   }
 
   virtual ~EchoClientMessageHandler() {
+  }
+
+  bool HandleConnection() {
+    echo::EchoRequest request;
+    request.set_message("hello");
+    VLOG_INFO() << "HandleConnection";
+    channel_->SendPacket(CMSG_ECHO, &request);
+    return true;
   }
 
   bool HandlePacket(const MessageHeader &header,
@@ -44,18 +54,12 @@ int main(int argc, char *argv[]) {
   SetProgramName(argv[0]);
   Dispatcher dispatcher;
   Monitor monitor;
-  EchoClientMessageHandler handler(&monitor);
   MessageChannel channel("127.0.0.1", 21118);
+  EchoClientMessageHandler handler(&channel, &monitor);
   channel.set_dispatcher(&dispatcher);
   channel.set_message_handler(&handler);
   dispatcher.Start();
-  if (!channel.Connect()) {
-    printf("connect to server failed, abort\n");
-    exit(-1);
-  }
-  echo::EchoRequest request;
-  request.set_message("hello");
-  channel.SendPacket(CMSG_ECHO, &request);
+  channel.Connect();
   monitor.Wait();
   channel.Close();
   dispatcher.Stop();

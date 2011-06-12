@@ -14,7 +14,6 @@ bool EncodePacket(uint32 opcode,
   if (output == NULL) {
     return false;
   }
-  output->Clear();
   output->SerializeFromUint32(opcode);
   output->SerializeFromUint32(message->ByteSize());
   string buffer;

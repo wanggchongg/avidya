@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include "eventrpc/event.h"
 #include "eventrpc/log.h"
+#include "eventrpc/assert_log.h"
 #include "eventrpc/net_utility.h"
 #include "eventrpc/utility.h"
 #include "eventrpc/message_connection_manager.h"

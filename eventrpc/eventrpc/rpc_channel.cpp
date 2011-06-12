@@ -8,6 +8,7 @@
 #include <google/protobuf/message.h>
 #include "eventrpc/error_code.h"
 #include "eventrpc/base.h"
+#include "eventrpc/callback.h"
 #include "eventrpc/event.h"
 #include "eventrpc/rpc_channel.h"
 #include "eventrpc/net_utility.h"
@@ -19,9 +20,27 @@ struct MessageResponse {
   gpb::Closure* done;
 };
 
-struct RpcChannel::Impl : public MessageHandler {
+struct CallMethodCallback : public Callback {
+  CallMethodCallback(uint32 opcode,
+                     gpb::Message* request,
+                     RpcChannel::Impl *impl)
+    : opcode_(opcode),
+      request_(request),
+      impl_(impl) {
+  }
+
+  virtual ~CallMethodCallback() {
+  }
+  void Run();
+
+  uint32 opcode_;
+  gpb::Message* request_;
+  RpcChannel::Impl *impl_;
+};
+
+struct RpcChannel::Impl : public ChannelMessageHandler {
  public:
-  Impl(RpcChannel *rpc_channel);
+  Impl(MessageChannel *channel);
 
   ~Impl();
 
@@ -31,6 +50,8 @@ struct RpcChannel::Impl : public MessageHandler {
                   gpb::Message* response,
                   gpb::Closure* done);
 
+  bool HandleConnection();
+
   bool HandlePacket(const MessageHeader &header,
                     Buffer* buffer);
 
@@ -38,20 +59,27 @@ struct RpcChannel::Impl : public MessageHandler {
 
   void FreeMessageResponse(MessageResponse *response);
 
+  void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
+
+  void PushTask(CallMethodCallback *callback);
+
  public:
-  RpcChannel *rpc_channel_;
   typedef list<MessageResponse*> MessageResponseList;
   typedef map<uint64, MessageResponseList> MessageResponseMap;
   MessageResponseMap message_response_map_;
   MessageResponseList free_response_list_;
 };
 
-RpcChannel::Impl::Impl(RpcChannel *rpc_channel)
-  : rpc_channel_(rpc_channel) {
-  rpc_channel_->set_message_handler(this);
+RpcChannel::Impl::Impl(MessageChannel *channel)
+  : ChannelMessageHandler(channel) {
+  channel->set_message_handler(this);
 }
 
 RpcChannel::Impl::~Impl() {
+}
+
+bool RpcChannel::Impl::HandleConnection() {
+  return true;
 }
 
 void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,
@@ -63,10 +91,17 @@ void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,
   message_response->response = response;
   message_response->done     = done;
   uint32 opcode = hash_string(method->full_name());
-  VLOG_INFO() << "register service: " << method->full_name()
-    << ", opcode: " << opcode;
+  gpb::Message* save_request = request->New();
+  save_request->CopyFrom(*request);
+  VLOG_INFO() << "call service: " << method->full_name()
+    << ", opcode: " << opcode
+    << ", request: " << save_request->DebugString();
   message_response_map_[opcode].push_back(message_response);
-  rpc_channel_->SendPacket(opcode, request);
+  CallMethodCallback *callback = new CallMethodCallback(
+      opcode,
+      save_request,
+      this);
+  PushTask(callback);
 }
 
 bool RpcChannel::Impl::HandlePacket(const MessageHeader &header,
@@ -100,6 +135,21 @@ MessageResponse* RpcChannel::Impl::GetMessageResponse() {
 
 void RpcChannel::Impl::FreeMessageResponse(MessageResponse *response) {
   free_response_list_.push_back(response);
+}
+
+void RpcChannel::Impl::SendPacket(uint32 opcode,
+                                  const ::google::protobuf::Message *message) {
+  channel_->SendPacket(opcode, message);
+}
+
+void RpcChannel::Impl::PushTask(CallMethodCallback *callback) {
+  channel_->dispatcher()->PushTask(callback);
+}
+
+void CallMethodCallback::Run() {
+  VLOG_INFO() << "request: " << request_->DebugString();
+  impl_->SendPacket(opcode_, request_);
+  delete request_;
 }
 
 RpcChannel::RpcChannel(const string &host, int port)

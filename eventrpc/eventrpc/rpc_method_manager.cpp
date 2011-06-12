@@ -8,6 +8,7 @@
 #include <google/protobuf/stubs/common.h>
 #include "eventrpc/rpc_method_manager.h"
 #include "eventrpc/log.h"
+#include "eventrpc/assert_log.h"
 #include "eventrpc/utility.h"
 #include "eventrpc/callback.h"
 namespace eventrpc {
@@ -117,6 +118,8 @@ bool RpcMethodManager::Impl::HandlePacket(
   gpb::Message *response = rpc_method->response_->New();
   string content = buffer->ToString(header.length);
   if (request->ParseFromString(content) == false) {
+    delete request;
+    delete response;
     VLOG_ERROR() << "ParseFromString " << header.opcode << " error";
     return false;
   }

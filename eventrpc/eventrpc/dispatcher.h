@@ -1,4 +1,6 @@
-
+/*
+ * Copyright(C) lichuang
+ */
 #ifndef __EVENTRPC_DISPATCHER_H__
 #define __EVENTRPC_DISPATCHER_H__
 

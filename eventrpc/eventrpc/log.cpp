@@ -7,9 +7,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <iomanip>    // for setw
-#include "log.h"
-#include "mutex.h"
-#include "utility.h"
+#include "eventrpc/log.h"
+#include "eventrpc/mutex.h"
+#include "eventrpc/utility.h"
 
 using std::string;
 using std::ostringstream;
@@ -60,7 +60,6 @@ void SetLogLevel(LogLevel log_level) {
 
 void SetLogPath(const char *log_path) {
   MutexLock lock(&kMutex);
-  ASSERT_GE(kLogPathLength, strlen(log_path));
   if (strlen(log_path) > kLogPathLength) {
     printf("log path %s is too long!", log_path);
     abort();
@@ -222,6 +221,7 @@ void Log::LogToStderr() {
 }
 
 void Log::LogToFile() {
+  return;
   kFileLogger[log_level_].Write(log_level_, tm_time_,
                                 log_header_.str(),
                                 input_stream_.str());

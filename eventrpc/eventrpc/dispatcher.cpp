@@ -1,10 +1,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include "log.h"
-#include "callback.h"
-#include "dispatcher.h"
-#include "net_utility.h"
+#include "eventrpc/log.h"
+#include "eventrpc/assert_log.h"
+#include "eventrpc/callback.h"
+#include "eventrpc/dispatcher.h"
+#include "eventrpc/net_utility.h"
 namespace {
 static const uint32 kMaxPollWaitTime = 1000;
 static const uint32 kEpollFdCount = 1024;
@@ -58,8 +59,10 @@ void Dispatcher::AddEvent(Event *event) {
 
 void Dispatcher::DeleteEvent(Event *event) {
   EventEntry *event_entry = static_cast<EventEntry*>(event->entry_);
-  ASSERT_NE(-1, epoll_ctl(epoll_fd_, EPOLL_CTL_DEL,
-                          event->fd_, &(event_entry->epoll_ev)));
+  if (epoll_ctl(epoll_fd_, EPOLL_CTL_DEL,
+                event->fd_, &(event_entry->epoll_ev)) == -1) {
+    VLOG_ERROR() << "epoll_ctl error: " << strerror(errno);
+  }
   close(event->fd_);
   event->fd_ = -1;
   event_entry->event = NULL;
@@ -145,9 +148,11 @@ int Dispatcher::HandleTasks() {
   }
 
   for (CallbackList::iterator iter = current_handle_tasks_->begin();
-       iter != current_handle_tasks_->end(); ++iter) {
-    VLOG_INFO() << "handle task request id ";
-    (*iter)->Run();
+       iter != current_handle_tasks_->end(); ) {
+    Callback *callback = *iter;
+    callback->Run();
+    ++iter;
+    delete callback;
   }
   current_handle_tasks_->clear();
   return 0;

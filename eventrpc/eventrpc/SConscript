@@ -14,6 +14,7 @@ src_files = [
   'monitor.cpp',
   'lookup3.cpp',
   'utility.cpp',
+  'net_address.cpp',
   'net_utility.cpp',
   'file_utility.cpp',
   'string_utility.cpp',

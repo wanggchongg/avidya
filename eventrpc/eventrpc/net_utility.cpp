@@ -118,13 +118,13 @@ bool NetUtility::Send(int fd, const void *buf, size_t count,
     ret = ::send(fd, ((char*)buf + (*length)),
                  count, MSG_NOSIGNAL | MSG_DONTWAIT);
     errno_copy = errno;
-    if (ret == 0) {
-      return false;
-    }
     if (ret > 0) {
       count -= ret;
       *length += ret;
       continue;
+    }
+    if (ret == 0) {
+      return true;
     }
     if (errno_copy == EINTR) {
       continue;

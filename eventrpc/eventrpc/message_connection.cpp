@@ -94,18 +94,21 @@ int MessageConnection::Impl::HandleRead() {
     ErrorMessage("recv from ");
     return -1;
   }
-  uint32 result = ReadMessageStateMachine(&input_buffer_,
-                                          &message_header_,
-                                          &state_);
-  if (result == kRecvMessageNotCompleted) {
+  while (!input_buffer_.is_read_complete()) {
+    VLOG_INFO() << "HandleRead, size: " << input_buffer_.end_position();
+    uint32 result = ReadMessageStateMachine(&input_buffer_,
+                                            &message_header_,
+                                            &state_);
+    if (result == kRecvMessageNotCompleted) {
+      return result;
+    }
+    if (!handler_->HandlePacket(message_header_, &input_buffer_)) {
+    ErrorMessage("handle message from ");
     return result;
+    }
   }
-  if (handler_->HandlePacket(message_header_, &input_buffer_)) {
-    input_buffer_.Clear();
-    return kSuccess;
-  }
-  ErrorMessage("handle message from ");
-  return result;
+  input_buffer_.Clear();
+  return kSuccess;
 }
 
 int MessageConnection::Impl::HandleWrite() {
@@ -138,6 +141,10 @@ void MessageConnection::Impl::set_message_handler(MessageHandler *handler) {
 void MessageConnection::Impl::SendPacket(
     uint32 opcode, const ::google::protobuf::Message *message) {
   EncodePacket(opcode, message, &output_buffer_);
+  uint32 result = WriteMessage(&output_buffer_, event_.fd_);
+  if (result == kSendMessageError) {
+    ErrorMessage("send message to ");
+  }
 }
 
 Event* MessageConnection::Impl::event() {

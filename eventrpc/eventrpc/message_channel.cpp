@@ -2,11 +2,23 @@
  * Copyright(C) lichuang
  */
 #include "eventrpc/error_code.h"
+#include "eventrpc/callback.h"
 #include "eventrpc/event.h"
 #include "eventrpc/message_channel.h"
 #include "eventrpc/net_utility.h"
 #include "eventrpc/log.h"
+#include "eventrpc/assert_log.h"
 namespace eventrpc {
+struct ConnectTask : public Callback {
+  ConnectTask(MessageChannel::Impl *impl)
+    : impl_(impl) {
+  }
+
+  void Run();
+
+  MessageChannel::Impl *impl_;
+};
+
 struct MessageChannelEvent : public Event {
   MessageChannelEvent(int fd, MessageChannel::Impl *impl)
     : Event(fd, EVENT_WRITE | EVENT_READ),
@@ -35,15 +47,22 @@ struct MessageChannel::Impl {
 
   void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
 
-  void set_message_handler(MessageHandler *handler);
+  void set_message_handler(ChannelMessageHandler *handler);
 
   void set_dispatcher(Dispatcher *dispatcher);
+
+  Dispatcher* dispatcher() {
+    return dispatcher_;
+  }
 
   int HandleRead();
 
   int HandleWrite();
 
   void ErrorMessage(const string &message);
+
+  void ConnectToServer();
+
  private:
   string host_;
   int port_;
@@ -51,7 +70,8 @@ struct MessageChannel::Impl {
   Buffer output_buffer_;
   Dispatcher *dispatcher_;
   MessageChannelEvent event_;
-  MessageHandler *handler_;
+  ConnectTask *connect_task_;
+  ChannelMessageHandler *handler_;
   MessageHeader message_header_;
   ReadMessageState state_;
 };
@@ -61,6 +81,7 @@ MessageChannel::Impl::Impl(const string &host, int port)
     port_(port),
     dispatcher_(NULL),
     event_(-1, this),
+    connect_task_(new ConnectTask(this)),
     handler_(NULL),
     state_(READ_HEADER) {
 }
@@ -75,13 +96,19 @@ void MessageChannel::Impl::ErrorMessage(const string &message) {
 }
 
 bool MessageChannel::Impl::Connect() {
+  ASSERT_TRUE(dispatcher_ != NULL) << "should be called after set_dispatcher";
+  dispatcher_->PushTask(connect_task_);
+  return true;
+}
+
+void MessageChannel::Impl::ConnectToServer() {
   event_.fd_ = NetUtility::Connect(host_, port_);
   if (event_.fd_ < 0) {
     ErrorMessage("connect to ");
-    return false;
+    return;
   }
+  handler_->HandleConnection();
   dispatcher_->AddEvent(&event_);
-  return true;
 }
 
 void MessageChannel::Impl::Close() {
@@ -95,9 +122,14 @@ void MessageChannel::Impl::SendPacket(
     uint32 opcode,
     const ::google::protobuf::Message *message) {
   EncodePacket(opcode, message, &output_buffer_);
+  VLOG_INFO() << "sendpacket, size: " << output_buffer_.end_position();
+  uint32 result = WriteMessage(&output_buffer_, event_.fd_);
+  if (result == kSendMessageError) {
+    ErrorMessage("send message to ");
+  }
 }
 
-void MessageChannel::Impl::set_message_handler(MessageHandler *handler) {
+void MessageChannel::Impl::set_message_handler(ChannelMessageHandler *handler) {
   handler_ = handler;
 }
 
@@ -110,24 +142,27 @@ int MessageChannel::Impl::HandleRead() {
     ErrorMessage("recv message from ");
     return kRecvMessageError;
   }
-  uint32 result = ReadMessageStateMachine(&input_buffer_,
-                                          &message_header_,
-                                          &state_);
-  if (result == kRecvMessageNotCompleted) {
+  while (!input_buffer_.is_read_complete()) {
+    uint32 result = ReadMessageStateMachine(&input_buffer_,
+                                            &message_header_,
+                                            &state_);
+    if (result == kRecvMessageNotCompleted) {
+      return result;
+    }
+    if (!handler_->HandlePacket(message_header_, &input_buffer_)) {
+    ErrorMessage("handle message from ");
     return result;
+    }
   }
-  if (handler_->HandlePacket(message_header_, &input_buffer_)) {
-    input_buffer_.Clear();
-    return kSuccess;
-  }
-  ErrorMessage("handle message from ");
-  return result;
+  input_buffer_.Clear();
+  return kSuccess;
 }
 
 int MessageChannel::Impl::HandleWrite() {
   if (output_buffer_.is_read_complete()) {
     return kSuccess;
   }
+  VLOG_INFO() << "HandleWrite, size: " << output_buffer_.end_position();
   uint32 result = WriteMessage(&output_buffer_, event_.fd_);
   if (result == kSendMessageError) {
     ErrorMessage("send message to ");
@@ -141,6 +176,10 @@ int MessageChannelEvent::HandleRead() {
 
 int MessageChannelEvent::HandleWrite() {
   return impl_->HandleWrite();
+}
+
+void ConnectTask::Run() {
+  impl_->ConnectToServer();
 }
 
 MessageChannel::MessageChannel(const string &host, int port) {
@@ -165,11 +204,15 @@ void MessageChannel::SendPacket(
   impl_->SendPacket(opcode, message);
 }
 
-void MessageChannel::set_message_handler(MessageHandler *handler) {
+void MessageChannel::set_message_handler(ChannelMessageHandler *handler) {
   impl_->set_message_handler(handler);
 }
 
 void MessageChannel::set_dispatcher(Dispatcher *dispatcher) {
   impl_->set_dispatcher(dispatcher);
+}
+
+Dispatcher* MessageChannel::dispatcher() {
+  return impl_->dispatcher();
 }
 };

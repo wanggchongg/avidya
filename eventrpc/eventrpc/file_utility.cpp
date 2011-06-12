@@ -8,10 +8,10 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include "base.h"
-#include "file_utility.h"
-#include "log.h"
-
+#include "eventrpc/base.h"
+#include "eventrpc/file_utility.h"
+#include "eventrpc/log.h"
+#include "eventrpc/assert_log.h"
 namespace eventrpc {
 bool FileUtility::ReadFileContents(const string &file,
                                    string *content) {

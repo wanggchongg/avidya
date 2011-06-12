@@ -12,6 +12,20 @@ struct MessageHandler {
   MessageHandler() {}
 };
 
+class MessageChannel;
+struct ChannelMessageHandler : public MessageHandler {
+ public:
+  ChannelMessageHandler(MessageChannel *channel)
+    : channel_(channel) {
+  }
+  virtual ~ChannelMessageHandler() {}
+  virtual bool HandlePacket(const MessageHeader &header,
+                            Buffer* buffer) = 0;
+  virtual bool HandleConnection() = 0;
+ protected:
+  MessageChannel *channel_;
+};
+
 class ServerMessageHandlerFactory;
 class MessageConnection;
 struct ServerMessageHandler : public MessageHandler {
