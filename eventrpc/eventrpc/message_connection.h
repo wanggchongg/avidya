@@ -12,7 +12,7 @@
 #include "eventrpc/message_connection_manager.h"
 namespace eventrpc {
 class Dispatcher;
-class Event;
+class EventHandler;
 class MessageConnection {
  public:
   MessageConnection(MessageConnectionManager *connection_manager);
@@ -27,7 +27,7 @@ class MessageConnection {
 
   void set_message_handler(MessageHandler *handler);
 
-  Event* event();
+  EventHandler* event_handler();
 
   void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
 

@@ -2,8 +2,8 @@
 #include "thread.h"
 
 namespace eventrpc {
-Thread::Thread(Runnable *runnable)
-  : runnable_(runnable) {
+Thread::Thread(ThreadWorker *thread_worker)
+  : thread_worker_(thread_worker) {
 
 }
 
@@ -25,7 +25,7 @@ void Thread::Start() {
 
 void* Thread::ThreadMain(void* arg) {
   Thread *thread = static_cast<Thread*>(arg);
-  thread->runnable_->Run();
+  thread->thread_worker_->Run();
   return NULL;
 }
 };

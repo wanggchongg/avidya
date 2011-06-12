@@ -4,6 +4,10 @@ namespace eventrpc {
 // use inherit class instead of using evil template trick
 struct Callback {
  public:
+  Callback() {
+  }
+  virtual ~Callback() {
+  }
   virtual void Run() = 0;
 };
 };

@@ -1,9 +1,16 @@
+/*
+ * Copyright(C) lichuang
+ */
 #include <string.h>
+#include <sys/epoll.h>
 #include <unistd.h>
 #include <errno.h>
+#include <list>
+#include "eventrpc/thread.h"
+#include "eventrpc/mutex.h"
 #include "eventrpc/log.h"
 #include "eventrpc/assert_log.h"
-#include "eventrpc/callback.h"
+#include "eventrpc/task.h"
 #include "eventrpc/dispatcher.h"
 #include "eventrpc/net_utility.h"
 namespace {
@@ -11,188 +18,208 @@ static const uint32 kMaxPollWaitTime = 1000;
 static const uint32 kEpollFdCount = 1024;
 };
 namespace eventrpc {
-Dispatcher::Dispatcher()
-  : runnable_(this),
-    thread_(&runnable_),
-    current_operate_events_(&operated_events_[0]),
-    waiting_operate_events_(&operated_events_[1]),
-    current_handle_tasks_(&tasks_[0]),
-    waiting_handle_tasks_(&tasks_[1]) {
-}
-
-Dispatcher::~Dispatcher() {
-  close(epoll_fd_);
-}
-
-void Dispatcher::Start() {
-  epoll_fd_ = epoll_create(kEpollFdCount);
-  ASSERT_NE(-1, epoll_fd_);
-  thread_.Start();
-}
-
-void Dispatcher::Stop() {
-}
-
-void Dispatcher::PushTask(Callback *callback) {
-  SpinMutexLock lock(&task_spin_mutex_);
-  waiting_handle_tasks_->push_back(callback);
-}
-
-void Dispatcher::AddEvent(Event *event) {
-  EventEntry *event_entry = new EventEntry();
-  ASSERT_NE(static_cast<EventEntry*>(NULL), event_entry);
-  event_entry->event = event;
-  event->entry_ = static_cast<Event::entry_t>(event_entry);
-  if (event->event_flags_ & EVENT_READ) {
-    event_entry->epoll_ev.events |= EPOLLIN;
+struct EpollEvent {
+  int fd;
+  uint32 flags;
+  struct epoll_event epoll_ev;
+  EventHandler *handler;
+};
+struct AddEventTask : public Task {
+  AddEventTask(Dispatcher::Impl *impl, EpollEvent *event)
+    : impl_(impl),
+      event_(event) {
   }
-  if (event->event_flags_ & EVENT_WRITE) {
-    event_entry->epoll_ev.events |= EPOLLOUT;
+  virtual ~AddEventTask() {
   }
 
-  event_entry->epoll_ev.events |= EPOLLET;
-  event_entry->epoll_ev.data.ptr = event_entry;
-  event_entry->event_operation_type = EVENT_OPERATION_ADD;
-  SpinMutexLock lock(&spin_mutex_);
-  waiting_operate_events_->push_back(event_entry);
+  void Handle();
+
+  Dispatcher::Impl *impl_;
+  EpollEvent *event_;
+};
+
+struct Dispatcher::Impl : public ThreadWorker {
+  Impl();
+
+  ~Impl();
+
+  void Run();
+
+  void AddEvent(int fd, uint32 flags, EventHandler *handler);
+
+  void Start();
+
+  void Stop();
+
+  void PushTask(Task *task);
+
+  void HandleTasks();
+
+  void InternalAddEvent(EpollEvent *event);
+
+  void InternalDeleteEvent(EpollEvent *event);
+ private:
+  typedef list<Task*> TaskList;
+  TaskList task_list_[2];
+  TaskList *running_task_list_;
+  TaskList *free_task_list_;
+  Thread thread_;
+  int epoll_fd_;
+  SpinMutex task_list_spin_mutex_;
+  epoll_event epoll_event_array_[kEpollFdCount];
+  EpollEvent* event_array_[kEpollFdCount];
+  typedef list<EpollEvent*> EventList;
+};
+
+Dispatcher::Impl::Impl()
+  : running_task_list_(&task_list_[0]),
+    free_task_list_(&task_list_[1]),
+    thread_(this),
+    epoll_fd_(-1) {
+  for (uint32 i = 0; i < kEpollFdCount; ++i) {
+    event_array_[i] = NULL;
+  }
 }
 
-void Dispatcher::DeleteEvent(Event *event) {
-  EventEntry *event_entry = static_cast<EventEntry*>(event->entry_);
-  if (epoll_ctl(epoll_fd_, EPOLL_CTL_DEL,
-                event->fd_, &(event_entry->epoll_ev)) == -1) {
-    VLOG_ERROR() << "epoll_ctl error: " << strerror(errno);
-  }
-  close(event->fd_);
-  event->fd_ = -1;
-  event_entry->event = NULL;
-  event_entry->event_operation_type = EVENT_OPERATION_DELETE;
-  SpinMutexLock lock(&spin_mutex_);
-  waiting_operate_events_->push_back(event_entry);
+Dispatcher::Impl::~Impl() {
 }
 
-void Dispatcher::ModifyEvent(Event *event) {
-  EventEntry *event_entry = static_cast<EventEntry*>(event->entry_);
-  event_entry->epoll_ev.events = 0;
-  if (event->event_flags_ & EVENT_READ) {
-    event_entry->epoll_ev.events |= EPOLLIN;
-  }
-  if (event->event_flags_ & EVENT_WRITE) {
-    event_entry->epoll_ev.events |= EPOLLOUT;
-  }
-  event_entry->event_operation_type = EVENT_OPERATION_MODIFY;
-  SpinMutexLock lock(&spin_mutex_);
-  waiting_operate_events_->push_back(event_entry);
-}
-
-int Dispatcher::Poll() {
+void Dispatcher::Impl::Run() {
+  VLOG_INFO() << "dispatcher thread start....";
   while (true) {
     // no need to lock
-    if (!waiting_operate_events_->empty()) {
-      OperateEvents();
-    }
-    // no need to lock
-    if (!waiting_handle_tasks_->empty()) {
+    if (!free_task_list_->empty()) {
       HandleTasks();
     }
-    int number = epoll_wait(epoll_fd_, &epoll_event_buf_[0],
-                            EPOLL_MAX_EVENTS, kMaxPollWaitTime);
+    int number = epoll_wait(epoll_fd_, &epoll_event_array_[0],
+                            kEpollFdCount, kMaxPollWaitTime);
     if (number == -1) {
       if (errno == EINTR) {
         continue;
       }
       VLOG_ERROR() << "epoll_wait return -1, errno: "
         << strerror(errno);
-      return -1;
+      Stop();
+      return;
     }
-    EventEntry *event_entry;
-    Event *event;
+    EpollEvent *event;
     for (int i = 0; i < number; ++i) {
-      event_entry = static_cast<EventEntry*>(epoll_event_buf_[i].data.ptr);
-      event = event_entry->event;
+      event = static_cast<EpollEvent*>(epoll_event_array_[i].data.ptr);
       if (event == NULL) {
         continue;
       }
-      if (event_entry->event_operation_type == EVENT_OPERATION_DELETE) {
-        continue;
+      if (epoll_event_array_[i].events & EPOLLIN) {
+        if (event->handler->HandleRead() == false) {
+          InternalDeleteEvent(event);
+        }
       }
-      if (epoll_event_buf_[i].events & EPOLLIN) {
-        event->HandleRead();
-      }
-      if (epoll_event_buf_[i].events & EPOLLOUT) {
-        event->HandleWrite();
+      if (epoll_event_array_[i].events & EPOLLOUT) {
+        if (event->handler->HandleWrite() == false) {
+          InternalDeleteEvent(event);
+        }
       }
     }
-    for (EventVector::iterator iter = retired_events_.begin();
-         iter != retired_events_.end(); ++iter) {
-      delete (*iter);
-    }
-    retired_events_.clear();
-    break;
-  }
-  return 0;
-}
-
-void Dispatcher::DispatcherRunnable::Run() {
-  while (dispatcher_->Poll() == 0) {
-    ;
   }
 }
 
-int Dispatcher::HandleTasks() {
+void Dispatcher::Impl::HandleTasks() {
   {
-    SpinMutexLock lock(&task_spin_mutex_);
-    CallbackList *tmp_task_list = current_handle_tasks_;
-    current_handle_tasks_ = waiting_handle_tasks_;
-    waiting_handle_tasks_ = tmp_task_list;
+    SpinMutexLock lock(&task_list_spin_mutex_);
+    TaskList *tmp_task_list = running_task_list_;
+    running_task_list_ = free_task_list_;
+    free_task_list_ = tmp_task_list;
   }
-
-  for (CallbackList::iterator iter = current_handle_tasks_->begin();
-       iter != current_handle_tasks_->end(); ) {
-    Callback *callback = *iter;
-    callback->Run();
+  for (TaskList::iterator iter = running_task_list_->begin();
+       iter != running_task_list_->end(); ) {
+    Task *task = *iter;
+    task->Handle();
     ++iter;
-    delete callback;
+    delete task;
   }
-  current_handle_tasks_->clear();
-  return 0;
+  running_task_list_->clear();
 }
 
-int Dispatcher::OperateEvents() {
-  {
-    SpinMutexLock lock(&spin_mutex_);
-    EventVector *tmp_event_vector = current_operate_events_;
-    current_operate_events_ = waiting_operate_events_;
-    waiting_operate_events_ = tmp_event_vector;
+void Dispatcher::Impl::AddEvent(int fd, uint32 flags, EventHandler *handler) {
+  EpollEvent *event = new EpollEvent();
+  ASSERT_TRUE(event != NULL);
+  event->fd = fd;
+  event->flags = flags;
+  event->handler = handler;
+  AddEventTask *task = new AddEventTask(this, event);
+  PushTask(task);
+}
+
+void Dispatcher::Impl::InternalAddEvent(EpollEvent *event) {
+  ASSERT_NE(static_cast<EpollEvent*>(NULL), event);
+  if (event->flags & EVENT_READ) {
+    event->epoll_ev.events |= EPOLLIN;
+  }
+  if (event->flags & EVENT_WRITE) {
+    event->epoll_ev.events |= EPOLLOUT;
   }
 
-  EventEntry *event_entry;
-  Event *event;
-  for (EventVector::iterator iter = current_operate_events_->begin();
-       iter != current_operate_events_->end(); ++iter) {
-    event_entry = *iter;
-    event = event_entry->event;
-    switch (event_entry->event_operation_type) {
-      case EVENT_OPERATION_ADD:
-        if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD,
-                      event->fd_, &(event_entry->epoll_ev)) != 0) {
-          VLOG_ERROR() << "epoll_ctl for fd " << event->fd_ << " error";
-        }
-        break;
-      case EVENT_OPERATION_DELETE:
-        retired_events_.push_back(event_entry);
-        break;
-      case EVENT_OPERATION_MODIFY:
-        if (epoll_ctl(epoll_fd_, EPOLL_CTL_MOD,
-                      event->fd_, &(event_entry->epoll_ev)) != 0) {
-          VLOG_ERROR() << "epoll_ctl for fd " << event->fd_ << " error";
-        }
-        break;
-      default:
-        break;
-    }
+  event->epoll_ev.events |= EPOLLET;
+  event->epoll_ev.data.ptr = event;
+  if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD,
+                event->fd, &(event->epoll_ev)) != 0) {
+    delete event;
+    VLOG_ERROR() << "epoll_ctl for fd " << event->fd
+      << " error: " << strerror(errno);
   }
-  current_operate_events_->clear();
-  return 0;
+  ASSERT_TRUE(event_array_[event->fd] == NULL);
+  VLOG_INFO() << "add event, fd: " << event->fd;
+  event_array_[event->fd] = event;
+}
+
+void Dispatcher::Impl::InternalDeleteEvent(EpollEvent *event) {
+  ASSERT_TRUE(event_array_[event->fd] == event);
+  if (epoll_ctl(epoll_fd_, EPOLL_CTL_DEL,
+                event->fd, &(event->epoll_ev)) == -1) {
+    VLOG_ERROR() << "epoll_ctl error: " << strerror(errno);
+  }
+  close(event->fd);
+  event_array_[event->fd] = NULL;
+}
+
+void Dispatcher::Impl::PushTask(Task *task) {
+  SpinMutexLock lock(&task_list_spin_mutex_);
+  free_task_list_->push_back(task);
+}
+
+void Dispatcher::Impl::Start() {
+  epoll_fd_ = ::epoll_create(kEpollFdCount);
+  ASSERT_TRUE(epoll_fd_ != -1);
+  thread_.Start();
+}
+
+void Dispatcher::Impl::Stop() {
+}
+
+void AddEventTask::Handle() {
+  impl_->InternalAddEvent(event_);
+}
+
+Dispatcher::Dispatcher()
+  : impl_(new Impl) {
+}
+
+Dispatcher::~Dispatcher() {
+  delete impl_;
+}
+
+void Dispatcher::AddEvent(int fd, uint32 flags, EventHandler *handler) {
+  impl_->AddEvent(fd, flags, handler);
+}
+
+void Dispatcher::Start() {
+  impl_->Start();
+}
+
+void Dispatcher::Stop() {
+  impl_->Stop();
+}
+
+void Dispatcher::PushTask(Task *task) {
+  impl_->PushTask(task);
 }
 };

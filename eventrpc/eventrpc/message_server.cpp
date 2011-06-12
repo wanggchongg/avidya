@@ -10,7 +10,7 @@
 #include "eventrpc/message_connection_manager.h"
 #include "eventrpc/message_server.h"
 namespace eventrpc {
-class MessageServerEvent;
+class MessageServerEventHandler;
 struct MessageServer::Impl {
  public:
   Impl();
@@ -34,7 +34,7 @@ struct MessageServer::Impl {
     manager_.set_message_handler_factory(factory);
   }
 
-  int HandleAccept();
+  bool HandleAccept();
 
   void Close();
 
@@ -42,27 +42,27 @@ struct MessageServer::Impl {
   string host_;
   uint32 port_;
   int listen_fd_;
-  MessageServerEvent *event_;
+  MessageServerEventHandler *event_handler_;
   Dispatcher *dispatcher_;
   MessageConnectionManager manager_;
 };
 
-struct MessageServerEvent : public Event {
+struct MessageServerEventHandler : public EventHandler {
  public:
-  MessageServerEvent(int fd, uint32 event_flags, MessageServer::Impl *server)
-    : Event(fd, event_flags),
-    server_(server) {
-    }
-
-  virtual ~MessageServerEvent() {
+  MessageServerEventHandler(MessageServer::Impl *server)
+    : server_(server) {
   }
 
-  int HandleRead() {
+  virtual ~MessageServerEventHandler() {
+  }
+
+  bool HandleRead() {
     return server_->HandleAccept();
   }
 
-  int HandleWrite() {
-    return -1;
+  bool HandleWrite() {
+    // should never happen
+    return false;
   }
 
  public:
@@ -73,7 +73,7 @@ MessageServer::Impl::Impl()
   : host_(""),
     port_(0),
     listen_fd_(0),
-    event_(NULL),
+    event_handler_(new MessageServerEventHandler(this)),
     dispatcher_(NULL) {
 }
 
@@ -84,10 +84,7 @@ MessageServer::Impl::~Impl() {
 void MessageServer::Impl::Start() {
   listen_fd_ = NetUtility::Listen(host_.c_str(), port_);
   ASSERT_TRUE(listen_fd_ > 0);
-  event_ = new MessageServerEvent(listen_fd_,
-                                  EVENT_READ, this);
-  dispatcher_->AddEvent(event_);
-  ASSERT_NE(static_cast<MessageServerEvent*>(NULL), event_);
+  dispatcher_->AddEvent(listen_fd_, EVENT_READ, event_handler_);
 }
 
 void MessageServer::Impl::Stop() {
@@ -95,14 +92,13 @@ void MessageServer::Impl::Stop() {
 }
 
 void MessageServer::Impl::Close() {
-  if (event_->fd_ > 0) {
+  if (listen_fd_ > 0) {
     LOG_INFO() << "shut down listen on " << host_ << " : " << port_;
-    dispatcher_->DeleteEvent(event_);
-    delete event_;
+    close(listen_fd_);
   }
 }
 
-int MessageServer::Impl::HandleAccept() {
+bool MessageServer::Impl::HandleAccept() {
   int fd;
   char buffer[30];
   while (true) {
@@ -118,9 +114,10 @@ int MessageServer::Impl::HandleAccept() {
     connection->set_fd(fd);
     connection->set_client_address(address);
     connection->set_dispacher(dispatcher_);
-    dispatcher_->AddEvent(connection->event());
+    dispatcher_->AddEvent(fd, EVENT_READ | EVENT_WRITE,
+                          connection->event_handler());
   }
-  return 0;
+  return true;
 }
 
 MessageServer::MessageServer() {

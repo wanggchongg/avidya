@@ -7,25 +7,23 @@
 #include "eventrpc/error_code.h"
 #include "eventrpc/log.h"
 #include "eventrpc/event.h"
-#include "eventrpc/callback.h"
 #include "eventrpc/dispatcher.h"
 #include "eventrpc/net_utility.h"
 #include "eventrpc/message_connection.h"
 #include "eventrpc/buffer.h"
 using namespace std;
 namespace eventrpc {
-struct MessageConnectionEvent : public Event {
-  MessageConnectionEvent(int fd, MessageConnection::Impl *impl)
-    : Event(fd, EVENT_READ | EVENT_WRITE),
-      impl_(impl) {
+struct MessageConnectionEventHandler : public EventHandler {
+  MessageConnectionEventHandler(MessageConnection::Impl *impl)
+    : impl_(impl) {
   }
 
-  virtual ~MessageConnectionEvent() {
+  virtual ~MessageConnectionEventHandler() {
   }
 
-  int HandleRead();
+  bool HandleRead();
 
-  int HandleWrite();
+  bool HandleWrite();
 
   MessageConnection::Impl *impl_;
 };
@@ -43,41 +41,45 @@ struct MessageConnection::Impl {
 
   void set_message_handler(MessageHandler *handler);
 
-  Event* event();
+  EventHandler* event_handler();
 
-  void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
+  void SendPacket(uint32 opcode,
+                  const ::google::protobuf::Message *message);
 
   void Close();
 
-  int HandleRead();
+  bool HandleRead();
 
-  int HandleWrite();
+  bool HandleWrite();
 
   void ErrorMessage(const string &message);
  private:
+  int fd_;
   MessageConnection *connection_;
-  MessageConnectionEvent event_;
+  MessageConnectionEventHandler *event_handler_;
   struct sockaddr_in client_address_;
   MessageConnectionManager *connection_manager_;
   Dispatcher *dispatcher_;
   Buffer input_buffer_;
   Buffer output_buffer_;
-  MessageHandler *handler_;
+  MessageHandler *message_handler_;
   MessageHeader message_header_;
   ReadMessageState state_;
 };
 
 MessageConnection::Impl::Impl(MessageConnection *connection,
                               MessageConnectionManager *manager)
-  : connection_(connection),
-    event_(-1, this),
+  : fd_(-1),
+    connection_(connection),
+    event_handler_(new MessageConnectionEventHandler(this)),
     connection_manager_(manager),
-    handler_(NULL),
+    message_handler_(NULL),
     state_(READ_HEADER) {
 }
 
 MessageConnection::Impl::~Impl() {
   Close();
+  delete event_handler_;
 }
 
 void MessageConnection::Impl::ErrorMessage(const string &message) {
@@ -89,10 +91,10 @@ void MessageConnection::Impl::ErrorMessage(const string &message) {
   Close();
 }
 
-int MessageConnection::Impl::HandleRead() {
-  if (input_buffer_.Read(event_.fd_) == -1) {
+bool MessageConnection::Impl::HandleRead() {
+  if (input_buffer_.Read(fd_) == -1) {
     ErrorMessage("recv from ");
-    return -1;
+    return false;
   }
   while (!input_buffer_.is_read_complete()) {
     VLOG_INFO() << "HandleRead, size: " << input_buffer_.end_position();
@@ -100,30 +102,30 @@ int MessageConnection::Impl::HandleRead() {
                                             &message_header_,
                                             &state_);
     if (result == kRecvMessageNotCompleted) {
-      return result;
+      return false;
     }
-    if (!handler_->HandlePacket(message_header_, &input_buffer_)) {
+    if (!message_handler_->HandlePacket(message_header_, &input_buffer_)) {
     ErrorMessage("handle message from ");
-    return result;
+    return false;
     }
   }
   input_buffer_.Clear();
-  return kSuccess;
+  return true;
 }
 
-int MessageConnection::Impl::HandleWrite() {
+bool MessageConnection::Impl::HandleWrite() {
   if (output_buffer_.is_read_complete()) {
-    return kSuccess;
+    return true;
   }
-  uint32 result = WriteMessage(&output_buffer_, event_.fd_);
+  uint32 result = WriteMessage(&output_buffer_, fd_);
   if (result == kSendMessageError) {
     ErrorMessage("send message to ");
   }
-  return result;
+  return (result == kSuccess);
 }
 
 void MessageConnection::Impl::set_fd(int fd) {
-  event_.fd_ = fd;
+  fd_ = fd;
 }
 
 void MessageConnection::Impl::set_client_address(struct sockaddr_in address) {
@@ -135,25 +137,26 @@ void MessageConnection::Impl::set_dispacher(Dispatcher *dispatcher) {
 }
 
 void MessageConnection::Impl::set_message_handler(MessageHandler *handler) {
-  handler_ = handler;
+  message_handler_ = handler;
 }
 
 void MessageConnection::Impl::SendPacket(
     uint32 opcode, const ::google::protobuf::Message *message) {
   EncodePacket(opcode, message, &output_buffer_);
-  uint32 result = WriteMessage(&output_buffer_, event_.fd_);
+  uint32 result = WriteMessage(&output_buffer_, fd_);
   if (result == kSendMessageError) {
     ErrorMessage("send message to ");
   }
 }
 
-Event* MessageConnection::Impl::event() {
-  return &event_;
+EventHandler* MessageConnection::Impl::event_handler() {
+  return event_handler_;
 }
 
 void MessageConnection::Impl::Close() {
-  if (event_.fd_ > 0) {
-    dispatcher_->DeleteEvent(&event_);
+  if (fd_ > 0) {
+    close(fd_);
+    fd_ = -1;
     connection_manager_->PutConnection(connection_);
     input_buffer_.Clear();
     output_buffer_.Clear();
@@ -185,11 +188,11 @@ void MessageConnection::set_message_handler(MessageHandler *handler) {
   impl_->set_message_handler(handler);
 }
 
-int MessageConnectionEvent::HandleRead() {
+bool MessageConnectionEventHandler::HandleRead() {
   return impl_->HandleRead();
 }
 
-int MessageConnectionEvent::HandleWrite() {
+bool MessageConnectionEventHandler::HandleWrite() {
   return impl_->HandleWrite();
 }
 
@@ -198,8 +201,8 @@ void MessageConnection::SendPacket(
   impl_->SendPacket(opcode, message);
 }
 
-Event* MessageConnection::event() {
-  return impl_->event();
+EventHandler* MessageConnection::event_handler() {
+  return impl_->event_handler();
 }
 
 void MessageConnection::Close() {

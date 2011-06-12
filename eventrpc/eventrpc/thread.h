@@ -2,15 +2,15 @@
 #define __EVENTRPC_THREAD_H__
 
 namespace eventrpc {
-class Runnable {
+class ThreadWorker {
  public:
-  virtual ~Runnable() {};
+  virtual ~ThreadWorker() {};
   virtual void Run() = 0;
 };
 
 class Thread {
  public:
-  Thread(Runnable *runnable);
+  Thread(ThreadWorker *ThreadWorker);
 
   ~Thread();
 
@@ -21,7 +21,7 @@ class Thread {
 
  private:
   pthread_t pthread_;
-  Runnable *runnable_;
+  ThreadWorker *thread_worker_;
 };
 };
 #endif  // __EVENTRPC_THREAD_H__

@@ -2,35 +2,34 @@
  * Copyright(C) lichuang
  */
 #include "eventrpc/error_code.h"
-#include "eventrpc/callback.h"
+#include "eventrpc/task.h"
 #include "eventrpc/event.h"
 #include "eventrpc/message_channel.h"
 #include "eventrpc/net_utility.h"
 #include "eventrpc/log.h"
 #include "eventrpc/assert_log.h"
 namespace eventrpc {
-struct ConnectTask : public Callback {
+struct ConnectTask : public Task {
   ConnectTask(MessageChannel::Impl *impl)
     : impl_(impl) {
   }
 
-  void Run();
+  void Handle();
 
   MessageChannel::Impl *impl_;
 };
 
-struct MessageChannelEvent : public Event {
-  MessageChannelEvent(int fd, MessageChannel::Impl *impl)
-    : Event(fd, EVENT_WRITE | EVENT_READ),
-      impl_(impl) {
+struct MessageChannelEventHandler : public EventHandler {
+  MessageChannelEventHandler(MessageChannel::Impl *impl)
+    : impl_(impl) {
   }
 
-  virtual ~MessageChannelEvent() {
+  virtual ~MessageChannelEventHandler() {
   }
 
-  int HandleRead();
+  bool HandleRead();
 
-  int HandleWrite();
+  bool HandleWrite();
 
   MessageChannel::Impl *impl_;
 };
@@ -55,21 +54,22 @@ struct MessageChannel::Impl {
     return dispatcher_;
   }
 
-  int HandleRead();
+  bool HandleRead();
 
-  int HandleWrite();
+  bool HandleWrite();
 
   void ErrorMessage(const string &message);
 
   void ConnectToServer();
 
  private:
+  int fd_;
   string host_;
   int port_;
   Buffer input_buffer_;
   Buffer output_buffer_;
   Dispatcher *dispatcher_;
-  MessageChannelEvent event_;
+  MessageChannelEventHandler *event_handler_;
   ConnectTask *connect_task_;
   ChannelMessageHandler *handler_;
   MessageHeader message_header_;
@@ -77,10 +77,11 @@ struct MessageChannel::Impl {
 };
 
 MessageChannel::Impl::Impl(const string &host, int port)
-  : host_(host),
+  : fd_(-1),
+    host_(host),
     port_(port),
     dispatcher_(NULL),
-    event_(-1, this),
+    event_handler_(new MessageChannelEventHandler(this)),
     connect_task_(new ConnectTask(this)),
     handler_(NULL),
     state_(READ_HEADER) {
@@ -88,6 +89,7 @@ MessageChannel::Impl::Impl(const string &host, int port)
 
 MessageChannel::Impl::~Impl() {
   Close();
+  delete event_handler_;
 }
 
 void MessageChannel::Impl::ErrorMessage(const string &message) {
@@ -102,19 +104,20 @@ bool MessageChannel::Impl::Connect() {
 }
 
 void MessageChannel::Impl::ConnectToServer() {
-  event_.fd_ = NetUtility::Connect(host_, port_);
-  if (event_.fd_ < 0) {
+  fd_ = NetUtility::Connect(host_, port_);
+  if (fd_ < 0) {
     ErrorMessage("connect to ");
     return;
   }
   handler_->HandleConnection();
-  dispatcher_->AddEvent(&event_);
+  dispatcher_->AddEvent(fd_, EVENT_READ | EVENT_WRITE, event_handler_);
 }
 
 void MessageChannel::Impl::Close() {
-  if (event_.fd_ > 0) {
+  if (fd_ > 0) {
     VLOG_INFO() << "close connection to [" << host_ << ":" << port_ << "]";
-    dispatcher_->DeleteEvent(&event_);
+    close(fd_);
+    fd_ = -1;
   }
 }
 
@@ -123,7 +126,7 @@ void MessageChannel::Impl::SendPacket(
     const ::google::protobuf::Message *message) {
   EncodePacket(opcode, message, &output_buffer_);
   VLOG_INFO() << "sendpacket, size: " << output_buffer_.end_position();
-  uint32 result = WriteMessage(&output_buffer_, event_.fd_);
+  uint32 result = WriteMessage(&output_buffer_, fd_);
   if (result == kSendMessageError) {
     ErrorMessage("send message to ");
   }
@@ -137,10 +140,10 @@ void MessageChannel::Impl::set_dispatcher(Dispatcher *dispatcher) {
   dispatcher_ = dispatcher;
 }
 
-int MessageChannel::Impl::HandleRead() {
-  if (input_buffer_.Read(event_.fd_) == -1) {
+bool MessageChannel::Impl::HandleRead() {
+  if (input_buffer_.Read(fd_) == -1) {
     ErrorMessage("recv message from ");
-    return kRecvMessageError;
+    return false;
   }
   while (!input_buffer_.is_read_complete()) {
     uint32 result = ReadMessageStateMachine(&input_buffer_,
@@ -151,34 +154,34 @@ int MessageChannel::Impl::HandleRead() {
     }
     if (!handler_->HandlePacket(message_header_, &input_buffer_)) {
     ErrorMessage("handle message from ");
-    return result;
+    return false;
     }
   }
   input_buffer_.Clear();
-  return kSuccess;
+  return true;
 }
 
-int MessageChannel::Impl::HandleWrite() {
+bool MessageChannel::Impl::HandleWrite() {
   if (output_buffer_.is_read_complete()) {
-    return kSuccess;
+    return true;
   }
   VLOG_INFO() << "HandleWrite, size: " << output_buffer_.end_position();
-  uint32 result = WriteMessage(&output_buffer_, event_.fd_);
+  uint32 result = WriteMessage(&output_buffer_, fd_);
   if (result == kSendMessageError) {
     ErrorMessage("send message to ");
   }
-  return result;
+  return (result == kSuccess);
 }
 
-int MessageChannelEvent::HandleRead() {
+bool MessageChannelEventHandler::HandleRead() {
   return impl_->HandleRead();
 }
 
-int MessageChannelEvent::HandleWrite() {
+bool MessageChannelEventHandler::HandleWrite() {
   return impl_->HandleWrite();
 }
 
-void ConnectTask::Run() {
+void ConnectTask::Handle() {
   impl_->ConnectToServer();
 }
 

@@ -8,7 +8,7 @@
 #include <google/protobuf/message.h>
 #include "eventrpc/error_code.h"
 #include "eventrpc/base.h"
-#include "eventrpc/callback.h"
+#include "eventrpc/task.h"
 #include "eventrpc/event.h"
 #include "eventrpc/rpc_channel.h"
 #include "eventrpc/net_utility.h"
@@ -20,8 +20,8 @@ struct MessageResponse {
   gpb::Closure* done;
 };
 
-struct CallMethodCallback : public Callback {
-  CallMethodCallback(uint32 opcode,
+struct CallMethodTask : public Task {
+  CallMethodTask(uint32 opcode,
                      gpb::Message* request,
                      RpcChannel::Impl *impl)
     : opcode_(opcode),
@@ -29,9 +29,9 @@ struct CallMethodCallback : public Callback {
       impl_(impl) {
   }
 
-  virtual ~CallMethodCallback() {
+  virtual ~CallMethodTask() {
   }
-  void Run();
+  void Handle();
 
   uint32 opcode_;
   gpb::Message* request_;
@@ -61,7 +61,7 @@ struct RpcChannel::Impl : public ChannelMessageHandler {
 
   void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
 
-  void PushTask(CallMethodCallback *callback);
+  void PushTask(CallMethodTask *callback);
 
  public:
   typedef list<MessageResponse*> MessageResponseList;
@@ -92,12 +92,14 @@ void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,
   message_response->done     = done;
   uint32 opcode = hash_string(method->full_name());
   gpb::Message* save_request = request->New();
-  save_request->CopyFrom(*request);
+  if (!save_request->IsInitialized()) {
+    save_request->CopyFrom(*request);
+  }
   VLOG_INFO() << "call service: " << method->full_name()
     << ", opcode: " << opcode
     << ", request: " << save_request->DebugString();
   message_response_map_[opcode].push_back(message_response);
-  CallMethodCallback *callback = new CallMethodCallback(
+  CallMethodTask *callback = new CallMethodTask(
       opcode,
       save_request,
       this);
@@ -142,11 +144,11 @@ void RpcChannel::Impl::SendPacket(uint32 opcode,
   channel_->SendPacket(opcode, message);
 }
 
-void RpcChannel::Impl::PushTask(CallMethodCallback *callback) {
-  channel_->dispatcher()->PushTask(callback);
+void RpcChannel::Impl::PushTask(CallMethodTask *task) {
+  channel_->dispatcher()->PushTask(task);
 }
 
-void CallMethodCallback::Run() {
+void CallMethodTask::Handle() {
   VLOG_INFO() << "request: " << request_->DebugString();
   impl_->SendPacket(opcode_, request_);
   delete request_;
