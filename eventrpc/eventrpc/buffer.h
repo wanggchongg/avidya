@@ -4,7 +4,7 @@
 #ifndef __EVENTRPC_BUFFER_H__
 #define __EVENTRPC_BUFFER_H__
 #include <vector>
-#include <string>
+#include <google/protobuf/message.h>
 #include "eventrpc/base.h"
 #include "eventrpc/noncopyable.h"
 namespace eventrpc {
@@ -55,10 +55,10 @@ class Buffer {
 
   uint32 DeserializeToUint32();
 
-  void AppendString(const string &content);
+  void SerializeFromMessage(const ::google::protobuf::Message *message);
 
-  string ToString(int size);
-
+  bool DeserializeToMessage(::google::protobuf::Message *message,
+                            uint32 length);
  private:
   vector<char> buffer_;
   size_t read_index_;

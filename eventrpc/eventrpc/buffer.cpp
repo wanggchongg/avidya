@@ -89,18 +89,16 @@ uint32 Buffer::DeserializeToUint32() {
   return ::ntohl(value);
 }
 
-void Buffer::AppendString(const string &content) {
-  if (content.size() > (buffer_.capacity() - write_index_)) {
-    buffer_.resize(content.size() + write_index_);
-  }
-  memcpy(write_content(), content.c_str(), content.size());
-  write_index_ += content.size();
+void Buffer::SerializeFromMessage(
+    const ::google::protobuf::Message *message) {
+  message->SerializeToArray(write_content(),
+                            message->ByteSize());
+  WriteSkip(message->ByteSize());
 }
 
-string Buffer::ToString(int size) {
-  string content;
-  content.append(read_content(), size);
-  read_index_ += size;
-  return content;
+bool Buffer::DeserializeToMessage(
+    ::google::protobuf::Message *message,
+    uint32 length) {
+  return message->ParseFromArray(read_content(), length);
 }
 };

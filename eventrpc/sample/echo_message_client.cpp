@@ -37,9 +37,9 @@ class EchoClientMessageHandler : public ChannelMessageHandler {
       VLOG_ERROR() << "opcode error: " << header.opcode;
       return false;
     }
-    string content = buffer->ToString(header.length);
     echo::EchoResponse response;
-    if (!response.ParseFromString(content)) {
+    if (!buffer->DeserializeToMessage(&response, header.length)) {
+      VLOG_ERROR() << "DeserializeToMessage error: " << header.opcode;
       monitor_->Notify();
       return false;
     }

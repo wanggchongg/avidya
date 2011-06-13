@@ -116,8 +116,9 @@ bool RpcChannel::Impl::HandlePacket(const MessageHeader &header,
   }
   MessageResponse *response = iter->second.front();
   iter->second.pop_front();
-  string content = buffer->ToString(header.length);
-  if (!response->response->ParseFromString(content)) {
+  if (!buffer->DeserializeToMessage(response->response,
+                                    header.length)) {
+    VLOG_ERROR() << "DeserializeToMessage " << header.opcode << " error";
     FreeMessageResponse(response);
     return false;
   }

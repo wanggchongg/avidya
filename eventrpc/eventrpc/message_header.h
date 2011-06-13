@@ -15,7 +15,6 @@ enum ReadMessageState {
 struct MessageHeader {
   uint32 opcode;
   uint32 length;
-}__attribute__((packed));
-
+} __attribute__((packed));
 };
 #endif  // __EVENTRPC_MESSAGE_HEADER_H_

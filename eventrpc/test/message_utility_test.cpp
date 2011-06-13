@@ -31,8 +31,9 @@ TEST_F(MessageUtilityTest, TestDecodeEncode) {
   ASSERT_TRUE(DecodeMessageHeader(&content, &header));
   ASSERT_EQ(header.length, response.ByteSize());
   ASSERT_EQ(1, header.opcode);
-  ASSERT_TRUE(result.ParseFromString(content.ToString(header.length)));
+  ASSERT_TRUE(content.DeserializeToMessage(&result, header.length));
 }
+
 };
 
 int main(int argc, char *argv[]) {

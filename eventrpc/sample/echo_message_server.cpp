@@ -22,18 +22,18 @@ class EchoServerMessageHandler : public ServerMessageHandler {
 
   bool HandlePacket(const MessageHeader &header,
                     Buffer* buffer) {
+    VLOG_INFO() << "HandlePacket";
     if (header.opcode != CMSG_ECHO) {
       VLOG_ERROR() << "opcode error: " << header.opcode;
       return false;
     }
-    string content = buffer->ToString(header.length);
-    VLOG_INFO() << "content length: " << header.length
-      << ", content: " << content;
     echo::EchoRequest request;
-    if (!request.ParseFromString(content)) {
-      VLOG_ERROR() << "ParseFromString error: " << header.length;
+    if (!request.ParseFromArray(buffer->read_content(),
+                                header.length)) {
+      VLOG_ERROR() << "ParseFromArray error: " << header.length;
       return false;
     }
+    buffer->ReadSkip(header.length);
     VLOG_INFO() << "request: " << request.message();
     echo::EchoResponse response;
     response.set_response(request.message());

@@ -116,11 +116,10 @@ bool RpcMethodManager::Impl::HandlePacket(
   const gpb::MethodDescriptor *method = rpc_method->method_;
   gpb::Message *request = rpc_method->request_->New();
   gpb::Message *response = rpc_method->response_->New();
-  string content = buffer->ToString(header.length);
-  if (request->ParseFromString(content) == false) {
+  if (!buffer->DeserializeToMessage(request, header.length)) {
     delete request;
     delete response;
-    VLOG_ERROR() << "ParseFromString " << header.opcode << " error";
+    VLOG_ERROR() << "DeserializeToMessage " << header.opcode << " error";
     return false;
   }
   HandleServiceEntry *entry = new HandleServiceEntry(method,
