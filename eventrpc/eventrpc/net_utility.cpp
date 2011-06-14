@@ -13,6 +13,10 @@
 #include <errno.h>
 #include "net_utility.h"
 #include "log.h"
+namespace {
+static const uint32 kMaxTryConnecTime = 3;
+static const uint32 kConnectFailSleepTime = 1;
+};
 namespace eventrpc {
 int NetUtility::Connect(const NetAddress &address) {
   int fd = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -22,12 +26,23 @@ int NetUtility::Connect(const NetAddress &address) {
   }
 
   const struct sockaddr_in *addr = address.address();
-  if (::connect(fd, (struct sockaddr *)(addr), sizeof(*addr)) < 0) {
+  uint32 count = 0;
+  while (count < kMaxTryConnecTime) {
+    if (::connect(fd, (struct sockaddr *)(addr),
+                  sizeof(*addr)) < 0) {
+      ++count;
+      sleep(count * kConnectFailSleepTime);
+      VLOG_ERROR() << "connect to " << address.DebugString()
+        << " fail, try again...";
+    }
+    break;
+  }
+  if (fd < 0) {
     ::close(fd);
     return -1;
   }
-
   if (!NetUtility::SetNonBlocking(fd)) {
+    VLOG_ERROR() << "SetNonBlocking fail";
     ::close(fd);
     return -1;
   }

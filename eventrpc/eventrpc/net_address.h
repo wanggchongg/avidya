@@ -17,9 +17,13 @@ class NetAddress {
     return &address_;
   }
 
-  string DebugString() const;
+  const string& DebugString() const;
+ private:
+  void Init();
+
  private:
   struct sockaddr_in address_;
+  string debug_string_;
 };
 };
 #endif  // __EVENTRPC_NET_ADDRESS_H__

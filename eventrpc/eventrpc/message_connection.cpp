@@ -83,14 +83,12 @@ MessageConnection::Impl::~Impl() {
 }
 
 bool MessageConnection::Impl::HandleRead() {
-  VLOG_ERROR() << "before read: " << input_buffer_.end_position();
   if (input_buffer_.Read(fd_) == -1) {
     VLOG_ERROR() << "recv message from "
       << client_address_.DebugString() << " error";
     Close();
     return false;
   }
-  VLOG_ERROR() << "after read: " << input_buffer_.end_position();
   while (!input_buffer_.is_read_complete()) {
     uint32 result = ReadMessageStateMachine(&input_buffer_,
                                             &message_header_,
@@ -109,14 +107,11 @@ bool MessageConnection::Impl::HandleRead() {
 }
 
 bool MessageConnection::Impl::HandleWrite() {
-  VLOG_ERROR() << "HandleWrite";
   if (output_buffer_.is_read_complete()) {
-    VLOG_ERROR() << "read complete";
+    VLOG_INFO() << "read complete";
     return true;
   }
-  VLOG_ERROR() << "before write: " << output_buffer_.size();
   uint32 result = WriteMessage(&output_buffer_, fd_);
-  VLOG_ERROR() << "after write: " << output_buffer_.size();
   if (result == kSendMessageError) {
     VLOG_ERROR() << "send message to "
       << client_address_.DebugString() << " error";
