@@ -100,12 +100,10 @@ bool MessageChannel::Impl::Connect() {
 
 void MessageChannel::Impl::ConnectToServer() {
   fd_ = NetUtility::Connect(server_address_);
-  if (fd_ < 0) {
-    return;
-  }
+  bool is_connected = (fd_ > 0);
   VLOG_INFO() << "create connection fd " << fd_
     << " for " << server_address_.DebugString();
-  handler_->HandleConnection();
+  handler_->HandleConnection(is_connected);
   dispatcher_->AddEvent(fd_, EVENT_READ | EVENT_WRITE, event_handler_);
 }
 

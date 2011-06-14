@@ -26,7 +26,10 @@ class EchoClientMessageHandler : public ChannelMessageHandler {
   virtual ~EchoClientMessageHandler() {
   }
 
-  bool HandleConnection() {
+  bool HandleConnection(bool is_connected) {
+    if (!is_connected) {
+      return false;
+    }
     for (uint32 i = 0; i < kMaxConnection; ++i) {
       echo::EchoRequest request;
       string content = StringUtility::ConvertUint32ToString(i);

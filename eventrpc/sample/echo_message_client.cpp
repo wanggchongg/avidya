@@ -23,7 +23,10 @@ class EchoClientMessageHandler : public ChannelMessageHandler {
   virtual ~EchoClientMessageHandler() {
   }
 
-  bool HandleConnection() {
+  bool HandleConnection(bool is_connected) {
+    if (!is_connected) {
+      return false;
+    }
     echo::EchoRequest request;
     request.set_message("hello");
     VLOG_INFO() << "HandleConnection";
