@@ -5,6 +5,9 @@
 #include "eventrpc/net_address.h"
 #include "eventrpc/assert_log.h"
 namespace eventrpc {
+NetAddress::NetAddress() {
+}
+
 NetAddress::NetAddress(const string &host, int port) {
   bzero(&address_, sizeof(address_));
   address_.sin_family = AF_INET;

@@ -1,7 +1,6 @@
 /*
  * Copyright(C) lichuang
  */
-#include <arpa/inet.h>  // htonl, ntohl
 #include <map>
 #include <google/protobuf/service.h>
 #include <google/protobuf/descriptor.h>
@@ -30,8 +29,6 @@ struct RpcMethod {
   const gpb::MethodDescriptor *method_;
 };
 
-typedef map<uint32, RpcMethod*> RpcMethodMap;
-
 struct RpcMethodManager::Impl {
  public:
   Impl();
@@ -44,6 +41,7 @@ struct RpcMethodManager::Impl {
                     Buffer* buffer,
                     MessageConnection *connection);
  private:
+  typedef map<uint32, RpcMethod*> RpcMethodMap;
   RpcMethodMap rpc_method_map_;
 };
 

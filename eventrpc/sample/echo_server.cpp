@@ -38,13 +38,12 @@ class EchoServiceImpl : public echo::EchoService {
 
 int main(int argc, char *argv[]) {
   SetProgramName(argv[0]);
-  RpcServer rpc_server;
+  RpcServer rpc_server("127.0.0.1", 21118);
   Dispatcher dispatcher;
   dispatcher.Start();
   rpc_server.set_dispatcher(&dispatcher);
   gpb::Service *service = new EchoServiceImpl();
   rpc_server.RegisterService(service);
-  rpc_server.set_host_and_port("127.0.0.1", 21118);
   rpc_server.Start();
   sigset_t new_mask;
   sigfillset(&new_mask);

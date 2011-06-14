@@ -28,12 +28,10 @@ class EchoServerMessageHandler : public ServerMessageHandler {
       return false;
     }
     echo::EchoRequest request;
-    if (!request.ParseFromArray(buffer->read_content(),
-                                header.length)) {
-      VLOG_ERROR() << "ParseFromArray error: " << header.length;
+    if (!buffer->DeserializeToMessage(&request, header.length)) {
+      VLOG_ERROR() << "DeserializeToMessage error: " << header.length;
       return false;
     }
-    buffer->ReadSkip(header.length);
     VLOG_INFO() << "request: " << request.message();
     echo::EchoResponse response;
     response.set_response(request.message());
@@ -55,11 +53,10 @@ class EchoServerMessageHandlerFactory: public ServerMessageHandlerFactory {
 
 int main(int argc, char *argv[]) {
   SetProgramName(argv[0]);
-  MessageServer server;
+  MessageServer server("127.0.0.1", 21118);
   Dispatcher dispatcher;
   dispatcher.Start();
   server.set_dispatcher(&dispatcher);
-  server.set_host_and_port("127.0.0.1", 21118);
   EchoServerMessageHandlerFactory factory;
   server.set_message_handler_factory(&factory);
   server.Start();

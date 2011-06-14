@@ -1,20 +1,22 @@
 /*
  * Copyright(C) lichuang
  */
-#include <string.h>
-#include <sys/epoll.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
+#include <sys/eventfd.h>
+#include <sys/epoll.h>
 #include <list>
 #include "eventrpc/thread.h"
 #include "eventrpc/mutex.h"
+#include "eventrpc/monitor.h"
 #include "eventrpc/log.h"
 #include "eventrpc/assert_log.h"
 #include "eventrpc/task.h"
 #include "eventrpc/dispatcher.h"
 #include "eventrpc/net_utility.h"
 namespace {
-static const uint32 kMaxPollWaitTime = 1000;
+static const uint32 kMaxPollWaitTime = 10;
 static const uint32 kEpollFdCount = 1024;
 };
 namespace eventrpc {
@@ -24,6 +26,24 @@ struct EpollEvent {
   struct epoll_event epoll_ev;
   EventHandler *handler;
 };
+
+struct TaskNotifyHandler : public EventHandler {
+  bool HandleRead();
+
+  bool HandleWrite() {
+    return true;
+  }
+
+  TaskNotifyHandler(int event_fd, string name)
+    : event_fd_(event_fd),
+      name_(name) {
+  }
+  virtual ~TaskNotifyHandler() {
+  };
+  int event_fd_;
+  string name_;
+};
+
 struct AddEventTask : public Task {
   AddEventTask(Dispatcher::Impl *impl, EpollEvent *event)
     : impl_(impl),
@@ -51,7 +71,11 @@ struct Dispatcher::Impl : public ThreadWorker {
 
   void Stop();
 
+  void CleanUp();
+
   void PushTask(Task *task);
+
+  void NewTaskNotify();
 
   void HandleTasks();
 
@@ -65,32 +89,40 @@ struct Dispatcher::Impl : public ThreadWorker {
   TaskList *free_task_list_;
   Thread thread_;
   int epoll_fd_;
+  int event_fd_;
+  TaskNotifyHandler *task_notify_handler_;
   SpinMutex task_list_spin_mutex_;
   epoll_event epoll_event_array_[kEpollFdCount];
   EpollEvent* event_array_[kEpollFdCount];
-  typedef list<EpollEvent*> EventList;
+  bool is_running_;
+  bool shut_down_;
+  Monitor cleanup_monitor_;
+  string name_;
 };
 
 Dispatcher::Impl::Impl()
   : running_task_list_(&task_list_[0]),
     free_task_list_(&task_list_[1]),
     thread_(this),
-    epoll_fd_(-1) {
+    epoll_fd_(-1),
+    event_fd_(-1),
+    task_notify_handler_(NULL),
+    is_running_(false),
+    shut_down_(false),
+    name_("dispatcher") {
   for (uint32 i = 0; i < kEpollFdCount; ++i) {
     event_array_[i] = NULL;
   }
 }
 
 Dispatcher::Impl::~Impl() {
+  Stop();
 }
 
 void Dispatcher::Impl::Run() {
   VLOG_INFO() << "dispatcher thread start....";
-  while (true) {
-    // no need to lock
-    if (!free_task_list_->empty()) {
-      HandleTasks();
-    }
+  is_running_ = true;
+  while (!shut_down_) {
     int number = epoll_wait(epoll_fd_, &epoll_event_array_[0],
                             kEpollFdCount, kMaxPollWaitTime);
     if (number == -1) {
@@ -99,7 +131,7 @@ void Dispatcher::Impl::Run() {
       }
       VLOG_ERROR() << "epoll_wait return -1, errno: "
         << strerror(errno);
-      Stop();
+      CleanUp();
       return;
     }
     EpollEvent *event;
@@ -119,14 +151,19 @@ void Dispatcher::Impl::Run() {
         }
       }
     }
+    // no need to lock
+    if (!free_task_list_->empty()) {
+      HandleTasks();
+    }
   }
+  CleanUp();
 }
 
 void Dispatcher::Impl::HandleTasks() {
   {
-    SpinMutexLock lock(&task_list_spin_mutex_);
     TaskList *tmp_task_list = running_task_list_;
     running_task_list_ = free_task_list_;
+    SpinMutexLock lock(&task_list_spin_mutex_);
     free_task_list_ = tmp_task_list;
   }
   for (TaskList::iterator iter = running_task_list_->begin();
@@ -182,17 +219,87 @@ void Dispatcher::Impl::InternalDeleteEvent(EpollEvent *event) {
 }
 
 void Dispatcher::Impl::PushTask(Task *task) {
-  SpinMutexLock lock(&task_list_spin_mutex_);
-  free_task_list_->push_back(task);
+  {
+    SpinMutexLock lock(&task_list_spin_mutex_);
+    free_task_list_->push_back(task);
+  }
+  // no need to lock
+  if (running_task_list_->empty()) {
+    NewTaskNotify();
+  }
+}
+
+void Dispatcher::Impl::NewTaskNotify() {
+  uint64 a = 1;
+  if (::write(event_fd_, &a, sizeof(a)) != sizeof(a)) {
+    VLOG_ERROR() << "write to event fd error: " << strerror(errno);
+  }
 }
 
 void Dispatcher::Impl::Start() {
   epoll_fd_ = ::epoll_create(kEpollFdCount);
   ASSERT_TRUE(epoll_fd_ != -1);
+  event_fd_ = ::eventfd(0, 0);
+  ASSERT_TRUE(event_fd_ != -1);
+  ASSERT_TRUE(NetUtility::SetNonBlocking(event_fd_));
+  task_notify_handler_ = new TaskNotifyHandler(event_fd_, name_);
+  AddEvent(event_fd_, EVENT_READ, task_notify_handler_);
   thread_.Start();
 }
 
 void Dispatcher::Impl::Stop() {
+  if (!is_running_) {
+    return;
+  }
+  shut_down_ = true;
+  // send a message to wake up the epoll thread do cleanup
+  NewTaskNotify();
+  // waiting cleanup work done
+  while (is_running_) {
+    cleanup_monitor_.Wait();
+  }
+  close(epoll_fd_);
+  close(event_fd_);
+}
+
+void Dispatcher::Impl::CleanUp() {
+  for (uint32 i = 0; i < kEpollFdCount; ++i) {
+    EpollEvent *event = event_array_[i];
+    if (event == NULL) {
+      continue;
+    }
+    close(event->fd);
+    delete event;
+  }
+  list<Task*>::iterator iter;
+  for (iter = running_task_list_->begin();
+       iter != running_task_list_->end(); ) {
+    Task *task = *iter;
+    task->Handle();
+    delete task;
+  }
+  running_task_list_->clear();
+  for (iter = free_task_list_->begin();
+       iter != free_task_list_->end(); ) {
+    Task *task = *iter;
+    task->Handle();
+    delete task;
+  }
+  free_task_list_->clear();
+  delete task_notify_handler_;
+  is_running_ = false;
+  // notify the other threads that cleanup work done
+  cleanup_monitor_.NotifyAll();
+}
+
+bool TaskNotifyHandler::HandleRead() {
+  uint64 a = 0;
+  if (read(event_fd_, &a, sizeof(a)) != sizeof(a)) {
+    VLOG_ERROR() << "Dispatcher " << name_
+      << " read eventfd: " << event_fd_
+      << " error:" << strerror(errno);
+  }
+  return true;
 }
 
 void AddEventTask::Handle() {

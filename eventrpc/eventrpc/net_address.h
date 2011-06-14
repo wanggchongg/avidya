@@ -9,8 +9,13 @@
 namespace eventrpc {
 class NetAddress {
  public:
+  NetAddress();
   NetAddress(const string &host, int port);
   NetAddress(struct sockaddr_in &address);
+
+  const struct sockaddr_in* address() const {
+    return &address_;
+  }
 
   string DebugString() const;
  private:

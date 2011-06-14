@@ -26,7 +26,7 @@ for file in test_src_files:
 env.ProtocolBuffer('echo.proto')
 service_src_files = [
   'message_utility_test',
-  #'echo_message_test',
+  'echo_message_test',
 ]
 for file in service_src_files:
   test_env.Program(file, [file + '.cpp', 'echo.pb.cc'])

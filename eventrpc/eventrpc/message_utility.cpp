@@ -36,6 +36,7 @@ uint32 ReadMessageStateMachine(Buffer *input,
   while (true) {
     if (*state == READ_HEADER) {
       if (input->size() < sizeof(MessageHeader)) {
+        VLOG_INFO() << "kRecvMessageNotCompleted";
         return kRecvMessageNotCompleted;
       }
       DecodeMessageHeader(input, header);
@@ -44,6 +45,10 @@ uint32 ReadMessageStateMachine(Buffer *input,
     if (*state == READ_MESSAGE) {
       *state = READ_HEADER;
       if (input->size() < header->length) {
+        VLOG_INFO() << "kRecvMessageNotCompleted"
+          << ", opcode: " << header->opcode
+          << ", size: " << header->length
+          << ", buffer size:" << input->size();
         return kRecvMessageNotCompleted;
       }
       return kSuccess;

@@ -6,6 +6,7 @@
 #include <string>
 #include "eventrpc/error_code.h"
 #include "eventrpc/log.h"
+#include "eventrpc/assert_log.h"
 #include "eventrpc/event.h"
 #include "eventrpc/dispatcher.h"
 #include "eventrpc/net_utility.h"
@@ -35,7 +36,7 @@ struct MessageConnection::Impl {
 
   void set_fd(int fd);
 
-  void set_client_address(struct sockaddr_in address);
+  void set_client_address(const NetAddress &address);
 
   void set_dispacher(Dispatcher *dispatcher);
 
@@ -52,12 +53,11 @@ struct MessageConnection::Impl {
 
   bool HandleWrite();
 
-  void ErrorMessage(const string &message);
  private:
   int fd_;
   MessageConnection *connection_;
   MessageConnectionEventHandler *event_handler_;
-  struct sockaddr_in client_address_;
+  NetAddress client_address_;
   MessageConnectionManager *connection_manager_;
   Dispatcher *dispatcher_;
   Buffer input_buffer_;
@@ -82,22 +82,16 @@ MessageConnection::Impl::~Impl() {
   delete event_handler_;
 }
 
-void MessageConnection::Impl::ErrorMessage(const string &message) {
-  char buffer[30];
-  VLOG_ERROR() << message
-    << inet_ntop(AF_INET, &client_address_.sin_addr,
-                 buffer, sizeof(buffer))
-    << ":" << ntohs(client_address_.sin_port) << " error";
-  Close();
-}
-
 bool MessageConnection::Impl::HandleRead() {
+  VLOG_ERROR() << "before read: " << input_buffer_.end_position();
   if (input_buffer_.Read(fd_) == -1) {
-    ErrorMessage("recv from ");
+    VLOG_ERROR() << "recv message from "
+      << client_address_.DebugString() << " error";
+    Close();
     return false;
   }
+  VLOG_ERROR() << "after read: " << input_buffer_.end_position();
   while (!input_buffer_.is_read_complete()) {
-    VLOG_INFO() << "HandleRead, size: " << input_buffer_.end_position();
     uint32 result = ReadMessageStateMachine(&input_buffer_,
                                             &message_header_,
                                             &state_);
@@ -105,8 +99,9 @@ bool MessageConnection::Impl::HandleRead() {
       return false;
     }
     if (!message_handler_->HandlePacket(message_header_, &input_buffer_)) {
-    ErrorMessage("handle message from ");
-    return false;
+    VLOG_ERROR() << "handle message from "
+      << client_address_.DebugString() << " error";
+    Close();
     }
   }
   input_buffer_.Clear();
@@ -114,12 +109,18 @@ bool MessageConnection::Impl::HandleRead() {
 }
 
 bool MessageConnection::Impl::HandleWrite() {
+  VLOG_ERROR() << "HandleWrite";
   if (output_buffer_.is_read_complete()) {
+    VLOG_ERROR() << "read complete";
     return true;
   }
+  VLOG_ERROR() << "before write: " << output_buffer_.size();
   uint32 result = WriteMessage(&output_buffer_, fd_);
+  VLOG_ERROR() << "after write: " << output_buffer_.size();
   if (result == kSendMessageError) {
-    ErrorMessage("send message to ");
+    VLOG_ERROR() << "send message to "
+      << client_address_.DebugString() << " error";
+    Close();
   }
   return (result == kSuccess);
 }
@@ -128,7 +129,7 @@ void MessageConnection::Impl::set_fd(int fd) {
   fd_ = fd;
 }
 
-void MessageConnection::Impl::set_client_address(struct sockaddr_in address) {
+void MessageConnection::Impl::set_client_address(const NetAddress &address) {
   client_address_ = address;
 }
 
@@ -143,10 +144,6 @@ void MessageConnection::Impl::set_message_handler(MessageHandler *handler) {
 void MessageConnection::Impl::SendPacket(
     uint32 opcode, const ::google::protobuf::Message *message) {
   EncodePacket(opcode, message, &output_buffer_);
-  uint32 result = WriteMessage(&output_buffer_, fd_);
-  if (result == kSendMessageError) {
-    ErrorMessage("send message to ");
-  }
 }
 
 EventHandler* MessageConnection::Impl::event_handler() {
@@ -176,7 +173,7 @@ void MessageConnection::set_fd(int fd) {
   impl_->set_fd(fd);
 }
 
-void MessageConnection::set_client_address(struct sockaddr_in address) {
+void MessageConnection::set_client_address(const NetAddress &address) {
   impl_->set_client_address(address);
 }
 

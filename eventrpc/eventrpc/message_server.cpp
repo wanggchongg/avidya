@@ -5,6 +5,7 @@
 #include "eventrpc/event.h"
 #include "eventrpc/log.h"
 #include "eventrpc/assert_log.h"
+#include "eventrpc/net_address.h"
 #include "eventrpc/net_utility.h"
 #include "eventrpc/utility.h"
 #include "eventrpc/message_connection_manager.h"
@@ -13,18 +14,13 @@ namespace eventrpc {
 class MessageServerEventHandler;
 struct MessageServer::Impl {
  public:
-  Impl();
+  Impl(const string &host, int port);
 
   ~Impl();
 
   void Start();
 
   void Stop();
-
-  void set_host_and_port(const string &host, uint32 port) {
-    host_ = host;
-    port_ = port;
-  }
 
   void set_dispatcher(Dispatcher *dispatcher) {
     dispatcher_ = dispatcher;
@@ -39,8 +35,7 @@ struct MessageServer::Impl {
   void Close();
 
  public:
-  string host_;
-  uint32 port_;
+  NetAddress listen_address_;
   int listen_fd_;
   MessageServerEventHandler *event_handler_;
   Dispatcher *dispatcher_;
@@ -69,9 +64,8 @@ struct MessageServerEventHandler : public EventHandler {
   MessageServer::Impl *server_;
 };
 
-MessageServer::Impl::Impl()
-  : host_(""),
-    port_(0),
+MessageServer::Impl::Impl(const string &host, int port)
+  : listen_address_(host, port),
     listen_fd_(0),
     event_handler_(new MessageServerEventHandler(this)),
     dispatcher_(NULL) {
@@ -82,8 +76,10 @@ MessageServer::Impl::~Impl() {
 }
 
 void MessageServer::Impl::Start() {
-  listen_fd_ = NetUtility::Listen(host_.c_str(), port_);
+  listen_fd_ = NetUtility::Listen(listen_address_);
   ASSERT_TRUE(listen_fd_ > 0);
+  VLOG_INFO() << "create listen fd " << listen_fd_
+    << " for " << listen_address_.DebugString();
   dispatcher_->AddEvent(listen_fd_, EVENT_READ, event_handler_);
 }
 
@@ -93,15 +89,14 @@ void MessageServer::Impl::Stop() {
 
 void MessageServer::Impl::Close() {
   if (listen_fd_ > 0) {
-    LOG_INFO() << "shut down listen on " << host_ << " : " << port_;
+    LOG_INFO() << "shut down listen on " << listen_address_.DebugString();
     close(listen_fd_);
   }
 }
 
 bool MessageServer::Impl::HandleAccept() {
-  int fd;
-  bool result;
-  char buffer[30];
+  int fd = -1;
+  bool result = false;
   while (true) {
     struct sockaddr_in address;
     result = NetUtility::Accept(listen_fd_, &address, &fd);
@@ -111,9 +106,10 @@ bool MessageServer::Impl::HandleAccept() {
     if (fd == 0) {
       break;
     }
+    NetAddress client_address(address);
     VLOG_INFO() << "accept connection from "
-      << inet_ntop(AF_INET, &address.sin_addr, buffer, sizeof(buffer))
-      << ":" << ntohs(address.sin_port);
+      << client_address.DebugString()
+      << ", fd: " << fd;
     MessageConnection* connection = manager_.GetConnection();
     connection->set_fd(fd);
     connection->set_client_address(address);
@@ -124,8 +120,8 @@ bool MessageServer::Impl::HandleAccept() {
   return true;
 }
 
-MessageServer::MessageServer() {
-  impl_ = new Impl();
+MessageServer::MessageServer(const string &host, int port) {
+  impl_ = new Impl(host, port);
 }
 
 MessageServer::~MessageServer() {
@@ -138,10 +134,6 @@ void MessageServer::Start() {
 
 void MessageServer::Stop() {
   impl_->Stop();
-}
-
-void MessageServer::set_host_and_port(const string &host, uint32 port) {
-  impl_->set_host_and_port(host, port);
 }
 
 void MessageServer::set_dispatcher(Dispatcher *dispatcher) {

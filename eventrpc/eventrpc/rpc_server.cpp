@@ -1,7 +1,6 @@
 /*
  * Copyright(C) lichuang
  */
-#include <arpa/inet.h>
 #include "eventrpc/utility.h"
 #include "eventrpc/rpc_server.h"
 #include "eventrpc/event.h"
@@ -71,8 +70,8 @@ bool RpcServerMessageHandler::HandlePacket(
   return method_manager_->HandlePacket(header, buffer, connection_);
 }
 
-RpcServer::RpcServer()
-  : MessageServer() {
+RpcServer::RpcServer(const string &host, int port)
+  : MessageServer(host, port) {
   impl_ = new Impl(this);
 }
 

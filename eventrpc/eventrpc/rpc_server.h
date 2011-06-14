@@ -9,7 +9,7 @@
 namespace eventrpc {
 class RpcServer : public MessageServer {
  public:
-  RpcServer();
+  RpcServer(const string &host, int port);
 
   virtual ~RpcServer();
 

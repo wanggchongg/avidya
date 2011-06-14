@@ -6,6 +6,7 @@
 #include "eventrpc/task.h"
 #include "eventrpc/event.h"
 #include "eventrpc/message_channel.h"
+#include "eventrpc/net_address.h"
 #include "eventrpc/net_utility.h"
 #include "eventrpc/log.h"
 #include "eventrpc/assert_log.h"
@@ -65,8 +66,7 @@ struct MessageChannel::Impl {
 
  private:
   int fd_;
-  string host_;
-  int port_;
+  NetAddress server_address_;
   Buffer input_buffer_;
   Buffer output_buffer_;
   Dispatcher *dispatcher_;
@@ -79,8 +79,7 @@ struct MessageChannel::Impl {
 
 MessageChannel::Impl::Impl(const string &host, int port)
   : fd_(-1),
-    host_(host),
-    port_(port),
+    server_address_(host, port),
     dispatcher_(NULL),
     event_handler_(new MessageChannelEventHandler(this)),
     connect_task_(new ConnectTask(this)),
@@ -93,11 +92,6 @@ MessageChannel::Impl::~Impl() {
   delete event_handler_;
 }
 
-void MessageChannel::Impl::ErrorMessage(const string &message) {
-  VLOG_ERROR() << message << "[" << host_ << ":" << port_ << "] error";
-  Close();
-}
-
 bool MessageChannel::Impl::Connect() {
   ASSERT_TRUE(dispatcher_ != NULL) << "should be called after set_dispatcher";
   dispatcher_->PushTask(connect_task_);
@@ -105,18 +99,20 @@ bool MessageChannel::Impl::Connect() {
 }
 
 void MessageChannel::Impl::ConnectToServer() {
-  fd_ = NetUtility::Connect(host_, port_);
+  fd_ = NetUtility::Connect(server_address_);
   if (fd_ < 0) {
-    ErrorMessage("connect to ");
     return;
   }
+  VLOG_INFO() << "create connection fd " << fd_
+    << " for " << server_address_.DebugString();
   handler_->HandleConnection();
   dispatcher_->AddEvent(fd_, EVENT_READ | EVENT_WRITE, event_handler_);
 }
 
 void MessageChannel::Impl::Close() {
   if (fd_ > 0) {
-    VLOG_INFO() << "close connection to [" << host_ << ":" << port_ << "]";
+    VLOG_INFO() << "close connection to "
+      << server_address_.DebugString() << ", fd: " << fd_;
     shutdown(fd_, SHUT_WR);
     fd_ = -1;
   }
@@ -126,11 +122,6 @@ void MessageChannel::Impl::SendPacket(
     uint32 opcode,
     const ::google::protobuf::Message *message) {
   EncodePacket(opcode, message, &output_buffer_);
-  VLOG_INFO() << "sendpacket, size: " << output_buffer_.end_position();
-  uint32 result = WriteMessage(&output_buffer_, fd_);
-  if (result == kSendMessageError) {
-    ErrorMessage("send message to ");
-  }
 }
 
 void MessageChannel::Impl::set_message_handler(ChannelMessageHandler *handler) {
@@ -142,8 +133,11 @@ void MessageChannel::Impl::set_dispatcher(Dispatcher *dispatcher) {
 }
 
 bool MessageChannel::Impl::HandleRead() {
+  VLOG_ERROR() << "HandleRead";
   if (input_buffer_.Read(fd_) == -1) {
-    ErrorMessage("recv message from ");
+    VLOG_ERROR() << "recv message from "
+      << server_address_.DebugString() << " error";
+    Close();
     return false;
   }
   while (!input_buffer_.is_read_complete()) {
@@ -154,7 +148,9 @@ bool MessageChannel::Impl::HandleRead() {
       return result;
     }
     if (!handler_->HandlePacket(message_header_, &input_buffer_)) {
-    ErrorMessage("handle message from ");
+    VLOG_ERROR() << "handle message from "
+      << server_address_.DebugString() << " error";
+    Close();
     return false;
     }
   }
@@ -166,11 +162,14 @@ bool MessageChannel::Impl::HandleWrite() {
   if (output_buffer_.is_read_complete()) {
     return true;
   }
-  VLOG_INFO() << "HandleWrite, size: " << output_buffer_.end_position();
+  VLOG_ERROR() << "before write: " << output_buffer_.size();
   uint32 result = WriteMessage(&output_buffer_, fd_);
   if (result == kSendMessageError) {
-    ErrorMessage("send message to ");
+    VLOG_ERROR() << "send message to "
+      << server_address_.DebugString() << " error";
+    Close();
   }
+  VLOG_ERROR() << "after write: " << output_buffer_.size();
   return (result == kSuccess);
 }
 

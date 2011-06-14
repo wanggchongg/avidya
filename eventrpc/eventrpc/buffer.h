@@ -19,7 +19,7 @@ class Buffer {
   int Write(int fd);
 
   void Clear() {
-    //buffer_.clear();
+    buffer_.clear();
     read_index_ = write_index_ = 0;
   }
 
@@ -59,7 +59,10 @@ class Buffer {
 
   bool DeserializeToMessage(::google::protobuf::Message *message,
                             uint32 length);
+
+  void Resize(int resize);
  private:
+  // TODO: replace vector,using POD instead
   vector<char> buffer_;
   size_t read_index_;
   size_t write_index_;

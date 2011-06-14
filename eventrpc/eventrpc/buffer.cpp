@@ -40,7 +40,7 @@ int Buffer::Read(int fd) {
     return -1;
   }
   if (static_cast<uint32>(to_read) > (buffer_.capacity() - write_index_)) {
-    buffer_.resize(to_read + write_index_);
+    Resize(to_read);
   }
   int32 length = 0;
   if (!NetUtility::Recv(fd, write_content(), to_read, &length)) {
@@ -67,6 +67,13 @@ int Buffer::Write(int fd) {
   return send_length;
 }
 
+void Buffer::Resize(int resize) {
+  if (resize < buffer_size_) {
+    resize = buffer_size_;
+  }
+  buffer_.resize(buffer_.capacity() + resize);
+}
+
 void Buffer::ReadSkip(int size) {
   if (size + read_index_ < buffer_.capacity()) {
     read_index_ += size;
@@ -80,6 +87,11 @@ void Buffer::WriteSkip(int size) {
 }
 
 void Buffer::SerializeFromUint32(uint32 value) {
+  /*
+  if (sizeof(uint32) > (buffer_.capacity() - write_index_)) {
+    Resize(sizeof(uint32));
+  }
+  */
   value = ::htonl(value);
   SerializeBufferFromValue<uint32>(value, this);
 }
@@ -91,6 +103,11 @@ uint32 Buffer::DeserializeToUint32() {
 
 void Buffer::SerializeFromMessage(
     const ::google::protobuf::Message *message) {
+  /*
+  if (static_cast<uint32>(message->ByteSize()) > (buffer_.capacity() - write_index_)) {
+    Resize(message->ByteSize());
+  }
+  */
   message->SerializeToArray(write_content(),
                             message->ByteSize());
   WriteSkip(message->ByteSize());
@@ -99,6 +116,8 @@ void Buffer::SerializeFromMessage(
 bool Buffer::DeserializeToMessage(
     ::google::protobuf::Message *message,
     uint32 length) {
-  return message->ParseFromArray(read_content(), length);
+  bool result = message->ParseFromArray(read_content(), length);
+  ReadSkip(length);
+  return result;
 }
 };

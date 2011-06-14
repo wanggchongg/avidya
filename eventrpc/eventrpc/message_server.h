@@ -14,15 +14,13 @@
 namespace eventrpc {
 class MessageServer {
  public:
-  MessageServer();
+  MessageServer(const string &host, int port);
 
   ~MessageServer();
 
   void Start();
 
   void Stop();
-
-  void set_host_and_port(const string &host, uint32 port);
 
   void set_dispatcher(Dispatcher *dispatcher);
 

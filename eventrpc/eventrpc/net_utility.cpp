@@ -14,22 +14,15 @@
 #include "net_utility.h"
 #include "log.h"
 namespace eventrpc {
-int NetUtility::Connect(const string &host, int port) {
+int NetUtility::Connect(const NetAddress &address) {
   int fd = ::socket(AF_INET, SOCK_STREAM, 0);
-
   if (fd < 0) {
+    VLOG_ERROR() << "create socket error: " << strerror(errno);
     return -1;
   }
 
-  struct sockaddr_in servaddr;
-
-  bzero(&servaddr, sizeof(servaddr));
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_port = htons(port);
-  inet_pton(AF_INET, host.c_str(), &servaddr.sin_addr);
-
-  if (::connect(fd, (struct sockaddr *)&servaddr,
-                sizeof(servaddr)) < 0) {
+  const struct sockaddr_in *addr = address.address();
+  if (::connect(fd, (struct sockaddr *)(addr), sizeof(*addr)) < 0) {
     ::close(fd);
     return -1;
   }
@@ -42,10 +35,10 @@ int NetUtility::Connect(const string &host, int port) {
   return fd;
 }
 
-int NetUtility::Listen(const char *ip, int port) {
+int NetUtility::Listen(const NetAddress &address) {
   int fd = ::socket(AF_INET, SOCK_STREAM, 0);
-
   if (fd < 0) {
+    VLOG_ERROR() << "create socket error: " << strerror(errno);
     return -1;
   }
 
@@ -54,22 +47,20 @@ int NetUtility::Listen(const char *ip, int port) {
                    &one, sizeof(one)) < 0) {
     return -1;
   }
-  struct sockaddr_in servaddr;
-
-  bzero(&servaddr, sizeof(servaddr));
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_port = htons(port);
-  servaddr.sin_addr.s_addr = inet_addr(ip);
-
   if (!NetUtility::SetNonBlocking(fd)) {
     return -1;
   }
 
-  if (::bind(fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
+  const struct sockaddr_in *addr = address.address();
+  if (::bind(fd, (struct sockaddr *)(addr), sizeof(*addr)) < 0) {
+    VLOG_ERROR() << "bind socket to " << address.DebugString()
+      << " error: " << strerror(errno);
     return -1;
   }
 
   if (::listen(fd, 10000) < 0) {
+    VLOG_ERROR() << "listen socket to " << address.DebugString()
+      << " error: " << strerror(errno);
     return -1;
   }
 
@@ -151,7 +142,8 @@ bool NetUtility::Recv(int fd, void *buf, size_t count, int *length) {
     errno_copy = errno;
     if (ret == 0) {
       // socket has been closed
-      return false;
+      VLOG_ERROR() << "recv error: " << strerror(errno_copy);
+      return true;
     }
     if (ret > 0) {
       count -= ret;

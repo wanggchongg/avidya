@@ -6,6 +6,7 @@
 #include "eventrpc/event.h"
 #include "eventrpc/task.h"
 namespace eventrpc {
+// thread-binding dispather implementation
 class Dispatcher {
  public:
   Dispatcher();
@@ -25,5 +26,4 @@ class Dispatcher {
   Impl *impl_;
 };
 };
-
 #endif  //  __EVENTRPC_DISPATCHER_H__

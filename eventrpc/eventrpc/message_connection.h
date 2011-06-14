@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <google/protobuf/message.h>
 #include "eventrpc/buffer.h"
+#include "eventrpc/net_address.h"
 #include "eventrpc/message_utility.h"
 #include "eventrpc/message_header.h"
 #include "eventrpc/message_handler.h"
@@ -21,7 +22,7 @@ class MessageConnection {
 
   void set_fd(int fd);
 
-  void set_client_address(struct sockaddr_in address);
+  void set_client_address(const NetAddress &address);
 
   void set_dispacher(Dispatcher *dispatcher);
 
