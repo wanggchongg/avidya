@@ -131,7 +131,6 @@ void MessageChannel::Impl::set_dispatcher(Dispatcher *dispatcher) {
 }
 
 bool MessageChannel::Impl::HandleRead() {
-  VLOG_ERROR() << "HandleRead";
   if (input_buffer_.Read(fd_) == -1) {
     VLOG_ERROR() << "recv message from "
       << server_address_.DebugString() << " error";
@@ -146,10 +145,10 @@ bool MessageChannel::Impl::HandleRead() {
       return result;
     }
     if (!handler_->HandlePacket(message_header_, &input_buffer_)) {
-    VLOG_ERROR() << "handle message from "
-      << server_address_.DebugString() << " error";
-    Close();
-    return false;
+      VLOG_ERROR() << "handle message from "
+        << server_address_.DebugString() << " error";
+      Close();
+      return false;
     }
   }
   input_buffer_.Clear();
@@ -160,14 +159,12 @@ bool MessageChannel::Impl::HandleWrite() {
   if (output_buffer_.is_read_complete()) {
     return true;
   }
-  VLOG_ERROR() << "before write: " << output_buffer_.size();
   uint32 result = WriteMessage(&output_buffer_, fd_);
   if (result == kSendMessageError) {
     VLOG_ERROR() << "send message to "
       << server_address_.DebugString() << " error";
     Close();
   }
-  VLOG_ERROR() << "after write: " << output_buffer_.size();
   return (result == kSuccess);
 }
 
