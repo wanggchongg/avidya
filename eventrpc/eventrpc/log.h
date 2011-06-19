@@ -128,6 +128,64 @@ class Log {
   if (!(condition)) LOG_DEBUG3()
 #define LOG_DEBUG4_IF_NOT(condition) \
   if (!(condition)) LOG_DEBUG4()
+// ASSERT condition macros
+#ifdef NDEBUG
+// define a null stream that actually has no effect
+// cause ASSERT marco has no effect in release version
+#define NULL_STREAM                             \
+  if (0) std::ostringstream()
+
+#define ASSERT(condition)                NULL_STREAM
+
+#define EASSERT_EQ(expected, actual)      NULL_STREAM
+#define EASSERT_NE(expected, actual)      NULL_STREAM
+#define EASSERT_LE(expected, actual)      NULL_STREAM
+#define EASSERT_LT(expected, actual)      NULL_STREAM
+#define EASSERT_GE(expected, actual)      NULL_STREAM
+#define EASSERT_GT(expected, actual)      NULL_STREAM
+#else   // ifdef NDEBUG
+#define ASSERT(condition)                                \
+ if (!(condition))                                      \
+   LOG_FATAL() << "ASSERT failed: " #condition "\n"
+
+#define DEFINE_EASSERT_OP_IMPL(name, op)                  \
+template<class t1, class t2>                            \
+inline bool                                             \
+ASSERT##name##impl(const t1& v1, const t2 &v2) {         \
+  return (v1 op v2);                                    \
+}
+
+DEFINE_EASSERT_OP_IMPL(EQ, ==)
+DEFINE_EASSERT_OP_IMPL(NE, !=)
+DEFINE_EASSERT_OP_IMPL(LE, <=)
+DEFINE_EASSERT_OP_IMPL(LT, <)
+DEFINE_EASSERT_OP_IMPL(GE, >=)
+DEFINE_EASSERT_OP_IMPL(GT, >)
+#undef DEFINE_EASSERT_OP_IMPL
+
+#define EASSERT_OP(name, op, val1, val2)                  \
+  if (!eventrpc::ASSERT##name##impl(val1, val2))         \
+    LOG_FATAL() << "ASSERT failed: "                     \
+      << #val1 " " #op " " #val2                        \
+      << "(" #val1 << " vs. " << #val2 ")\n"
+
+#define EASSERT_EQ(expected, actual)                      \
+  EASSERT_OP(EQ, ==, (expected), actual)
+#define EASSERT_NE(expected, actual)                      \
+  EASSERT_OP(NE, !=, expected, actual)
+#define EASSERT_TRUE(actual)                             \
+  EASSERT_EQ(true, (actual))
+#define EASSERT_FALSE(actual)                            \
+  EASSERT_NE(false, (actual))
+#define EASSERT_LE(expected, actual)                      \
+  EASSERT_OP(LE, <=, expected, actual)
+#define EASSERT_LT(expected, actual)                      \
+  EASSERT_OP(LT, <, expected, actual)
+#define EASSERT_GE(expected, actual)                      \
+  EASSERT_OP(GE, >=, expected, actual)
+#define EASSERT_GT(expected, actual)                      \
+  EASSERT_OP(GT, >, expected, actual)
+#endif // ifndef NDEBUG
 };
 
 using eventrpc::Log;

@@ -4,7 +4,6 @@
 #include <arpa/inet.h>
 #include "eventrpc/event.h"
 #include "eventrpc/log.h"
-#include "eventrpc/assert_log.h"
 #include "eventrpc/net_address.h"
 #include "eventrpc/net_utility.h"
 #include "eventrpc/utility.h"
@@ -77,7 +76,7 @@ MessageServer::Impl::~Impl() {
 
 void MessageServer::Impl::Start() {
   listen_fd_ = NetUtility::Listen(listen_address_);
-  ASSERT_TRUE(listen_fd_ > 0);
+  EASSERT_TRUE(listen_fd_ > 0);
   VLOG_INFO() << "create listen fd " << listen_fd_
     << " for " << listen_address_.DebugString();
   dispatcher_->AddEvent(listen_fd_, EVENT_READ, event_handler_);

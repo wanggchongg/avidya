@@ -11,11 +11,10 @@
 #include "eventrpc/base.h"
 #include "eventrpc/file_utility.h"
 #include "eventrpc/log.h"
-#include "eventrpc/assert_log.h"
 namespace eventrpc {
 bool FileUtility::ReadFileContents(const string &file,
                                    string *content) {
-  ASSERT(content);
+  EASSERT_TRUE(content != NULL);
   int fd = open(file.c_str(), O_RDONLY);
   if (fd < 0) {
     LOG_ERROR() << "open file " << file << " for read error: "

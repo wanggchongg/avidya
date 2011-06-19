@@ -11,7 +11,6 @@
 #include "eventrpc/mutex.h"
 #include "eventrpc/monitor.h"
 #include "eventrpc/log.h"
-#include "eventrpc/assert_log.h"
 #include "eventrpc/task.h"
 #include "eventrpc/dispatcher.h"
 #include "eventrpc/net_utility.h"
@@ -178,7 +177,7 @@ void Dispatcher::Impl::HandleTasks() {
 
 void Dispatcher::Impl::AddEvent(int fd, uint32 flags, EventHandler *handler) {
   EpollEvent *event = new EpollEvent();
-  ASSERT_TRUE(event != NULL);
+  EASSERT_TRUE(event != NULL);
   event->fd = fd;
   event->flags = flags;
   event->handler = handler;
@@ -187,7 +186,7 @@ void Dispatcher::Impl::AddEvent(int fd, uint32 flags, EventHandler *handler) {
 }
 
 void Dispatcher::Impl::InternalAddEvent(EpollEvent *event) {
-  ASSERT_NE(static_cast<EpollEvent*>(NULL), event);
+  EASSERT_NE(static_cast<EpollEvent*>(NULL), event);
   if (event->flags & EVENT_READ) {
     event->epoll_ev.events |= EPOLLIN;
   }
@@ -203,13 +202,13 @@ void Dispatcher::Impl::InternalAddEvent(EpollEvent *event) {
     VLOG_ERROR() << "epoll_ctl for fd " << event->fd
       << " error: " << strerror(errno);
   }
-  ASSERT_TRUE(event_array_[event->fd] == NULL);
+  EASSERT_TRUE(event_array_[event->fd] == NULL);
   VLOG_INFO() << "add event, fd: " << event->fd;
   event_array_[event->fd] = event;
 }
 
 void Dispatcher::Impl::InternalDeleteEvent(EpollEvent *event) {
-  ASSERT_TRUE(event_array_[event->fd] == event);
+  EASSERT_TRUE(event_array_[event->fd] == event);
   if (epoll_ctl(epoll_fd_, EPOLL_CTL_DEL,
                 event->fd, &(event->epoll_ev)) == -1) {
     VLOG_ERROR() << "epoll_ctl error: " << strerror(errno);
@@ -238,10 +237,10 @@ void Dispatcher::Impl::NewTaskNotify() {
 
 void Dispatcher::Impl::Start() {
   epoll_fd_ = ::epoll_create(kEpollFdCount);
-  ASSERT_TRUE(epoll_fd_ != -1);
+  EASSERT_TRUE(epoll_fd_ != -1);
   event_fd_ = ::eventfd(0, 0);
-  ASSERT_TRUE(event_fd_ != -1);
-  ASSERT_TRUE(NetUtility::SetNonBlocking(event_fd_));
+  EASSERT_TRUE(event_fd_ != -1);
+  EASSERT_TRUE(NetUtility::SetNonBlocking(event_fd_));
   task_notify_handler_ = new TaskNotifyHandler(event_fd_, name_);
   AddEvent(event_fd_, EVENT_READ, task_notify_handler_);
   thread_.Start();

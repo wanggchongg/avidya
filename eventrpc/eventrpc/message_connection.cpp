@@ -6,7 +6,6 @@
 #include <string>
 #include "eventrpc/error_code.h"
 #include "eventrpc/log.h"
-#include "eventrpc/assert_log.h"
 #include "eventrpc/event.h"
 #include "eventrpc/dispatcher.h"
 #include "eventrpc/net_utility.h"

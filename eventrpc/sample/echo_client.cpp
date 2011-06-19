@@ -6,7 +6,6 @@
 #include "eventrpc/message_channel.h"
 #include "eventrpc/message_header.h"
 #include "eventrpc/log.h"
-#include "eventrpc/assert_log.h"
 #include "eventrpc/buffer.h"
 #include "sample/echo.pb.h"
 using namespace eventrpc;

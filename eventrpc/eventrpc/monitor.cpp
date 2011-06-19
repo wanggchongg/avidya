@@ -2,7 +2,6 @@
  * Copyright(C) lichuang
  */
 #include "eventrpc/log.h"
-#include "eventrpc/assert_log.h"
 #include "eventrpc/monitor.h"
 #include "eventrpc/time_utility.h"
 namespace eventrpc {

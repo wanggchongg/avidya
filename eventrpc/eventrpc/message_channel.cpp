@@ -9,7 +9,6 @@
 #include "eventrpc/net_address.h"
 #include "eventrpc/net_utility.h"
 #include "eventrpc/log.h"
-#include "eventrpc/assert_log.h"
 namespace eventrpc {
 struct ConnectTask : public Task {
   ConnectTask(MessageChannel::Impl *impl)
@@ -93,7 +92,7 @@ MessageChannel::Impl::~Impl() {
 }
 
 bool MessageChannel::Impl::Connect() {
-  ASSERT_TRUE(dispatcher_ != NULL) << "should be called after set_dispatcher";
+  EASSERT_TRUE(dispatcher_ != NULL) << "should be called after set_dispatcher";
   dispatcher_->PushTask(connect_task_);
   return true;
 }

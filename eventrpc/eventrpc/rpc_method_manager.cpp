@@ -7,7 +7,6 @@
 #include <google/protobuf/stubs/common.h>
 #include "eventrpc/rpc_method_manager.h"
 #include "eventrpc/log.h"
-#include "eventrpc/assert_log.h"
 #include "eventrpc/utility.h"
 #include "eventrpc/callback.h"
 namespace eventrpc {
@@ -70,7 +69,7 @@ void RpcMethodManager::Impl::RegisterService(gpb::Service *service) {
     uint32 opcode = hash_string(method->full_name());
     VLOG_INFO() << "register service: " << method->full_name()
       << ", opcode: " << opcode;
-    ASSERT_EQ(rpc_method_map_.find(opcode),
+    EASSERT_EQ(rpc_method_map_.find(opcode),
               rpc_method_map_.end()) << "rpc method "
               << method->full_name() << " duplicated";
     rpc_method_map_[opcode] = rpc_method;
