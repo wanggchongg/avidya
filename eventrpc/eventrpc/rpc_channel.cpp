@@ -50,8 +50,6 @@ struct RpcChannel::Impl : public ChannelMessageHandler {
                   gpb::Message* response,
                   gpb::Closure* done);
 
-  bool HandleConnection(bool is_connected);
-
   bool HandlePacket(const MessageHeader &header,
                     Buffer* buffer);
 
@@ -76,10 +74,6 @@ RpcChannel::Impl::Impl(MessageChannel *channel)
 }
 
 RpcChannel::Impl::~Impl() {
-}
-
-bool RpcChannel::Impl::HandleConnection(bool is_connected) {
-  return is_connected;
 }
 
 void RpcChannel::Impl::CallMethod(const gpb::MethodDescriptor* method,

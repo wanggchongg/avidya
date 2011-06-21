@@ -10,14 +10,39 @@
 #include "eventrpc/net_utility.h"
 #include "eventrpc/log.h"
 namespace eventrpc {
+namespace {
+static const int32 kMaxTryConnectTime = 5;
+};
 struct ConnectTask : public Task {
   ConnectTask(MessageChannel::Impl *impl)
     : impl_(impl) {
   }
 
+  virtual ~ConnectTask() {
+  }
+
   void Handle();
 
   MessageChannel::Impl *impl_;
+};
+
+struct SendPacketTask : public Task {
+  SendPacketTask(MessageChannel::Impl *impl,
+                 uint32 opcode,
+                 ::google::protobuf::Message *message)
+    : impl_(impl),
+      opcode_(opcode),
+      message_(message) {
+  }
+
+  void Handle();
+
+  virtual ~SendPacketTask() {
+  }
+
+  MessageChannel::Impl *impl_;
+  uint32 opcode_;
+  ::google::protobuf::Message *message_;
 };
 
 struct MessageChannelEventHandler : public EventHandler {
@@ -47,6 +72,9 @@ struct MessageChannel::Impl {
 
   void SendPacket(uint32 opcode, const ::google::protobuf::Message *message);
 
+  void HandleSendPacket(uint32 opcode,
+                        const ::google::protobuf::Message *message);
+
   void set_message_handler(ChannelMessageHandler *handler);
 
   void set_dispatcher(Dispatcher *dispatcher);
@@ -65,6 +93,8 @@ struct MessageChannel::Impl {
 
  private:
   int fd_;
+  bool is_connected_;
+  int32 try_connect_count_;
   NetAddress server_address_;
   Buffer input_buffer_;
   Buffer output_buffer_;
@@ -78,6 +108,8 @@ struct MessageChannel::Impl {
 
 MessageChannel::Impl::Impl(const string &host, int port)
   : fd_(-1),
+    is_connected_(false),
+    try_connect_count_(0),
     server_address_(host, port),
     dispatcher_(NULL),
     event_handler_(new MessageChannelEventHandler(this)),
@@ -99,11 +131,31 @@ bool MessageChannel::Impl::Connect() {
 
 void MessageChannel::Impl::ConnectToServer() {
   fd_ = NetUtility::Connect(server_address_);
-  bool is_connected = (fd_ > 0);
-  VLOG_INFO() << "create connection fd " << fd_
-    << " for " << server_address_.DebugString();
-  handler_->HandleConnection(is_connected);
-  dispatcher_->AddEvent(fd_, EVENT_READ | EVENT_WRITE, event_handler_);
+  if (fd_ > 0) {
+    is_connected_ = true;
+    VLOG_INFO() << "create connection fd " << fd_
+      << " for " << server_address_.DebugString();
+    uint32 result = WriteMessage(&output_buffer_, fd_);
+    if (result == kSendMessageError) {
+      VLOG_ERROR() << "send message to "
+        << server_address_.DebugString() << " error";
+      Close();
+    }
+    dispatcher_->AddEvent(fd_, EVENT_READ | EVENT_WRITE, event_handler_);
+    return;
+  }
+  ++try_connect_count_;
+  if (try_connect_count_ > kMaxTryConnectTime) {
+    VLOG_ERROR() << "try connect to "
+      << server_address_.DebugString() << kMaxTryConnectTime
+      << "times, now give up and quit";
+    Close();
+    return;
+  }
+  VLOG_ERROR() << "try connect to "
+    << server_address_.DebugString() << try_connect_count_
+    << " times fail, now try again...";
+  dispatcher_->PushTask(connect_task_);
 }
 
 void MessageChannel::Impl::Close() {
@@ -116,6 +168,15 @@ void MessageChannel::Impl::Close() {
 }
 
 void MessageChannel::Impl::SendPacket(
+    uint32 opcode,
+    const ::google::protobuf::Message *message) {
+  SendPacketTask *task = new SendPacketTask(this,
+                                            opcode,
+                                            message->New());
+  dispatcher_->PushTask(task);
+}
+
+void MessageChannel::Impl::HandleSendPacket(
     uint32 opcode,
     const ::google::protobuf::Message *message) {
   EncodePacket(opcode, message, &output_buffer_);
@@ -177,6 +238,11 @@ bool MessageChannelEventHandler::HandleWrite() {
 
 void ConnectTask::Handle() {
   impl_->ConnectToServer();
+}
+
+void SendPacketTask::Handle() {
+  impl_->HandleSendPacket(opcode_, message_);
+  delete message_;
 }
 
 MessageChannel::MessageChannel(const string &host, int port) {

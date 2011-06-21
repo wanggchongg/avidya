@@ -16,8 +16,6 @@
 #include "log.h"
 namespace {
 static const uint32 kConnectTimeoutSecond = 5;
-static const uint32 kMaxTryConnecTime = 3;
-static const uint32 kConnectFailSleepTime = 1;
 };
 namespace eventrpc {
 static bool is_connected(int fd,

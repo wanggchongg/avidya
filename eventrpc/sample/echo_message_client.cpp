@@ -12,26 +12,15 @@
 using namespace eventrpc;
 using namespace std;
 
-class EchoClientMessageHandler : public ChannelMessageHandler {
+class EchoClientMessageHandler : public MessageHandler {
  public:
   EchoClientMessageHandler(MessageChannel *channel,
                            Monitor *monitor)
-    : ChannelMessageHandler(channel),
+    : MessageHandler(channel),
       monitor_(monitor) {
   }
 
   virtual ~EchoClientMessageHandler() {
-  }
-
-  bool HandleConnection(bool is_connected) {
-    if (!is_connected) {
-      return false;
-    }
-    echo::EchoRequest request;
-    request.set_message("hello");
-    VLOG_INFO() << "HandleConnection";
-    channel_->SendPacket(CMSG_ECHO, &request);
-    return true;
   }
 
   bool HandlePacket(const MessageHeader &header,
@@ -63,6 +52,9 @@ int main(int argc, char *argv[]) {
   channel.set_message_handler(&handler);
   dispatcher.Start();
   channel.Connect();
+  echo::EchoRequest request;
+  request.set_message("hello");
+  channel.SendPacket(CMSG_ECHO, &request);
   monitor.Wait();
   channel.Close();
   dispatcher.Stop();

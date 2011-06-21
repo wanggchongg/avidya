@@ -21,7 +21,6 @@ struct ChannelMessageHandler : public MessageHandler {
   virtual ~ChannelMessageHandler() {}
   virtual bool HandlePacket(const MessageHeader &header,
                             Buffer* buffer) = 0;
-  virtual bool HandleConnection(bool is_connected) = 0;
  protected:
   MessageChannel *channel_;
 };
