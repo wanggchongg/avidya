@@ -22,8 +22,7 @@ static const uint32 kConnectFailSleepTime = 1;
 namespace eventrpc {
 static bool is_connected(int fd,
                          const fd_set *read_events,
-                         const fd_set *write_events,
-                         const fd_set *exception_events) {
+                         const fd_set *write_events) {
   int error_save = 0;
   socklen_t length = sizeof(error_save);
   // assume no error
@@ -78,7 +77,7 @@ int NetUtility::Connect(const NetAddress &address) {
     ::close(fd);
     return -1;
   }
-  if (is_connected(fd, &read_events, &write_events, &exception_events)) {
+  if (is_connected(fd, &read_events, &write_events)) {
     VLOG_INFO() << "connect to " << address.DebugString()
       << " success";
     return fd;
