@@ -2,6 +2,7 @@
  * Copyright (C) Lichuang
  *
  */
+#include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -14,31 +15,34 @@
 #include "net_utility.h"
 #include "log.h"
 namespace {
+static const uint32 kConnectTimeoutSecond = 5;
 static const uint32 kMaxTryConnecTime = 3;
 static const uint32 kConnectFailSleepTime = 1;
 };
 namespace eventrpc {
+static bool is_connected(int fd,
+                         const fd_set *read_events,
+                         const fd_set *write_events,
+                         const fd_set *exception_events) {
+  int error_save = 0;
+  socklen_t length = sizeof(error_save);
+  // assume no error
+  errno = 0;
+  if (!FD_ISSET(fd, read_events) &&
+      !FD_ISSET(fd, write_events)) {
+    return false;
+  }
+  if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &error_save, &length)< 0) {
+    return false;
+  }
+  errno = error_save;
+  return (error_save == 0);
+}
+
 int NetUtility::Connect(const NetAddress &address) {
   int fd = ::socket(AF_INET, SOCK_STREAM, 0);
   if (fd < 0) {
     VLOG_ERROR() << "create socket error: " << strerror(errno);
-    return -1;
-  }
-
-  const struct sockaddr_in *addr = address.address();
-  uint32 count = 0;
-  while (count < kMaxTryConnecTime) {
-    if (::connect(fd, (struct sockaddr *)(addr),
-                  sizeof(*addr)) < 0) {
-      ++count;
-      sleep(count * kConnectFailSleepTime);
-      VLOG_ERROR() << "connect to " << address.DebugString()
-        << " fail, try again...";
-    }
-    break;
-  }
-  if (fd < 0) {
-    ::close(fd);
     return -1;
   }
   if (!NetUtility::SetNonBlocking(fd)) {
@@ -46,8 +50,42 @@ int NetUtility::Connect(const NetAddress &address) {
     ::close(fd);
     return -1;
   }
-
-  return fd;
+  const struct sockaddr_in *addr = address.address();
+  int ret = ::connect(fd, (struct sockaddr *)(addr), sizeof(*addr));
+  if (ret == 0) {
+    // connected?
+    return fd;
+  }
+  // time-out connect
+  fd_set read_events, write_events, exception_events;
+  struct timeval tv;
+  FD_ZERO(&read_events);
+  FD_SET(fd, &read_events);
+  write_events = read_events;
+  exception_events = read_events;
+  tv.tv_sec = kConnectTimeoutSecond;
+  tv.tv_usec = 0;
+  int result = ::select(fd + 1, &read_events,
+                        &write_events, &exception_events,
+                        &tv);
+  if (result < 0) {
+    VLOG_ERROR() << "select fail: " << strerror(errno);
+    ::close(fd);
+    return -1;
+  }
+  if (result == 0) {
+    VLOG_ERROR() << "connect time out";
+    ::close(fd);
+    return -1;
+  }
+  if (is_connected(fd, &read_events, &write_events, &exception_events)) {
+    VLOG_INFO() << "connect to " << address.DebugString()
+      << " success";
+    return fd;
+  }
+  VLOG_ERROR() << "connect time out";
+  ::close(fd);
+  return -1;
 }
 
 int NetUtility::Listen(const NetAddress &address) {
@@ -187,11 +225,9 @@ bool NetUtility::SetNonBlocking(int fd) {
   if (flags == -1) {
     return false;
   }
-
   if (-1 == fcntl(fd, F_SETFL, flags | O_NONBLOCK)) {
     return false;
   }
-
   return true;
 }
 };

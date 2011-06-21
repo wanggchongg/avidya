@@ -10,5 +10,14 @@ struct Task {
   }
   virtual void Handle() = 0;
 };
+
+struct TimerTask {
+ public:
+  TimerTask() {
+  }
+  virtual ~TimerTask() {
+  }
+  virtual void Handle() = 0;
+};
 };
 #endif  // __EVENTRPC_TASK_H__
