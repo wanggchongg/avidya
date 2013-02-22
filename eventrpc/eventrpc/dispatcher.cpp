@@ -314,14 +314,14 @@ void Dispatcher::Impl::CleanUp() {
   }
   list<Task*>::iterator iter;
   for (iter = running_task_list_->begin();
-       iter != running_task_list_->end(); ) {
+       iter != running_task_list_->end(); ++iter) {
     Task *task = *iter;
     task->Handle();
     delete task;
   }
   running_task_list_->clear();
   for (iter = free_task_list_->begin();
-       iter != free_task_list_->end(); ) {
+       iter != free_task_list_->end(); ++iter) {
     Task *task = *iter;
     task->Handle();
     delete task;
