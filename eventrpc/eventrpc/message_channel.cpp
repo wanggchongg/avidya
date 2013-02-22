@@ -29,10 +29,11 @@ struct ConnectTask : public Task {
 struct SendPacketTask : public Task {
   SendPacketTask(MessageChannel::Impl *impl,
                  uint32 opcode,
-                 ::google::protobuf::Message *message)
+                 const ::google::protobuf::Message *message)
     : impl_(impl),
-      opcode_(opcode),
-      message_(message) {
+      opcode_(opcode) {
+    message_ = message->New();
+    message_->CopyFrom(*message);
   }
 
   void Handle();
@@ -155,7 +156,7 @@ void MessageChannel::Impl::ConnectToServer() {
   VLOG_ERROR() << "try connect to "
     << server_address_.DebugString() << try_connect_count_
     << " times fail, now try again...";
-  dispatcher_->PushTask(connect_task_);
+  dispatcher_->PushTask(new ConnectTask(this));
 }
 
 void MessageChannel::Impl::Close() {
@@ -172,7 +173,7 @@ void MessageChannel::Impl::SendPacket(
     const ::google::protobuf::Message *message) {
   SendPacketTask *task = new SendPacketTask(this,
                                             opcode,
-                                            message->New());
+                                            message);
   dispatcher_->PushTask(task);
 }
 

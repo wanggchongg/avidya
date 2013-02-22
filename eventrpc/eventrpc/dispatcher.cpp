@@ -1,10 +1,20 @@
 /*
  * Copyright(C) lichuang
  */
+
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+
+#define USE_SOCKETPAIR
+
+#ifndef USE_SOCKETPAIR
 #include <sys/eventfd.h>
+#else
+#include <sys/socket.h>
+#include <sys/types.h>
+#endif
+
 #include <sys/epoll.h>
 #include <list>
 #include "eventrpc/thread.h"
@@ -88,7 +98,11 @@ struct Dispatcher::Impl : public ThreadWorker {
   TaskList *free_task_list_;
   Thread thread_;
   int epoll_fd_;
+#ifndef USE_SOCKETPAIR
   int event_fd_;
+#else
+  int event_fd_[2];
+#endif
   TaskNotifyHandler *task_notify_handler_;
   SpinMutex task_list_spin_mutex_;
   epoll_event epoll_event_array_[kEpollFdCount];
@@ -104,11 +118,17 @@ Dispatcher::Impl::Impl()
     free_task_list_(&task_list_[1]),
     thread_(this),
     epoll_fd_(-1),
+#ifndef USE_SOCKETPAIR
     event_fd_(-1),
+#endif
     task_notify_handler_(NULL),
     is_running_(false),
     shut_down_(false),
     name_("dispatcher") {
+#ifdef USE_SOCKETPAIR
+    event_fd_[0] = -1;
+    event_fd_[1] = -1;
+#endif
   for (uint32 i = 0; i < kEpollFdCount; ++i) {
     event_array_[i] = NULL;
   }
@@ -230,19 +250,36 @@ void Dispatcher::Impl::PushTask(Task *task) {
 
 void Dispatcher::Impl::NewTaskNotify() {
   uint64 a = 1;
+#ifndef USE_SOCKETPAIR
   if (::write(event_fd_, &a, sizeof(a)) != sizeof(a)) {
     VLOG_ERROR() << "write to event fd error: " << strerror(errno);
   }
+#else
+  if (::write(event_fd_[0], &a, sizeof(a)) != sizeof(a)) {
+    VLOG_ERROR() << "write to event fd error: " << strerror(errno);
+  }
+#endif
 }
 
 void Dispatcher::Impl::Start() {
   epoll_fd_ = ::epoll_create(kEpollFdCount);
   EASSERT_TRUE(epoll_fd_ != -1);
+#ifndef USE_SOCKETPAIR
   event_fd_ = ::eventfd(0, 0);
   EASSERT_TRUE(event_fd_ != -1);
   EASSERT_TRUE(NetUtility::SetNonBlocking(event_fd_));
   task_notify_handler_ = new TaskNotifyHandler(event_fd_, name_);
   AddEvent(event_fd_, EVENT_READ, task_notify_handler_);
+#else
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, event_fd_)) {
+      LOG_ERROR() << "fail to open socketpair";
+      return;
+  }
+  EASSERT_TRUE(NetUtility::SetNonBlocking(event_fd_[0]));
+  EASSERT_TRUE(NetUtility::SetNonBlocking(event_fd_[1]));
+  task_notify_handler_ = new TaskNotifyHandler(event_fd_[1], name_);
+  AddEvent(event_fd_[0], EVENT_READ, task_notify_handler_);
+#endif
   thread_.Start();
 }
 
@@ -258,7 +295,12 @@ void Dispatcher::Impl::Stop() {
     cleanup_monitor_.Wait();
   }
   close(epoll_fd_);
+#ifndef USE_SOCKETPAIR
   close(event_fd_);
+#else
+  close(event_fd_[0]);
+  close(event_fd_[1]);
+#endif
 }
 
 void Dispatcher::Impl::CleanUp() {

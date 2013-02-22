@@ -24,3 +24,5 @@ service EchoService
   rpc Echo(EchoRequest) returns (EchoResponse);
   rpc Dummy(DummyRequest) returns (DummyResponse);
 };
+
+option cc_generic_services = true;
