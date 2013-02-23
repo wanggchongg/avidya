@@ -1,6 +1,7 @@
-/*
- * Copyright(C) lichuang
- */
+// Copyright (C) 2013, avidya
+// Created by lichuang1982@gmail.com
+// Last modified: anqin.qin@gmail.com
+
 #include <sys/socket.h>
 #include "eventrpc/error_code.h"
 #include "eventrpc/task.h"
@@ -23,6 +24,9 @@ struct ConnectTask : public Task {
 
   void Handle();
 
+  std::string TaskName() {
+    return "ConnectTask";
+  }
   MessageChannel::Impl *impl_;
 };
 
@@ -37,6 +41,10 @@ struct SendPacketTask : public Task {
   }
 
   void Handle();
+
+  std::string TaskName() {
+    return "SendPacketTask";
+  }
 
   virtual ~SendPacketTask() {
   }
@@ -91,6 +99,10 @@ struct MessageChannel::Impl {
   void ErrorMessage(const string &message);
 
   void ConnectToServer();
+
+  bool IsConnected() {
+    return is_connected_;
+  }
 
  private:
   int fd_;
@@ -154,7 +166,7 @@ void MessageChannel::Impl::ConnectToServer() {
     return;
   }
   VLOG_ERROR() << "try connect to "
-    << server_address_.DebugString() << try_connect_count_
+    << server_address_.DebugString() << ", " << try_connect_count_
     << " times fail, now try again...";
   dispatcher_->PushTask(new ConnectTask(this));
 }
@@ -278,5 +290,9 @@ void MessageChannel::set_dispatcher(Dispatcher *dispatcher) {
 
 Dispatcher* MessageChannel::dispatcher() {
   return impl_->dispatcher();
+}
+
+bool MessageChannel::IsConnected() {
+  return impl_->IsConnected();
 }
 };

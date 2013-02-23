@@ -1,10 +1,13 @@
+// Copyright (C) 2013, avidya
+// Created by lichuang1982@gmail.com
+
 #include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <iostream>
-#include "log.h"
-#include "rpc_server.h"
-#include "echo.pb.h"
+#include "eventrpc/log.h"
+#include "eventrpc/rpc_server.h"
+#include "sample/echo.pb.h"
 
 using namespace eventrpc;
 using namespace std;

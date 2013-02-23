@@ -1,6 +1,7 @@
-/*
- * Copyright(C) lichuang
- */
+// Copyright (C) 2013, avidya
+// Created by lichuang1982@gmail.com
+// Last modified: anqin.qin@gmail.com
+
 #ifndef __EVENTRPC_MESSAGE_CHANNEL_H__
 #define __EVENTRPC_MESSAGE_CHANNEL_H__
 #include <string>
@@ -30,6 +31,8 @@ class MessageChannel {
   void set_dispatcher(Dispatcher *dispatcher);
 
   Dispatcher * dispatcher();
+
+  bool IsConnected();
 
   struct Impl;
  private:

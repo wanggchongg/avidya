@@ -1,6 +1,6 @@
-/*
- * Copyright(C) lichuang
- */
+// Copyright (C) 2013, avidya
+// Created by lichuang1982@gmail.com
+// Last modified: anqin.qin@gmail.com
 
 #include <unistd.h>
 #include <errno.h>
@@ -24,10 +24,6 @@
 #include "eventrpc/task.h"
 #include "eventrpc/dispatcher.h"
 #include "eventrpc/net_utility.h"
-namespace {
-static const uint32 kMaxPollWaitTime = 10;
-static const uint32 kEpollFdCount = 1024;
-};
 namespace eventrpc {
 struct EpollEvent {
   int fd;
@@ -63,6 +59,10 @@ struct AddEventTask : public Task {
 
   void Handle();
 
+  std::string TaskName() {
+      return "AddEventTask";
+  }
+
   Dispatcher::Impl *impl_;
   EpollEvent *event_;
 };
@@ -91,6 +91,7 @@ struct Dispatcher::Impl : public ThreadWorker {
   void InternalAddEvent(EpollEvent *event);
 
   void InternalDeleteEvent(EpollEvent *event);
+
  private:
   typedef list<Task*> TaskList;
   TaskList task_list_[2];
@@ -188,6 +189,8 @@ void Dispatcher::Impl::HandleTasks() {
   for (TaskList::iterator iter = running_task_list_->begin();
        iter != running_task_list_->end(); ) {
     Task *task = *iter;
+    VLOG_INFO() << "HandleTasks: " << task->TaskName()
+        << ": " << task;
     task->Handle();
     ++iter;
     delete task;
@@ -238,6 +241,10 @@ void Dispatcher::Impl::InternalDeleteEvent(EpollEvent *event) {
 }
 
 void Dispatcher::Impl::PushTask(Task *task) {
+  if (shut_down_) {
+      return;
+  }
+  VLOG_INFO() << "PushTask(): " << task->TaskName() << ": " << task;
   {
     SpinMutexLock lock(&task_list_spin_mutex_);
     free_task_list_->push_back(task);
@@ -249,6 +256,9 @@ void Dispatcher::Impl::PushTask(Task *task) {
 }
 
 void Dispatcher::Impl::NewTaskNotify() {
+  if (shut_down_) {
+      return;
+  }
   uint64 a = 1;
 #ifndef USE_SOCKETPAIR
   if (::write(event_fd_, &a, sizeof(a)) != sizeof(a)) {
@@ -323,6 +333,8 @@ void Dispatcher::Impl::CleanUp() {
   for (iter = free_task_list_->begin();
        iter != free_task_list_->end(); ++iter) {
     Task *task = *iter;
+
+    VLOG_INFO() << "HandleTasks: " << task->TaskName() << ": " << task;
     task->Handle();
     delete task;
   }
