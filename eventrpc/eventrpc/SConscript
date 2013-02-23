@@ -22,6 +22,7 @@ src_files = [
   'dispatcher.cpp',
   'buffer.cpp',
   'rpc_channel.cpp',
+  'rpc_controller.cpp',
   'rpc_server.cpp',
   'rpc_method_manager.cpp',
   'message_channel.cpp',
